@@ -1,5 +1,5 @@
 
-package pson.net;
+package pson;
 
 import java.net.*;
 import java.util.*;
@@ -11,8 +11,8 @@ import java.nio.channels.spi.*;
 /**
  * Implementation of the NEEM network layer.
  */
-public class NetworkLayer {
-	public NetworkLayer(InetSocketAddress local) throws IOException {
+public class Transport {
+	public Transport(InetSocketAddress local) throws IOException {
 		queued=new ArrayList();
 		ssock=ServerSocketChannel.open();
 		ssock.configureBlocking(false);
@@ -113,7 +113,7 @@ public class NetworkLayer {
 	/**
 	 * Connect event handler.
 	 */
-	public void handler(Handler handler) {
+	public void handler(Gossip handler) {
 		this.handler=handler;
 	}
 
@@ -172,11 +172,6 @@ public class NetworkLayer {
 				info.outremaining-=info.sock.write(info.outgoing, 0, info.outgoing.length);
 				if (info.outremaining!=0)
 					return;
-				queue(new Runnable() {
-					public void run() {
-						handler.ready(info);
-					}
-				});
 			}
 			info.writable=true;
 			info.outgoing=null;
@@ -317,15 +312,8 @@ public class NetworkLayer {
 	private ServerSocketChannel ssock;
 	private Selector selector;
 	private Map connections;
-	private Handler handler;
+	private Gossip handler;
 	private ArrayList queued;
-
-	public interface Handler {
-		public void open(Connection info);
-		public void close(InetSocketAddress addr);
-		public void ready(Connection info);
-		public void receive(ByteBuffer[] msg, Connection info);
-	};
 
 	public static class Connection {
 		Connection(InetSocketAddress addr, SelectionKey key, ByteBuffer[] outgoing) {
