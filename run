@@ -1,0 +1,23 @@
+javac neem/*.java -Xlint
+javac test/*.java -Xlint
+
+eu=`hostname`
+
+#ips="lhufa lhona ucha inha"
+ips="192.168.82.185 192.168.82.183 192.168.82.189 192.168.82.187"
+
+if [ $# != 4 ]; then
+	echo "é favor indicar o ip e o logfile"
+	exit 1
+fi
+rm -rf $3
+java test.Big $1 $2 > $3 & 
+
+if [ $4 != "l" ]; then
+
+for ip in $ips;
+  do
+    ssh $ip "cd pson--devel--0.1--patch-42;java test.Big $ip $1 > exec.$ip.log" &
+  done
+fi
+# arch-tag: ada09698-a4a9-4c28-b704-88329914a19b

@@ -1,0 +1,59 @@
+ This text will (hopefuly) describe the steps to take, in order to design an 
+aplication that resorts to the NEEM protocol for group comunication.
+
+
+How to start?
+
+1. First of all, such application MUST conform with the App interface,  thereby 
+  implementing every method of this class.
+
+2. The implementation of the methods in the App interface is free. As long as 
+ the methods of the underlying classes are used correctly, the application WILL
+ work as expected.
+
+3. Two synchronization ports must be defined. One where messages related with 
+ membership can be relayed between group members (m_syncport). The other port
+ is used to relay messages sent from the application layer (g_syncport). The 
+ transport layer supports more than one gossip, to provide support for several
+ applications sending messages to the same group, while sharing the transport 
+ layer, and it's connections. Such support, led to where every message that is
+ sent to the group must state wich port it's intended for. If this stated port
+ equals m_syncport, then it's delivered to the MembershipImpl class instance
+ associated with each Transport class instance. If it's not, it'll have to be
+ delivered to the GossipImpl class instance. As at the transport level there's 
+ a Map of Gossips indexed by port, an atempt is made to deliver the message to 
+ the GossipImpl instance at the port the message states. If a Gossip exists at
+ that index, the message is delivered to it, if not it's dropped.
+  At the Gossip and Membership layer, for each message message to be sent, an 
+ unique identifier is generated using the UUID class. This unique identifier is 
+ stored in a HashSet class instance. If the incoming message has already been
+ received by either layer, i.e., its identifier is present in the HashSet, the
+ message is dropped silently.
+
+What is needed to run?
+
+4. As soon as the application has implemented the methods of the App interface,
+ it's time to begin piling up the layers. The application WILL require 1 (one),
+ or more, instance(s) of the GossipImpl class ( for multicast and receive),
+ 1 (one) instance of the MembershipImpl class ( to deal with local group 
+ membership changes) and one instance of the Transport class ( wich provides
+ comunication primitives to both previously refered classes, and is shared 
+ between them).
+  To create an instance of the Transport class, the constructor of the class
+ has to be called with 2 (two) arguments: the ip address and the port to bind
+ at.
+  To instanciate the Gossip class, 4 (four) parameters MUST be supplied:
+ the Transport class instance that provides comunication, the port thas is used
+ by the transport class to deliver received gossip related messages, the fanout
+ wich is the maximum number of local group members to adress each message and
+ the group size, or, more accurately, the maximum local group size.
+  Similar to the process to create a Gossip object, the creation of a Membership
+ object takes 4 (four) parameters: the Transport class instance that provides 
+ comunication, the port thas is used by the transport class to deliver received
+ membership related messages, the fanout wich is the maximum number of local
+ group members to adress each message and the group size, or, more accurately, the
+ maximum local group size.
+
+5. How messages are
+
+# arch-tag: f34eef08-cdd8-4c9b-a042-883fc482d377
