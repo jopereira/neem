@@ -1,17 +1,40 @@
- This text will (hopefuly) describe the steps to take, in order to design an 
-aplication that resorts to the NEEM protocol for group comunication.
+<body>
+
+	<p>The NeEM library provides an implementation of epidemic multicast (also called 
+	probabilistic or gossip-based) in wide-area networks by using 
+	multiple TCP/IP connections in a non-blocking fashion.</p>
+
+	<p>Epidemic multicast protocols achieve stable high throughput
+	regardless of node and network faults and scale to very large numbers
+	of participants.
+	The resulting protocol can be used for event dissemination to
+	a very large number of interested parties.</p>
+
+	<p>Implementation is based on Java5 and takes advantage
+	of the NIO interfaces to maintain multiple network connections without
+	excessive threading overhead. The goal of this implementation is to be
+	small, self-contained, and practical.</p>
+ 
+ <p>This text will (hopefuly) describe the steps to take, in order to design an 
+aplication that resorts to the NEEM protocol for group comunication.</p>
 
 
-How to start?
+<h2>How to start?</h2>
 
-1. First of all, such application MUST conform with the App interface,  thereby 
+<ol>
+<li>
+First of all, such application MUST conform with the App interface,  thereby 
   implementing every method of this class.
+  </li>
 
-2. The implementation of the methods in the App interface is free. As long as 
+<li>
+ The implementation of the methods in the App interface is free. As long as 
  the methods of the underlying classes are used correctly, the application WILL
  work as expected.
+</li>
 
-3. Two synchronization ports must be defined. One where messages related with 
+<li>
+ Two synchronization ports must be defined. One where messages related with 
  membership can be relayed between group members (m_syncport). The other port
  is used to relay messages sent from the application layer (g_syncport). The 
  transport layer supports more than one gossip, to provide support for several
@@ -29,19 +52,25 @@ How to start?
  stored in a HashSet class instance. If the incoming message has already been
  received by either layer, i.e., its identifier is present in the HashSet, the
  message is dropped silently.
+</li>
+</ol>
 
-What is needed to run?
+<h2>What is needed to run?</h2>
 
-4. As soon as the application has implemented the methods of the App interface,
+<p>
+ As soon as the application has implemented the methods of the App interface,
  it's time to begin piling up the layers. The application WILL require 1 (one),
  or more, instance(s) of the GossipImpl class ( for multicast and receive),
  1 (one) instance of the MembershipImpl class ( to deal with local group 
  membership changes) and one instance of the Transport class ( wich provides
  comunication primitives to both previously refered classes, and is shared 
  between them).
+ </p><p>
   To create an instance of the Transport class, the constructor of the class
  has to be called with 2 (two) arguments: the ip address and the port to bind
  at.
+</p>
+<p>
   To instanciate the Gossip class, 4 (four) parameters MUST be supplied:
  the Transport class instance that provides comunication, the port thas is used
  by the transport class to deliver received gossip related messages, the fanout
@@ -53,7 +82,7 @@ What is needed to run?
  membership related messages, the fanout wich is the maximum number of local
  group members to adress each message and the group size, or, more accurately, the
  maximum local group size.
-
-5. How messages are
+</p>
+</body>
 
 # arch-tag: f34eef08-cdd8-4c9b-a042-883fc482d377

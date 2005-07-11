@@ -1,39 +1,39 @@
 /*
- * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005, University of Minho
- * All rights reserved.
- *
- * Contributors:
- *  - Pedro Santos <psantos@gmail.com>
- *  - Jose Orlando Pereira <jop@di.uminho.pt>
- * 
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- * 
- *  - Redistributions of source code must retain the above copyright
- *  notice, this list of conditions and the following disclaimer.
- * 
- *  - Redistributions in binary form must reproduce the above copyright
- *  notice, this list of conditions and the following disclaimer in the
- *  documentation and/or other materials provided with the distribution.
- * 
- *  - Neither the name of the University of Minho nor the names of its
- *  contributors may be used to endorse or promote products derived from
- *  this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+ * NeEM - Network-friendly Epidemic Multicast
+ * Copyright (c) 2005, University of Minho
+ * All rights reserved.
+ *
+ * Contributors:
+ *  - Pedro Santos <psantos@gmail.com>
+ *  - Jose Orlando Pereira <jop@di.uminho.pt>
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ * 
+ *  - Redistributions of source code must retain the above copyright
+ *  notice, this list of conditions and the following disclaimer.
+ * 
+ *  - Redistributions in binary form must reproduce the above copyright
+ *  notice, this list of conditions and the following disclaimer in the
+ *  documentation and/or other materials provided with the distribution.
+ * 
+ *  - Neither the name of the University of Minho nor the names of its
+ *  contributors may be used to endorse or promote products derived from
+ *  this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 package neem;
 
@@ -51,8 +51,8 @@ import java.nio.channels.spi.*;
  */
 public class Transport implements Runnable {
     public Transport(InetSocketAddress local) throws IOException, BindException {
-        queued = new ArrayList<Runnable>();
-        handlers = new Hashtable<Integer, Gossip>();
+        timers = new TreeMap<Long,Runnable>();
+        handlers = new Hashtable<Integer, DataListener>();
         ssock = ServerSocketChannel.open();
         ssock.configureBlocking(false);
         
@@ -64,7 +64,7 @@ public class Transport implements Runnable {
         id = new String(local.getHostName() + ":" + local.getPort());
                 
     }
-	
+    
     /**
      * Get local id.
      */
@@ -83,7 +83,7 @@ public class Transport implements Runnable {
         return (InetSocketAddress[]) connections.keySet().toArray(
                 new InetSocketAddress[connections.size()]);
     }
-	
+    
     /**
      * Get all connections.
      */
@@ -113,8 +113,18 @@ public class Transport implements Runnable {
      * Queue processing task.
      */
     public synchronized void queue(Runnable task) {
-        queued.add(task);
-        selector.wakeup();
+        schedule(task, 0);
+    }
+
+    /**
+     * Schedule processing task.
+     * @param delay delay before execution
+     */
+    public synchronized void schedule(Runnable task, long delay) {
+        Long key=new Long(System.currentTimeMillis()+delay);
+        timers.put(key,task);
+        if (key==timers.firstKey())
+            selector.wakeup();
     }
 
     /**
@@ -123,7 +133,7 @@ public class Transport implements Runnable {
      */
     public Connection add(InetSocketAddress addr) {
         Connection info = (Connection) connections.get(addr);
-	
+    
         try {
             if (info == null) {
                 SocketChannel sock = SocketChannel.open();
@@ -158,7 +168,7 @@ public class Transport implements Runnable {
         /* --------
          *|msg size| <- from here
          * --------
-         *|  uuid  | <- from Gossip
+         *|  uuid  | <- from DataListener
          * --------
          *|  msg   | <- from App
          * --------
@@ -177,15 +187,13 @@ public class Transport implements Runnable {
     /**
      * Adds a reference to a gossip event handler.
      */
-    public void handler(Gossip handler, short port) {
-        this.g_syncport = port;
+    public void handler(DataListener handler, short port) {
         this.handlers.put(new Integer(port), handler);
     }
         
     /** Sets the reference to the membership event handler.
      */
-    public void membership_handler(Membership handler, short port) {
-        this.m_syncport = port;
+    public void membership_handler(Membership handler) {
         this.membership_handler = handler;
     }
 
@@ -196,23 +204,24 @@ public class Transport implements Runnable {
         while (true) {
             try {
                 // Execute pending tasks.
-                ArrayList execq = null;
+                Runnable task=null;
+                long delay=0;
 
                 synchronized (this) {
-                    if (!queued.isEmpty()) {
-                        execq = queued;
-                        queued = new ArrayList<Runnable>();
+                    if (!timers.isEmpty()) {
+                        long now=System.currentTimeMillis();
+                        Long key=timers.firstKey();
+                        if (key<=now)
+                            task=timers.remove(key);
+                        else
+                            delay=key-now;
                     }
                 }
-			
-                if (execq != null) {
-                    for (Iterator i = execq.iterator(); i.hasNext();) {
-                        Runnable task = (Runnable) i.next();
-
+            
+                if (task != null)
                         task.run();
-                    }
-                } else {    
-                    int s = selector.select();
+                else {    
+                    int s = selector.select(delay);
                             
                     // Execute pending event-handlers.
                             
@@ -253,7 +262,11 @@ public class Transport implements Runnable {
     private void handleWrite(SelectionKey key) {
         final Connection info = (Connection) key.attachment();
         
-        while (!info.msg_q.isEmpty()) {
+        if (info.msg_q.isEmpty() && info.outgoing==null) {
+            key.interestOps(SelectionKey.OP_READ);
+            return;
+        }
+
             try {
                 if (info.outgoing == null) {
                     Bucket b = (Bucket) info.msg_q.pop();
@@ -287,23 +300,18 @@ public class Transport implements Runnable {
                             info.outgoing.length);
 
                     info.outremaining -= n;
-                    if (info.outremaining != 0 || !info.msg_q.isEmpty()) {
-                        key.interestOps(
-                                SelectionKey.OP_WRITE | SelectionKey.OP_READ);
-                                                       
+                    if (info.outremaining == 0) {
+                        info.writable = true;
+                        info.outgoing = null;
                     }
-            
-                    info.writable = true;
-                    info.outgoing = null;
-                    key.interestOps(SelectionKey.OP_READ);
-                }    		
+                    key.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
+                }            
             } catch (IOException e) {
                 handleClose(key);
                 return;
             } catch (CancelledKeyException cke) {
                 membership_handler.close(info.addr);
             }
-        }
         
     }
 
@@ -313,11 +321,11 @@ public class Transport implements Runnable {
         
         // New buffer?
         if (info.incoming == null || info.incoming.remaining() == 0) {
-			
+            
             info.incoming = ByteBuffer.allocate(1024);
             info.copy = info.incoming.asReadOnlyBuffer();
         }
-        // Read as much as we can with a single buffer.			
+        // Read as much as we can with a single buffer.            
         try {
             long read = 0;
 
@@ -343,7 +351,7 @@ public class Transport implements Runnable {
                 if (info.copy.remaining() >= 6) {
                     if (info.firsttime) {
                         addr = AddressUtils.readAddress(info); // n devia ser criado um novo info? este está associado a um endereço diferente
-                        //System.out.println("READ: " + addr.toString()); // n devia haver problema, a não ser o nº de connections
+                        //System.out.println("READ: " + addr.toString()); // n devia haver problema, a não ser o n  de connections
                         info.addr = addr;
                         info.firsttime = false;
                         Connection outro = null;
@@ -404,32 +412,21 @@ public class Transport implements Runnable {
             final Integer prt = new Integer(info.port);
 
             // Is the message complete?
-            if (info.msgsize == 0 && info.port != m_syncport) {
+            if (info.msgsize == 0) {
                 final ByteBuffer[] msg = (ByteBuffer[]) info.incomingmb.toArray(
                         new ByteBuffer[info.incomingmb.size()]);
 
-                queue(
-                        new Runnable() {
+                queue(new Runnable() {
                     public void run() {
-                        Gossip handler = handlers.get(prt);
+                        DataListener handler = handlers.get(prt);
 
                         try {
                             handler.receive(msg, info);    
                         } catch (NullPointerException npe) {
                             // npe.printStackTrace();
                             System.out.println(
-                                    "Gossip@port not found: " + prt.intValue());//there wasn't a gossip layer registered here at that port
+                                    "DataListener@port not found: " + prt.intValue());//there wasn't a gossip layer registered here at that port
                         }
-                    }
-                });
-                info.incomingmb = null;
-            } else if (info.msgsize == 0 && info.port == m_syncport) {
-                final ByteBuffer[] msg = (ByteBuffer[]) info.incomingmb.toArray(
-                        new ByteBuffer[info.incomingmb.size()]);
-                        
-                queue(new Runnable() {
-                    public void run() {
-                        membership_handler.receive(msg, info);
                     }
                 });
                 info.incomingmb = null;
@@ -464,7 +461,7 @@ public class Transport implements Runnable {
         if (sock == null) {
             return;
         }
-		
+        
         try {
             sock.configureBlocking(false);
             sock.socket().setSendBufferSize(1024);
@@ -494,7 +491,7 @@ public class Transport implements Runnable {
                 info.sock.socket().setReceiveBufferSize(1024);
                 info.sock.socket().setSendBufferSize(1024);
                 // Write my accepting socket to socket
-                AddressUtils.writeAddress(this.id(), info);
+                info.sock.write(AddressUtils.writeAddressToBuffer(this.id()));
                 Connection other = connections.put(info.addr, info);
 
                 if (other == null) {
@@ -552,10 +549,6 @@ public class Transport implements Runnable {
      */
     private String id;
     
-    /** ports where each gossip & membership event handlers must serve (this could be configured from a file or arg - TODO)
-     */
-    private short g_syncport = 1, m_syncport = 0;
-
     /** Socket used to listen for connections
      */
     private ServerSocketChannel ssock;
@@ -570,7 +563,7 @@ public class Transport implements Runnable {
 
     /** Queue for tasks
      */
-    private ArrayList<Runnable> queued;
+    private SortedMap<Long, Runnable> timers;
 
     /** DUH nb 2
      */
@@ -580,9 +573,9 @@ public class Transport implements Runnable {
      */
     public int accepted = 0;
 
-    /** Storage for Gossip protocol events handlers
+    /** Storage for DataListener protocol events handlers
      */
-    private Hashtable<Integer, Gossip> handlers;
+    private Hashtable<Integer, DataListener> handlers;
 
     /** Reference for Membership events handler
      */

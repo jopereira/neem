@@ -36,31 +36,56 @@
  */
 
 /*
- * App.java
+ * OutputFile.java
  *
- * Created on March 15, 2005, 4:12 PM
+ * Created on May 27, 2005, 3:09 PM
+ *
+ * To change this template, choose Tools | Options and locate the template under
+ * the Source Creation and Management node. Right-click the template and choose
+ * Open. You can then make changes to the template in the Source Editor.
  */
-package neem;
+
+package test;
 
 
-import java.nio.*;
+import java.io.*;
+import java.lang.*;
+import java.util.*;
 
 
 /**
- * Applications that intend to use the Gossip Multicast Protocol MUST implement this Interface.
- * @author psantos@GSD
+ *  Estudo para file output de logs
+ * @author psantos
  */
-public interface App {
+public abstract class FileOps {
+    
+    public static void write(String o, String file_name) {
+        try {
+            FileOutputStream fos = new FileOutputStream(file_name, true);
+            PrintWriter oos = new PrintWriter(fos);
 
-    /**
-     *  This method decodes the message received. It must be inverse to the one used for encoding.
-     * It's called by the gossip layer.
-     * @param msg The message being delivered.
-     */
-    public void deliver(ByteBuffer[] msg, Gossip gimpl);
+            oos.write(o);
+            oos.close();
+            fos.close();
+        } catch (FileNotFoundException fnfe) {
+            fnfe.printStackTrace();
+        } catch (IOException ioe) {}
+    }
+    
+    public static String read(String file_name) {
+        String res = null;
+
+        try {
+            FileReader fis = new FileReader(file_name);
+            BufferedReader ois = new BufferedReader(fis);
+
+            res = ois.readLine();
+        } catch (FileNotFoundException fnfe) {} catch (IOException ioe) {}
+        return res;
+    }
 }
 
 
 ;
 
-// arch-tag: 6b30f28e-5375-46ef-9963-8296bf64f9eb
+// arch-tag: 9628a2a6-a377-49b1-b5d6-015cb557aa9c
