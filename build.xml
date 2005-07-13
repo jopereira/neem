@@ -1,4 +1,4 @@
-<project name="NeEM - Network Friendly Epidemic Multicast" default="dist" basedir=".">
+<project name="NeEM - Network Friendly Epidemic Multicast" default="compress" basedir=".">
     <description>
         Makefile for NeEM Project
     </description>
@@ -7,8 +7,7 @@
   <property name="build" location="build"/>
   <property name="dist"  location="dist"/>
   <property name="docs"  location="docs"/>
-  <property name="compress" location="compress"/>
-
+  <property name="test"  location="test"/>
 
   <target name="init">
     <!-- Create the time stamp -->
@@ -21,33 +20,34 @@
   <target name="compile" depends="init"
         description="compile the source " >
     <!-- Compile the java code from ${src} into ${build} -->
-    <mkdir dir="${build}/neem"/>
-    <javac srcdir="${src}" destdir="${build}"/>
+    <mkdir dir="${build}/classes"/>
+    <javac srcdir="${src}" destdir="${build}/classes"/>
+    <javac srcdir="${test}" destdir="${build}/classes">
+      <include name="Chat.java"/>
+    </javac>
   </target>
-
+  
   <target name="dist" depends="compile"
         description="generate the distribution" >
     <!-- Create the distribution directory -->
     <mkdir dir="${dist}/lib"/>
 
     <!-- Put everything in ${build} into the NeEM-${DSTAMP}.jar file -->
-    <jar jarfile="${dist}/lib/NeEM-${DSTAMP}.jar" basedir="${build}/neem"/>
+    <jar jarfile="${dist}/lib/NeEM-${DSTAMP}.jar" basedir="${build}/classes"/>
   </target>
  
-  <target name="docs" depends="init" description="Generate Javadoc for package">
+  <target name="javadoc" depends="dist" description="Generate Javadoc for NeEM">
     <mkdir dir="${docs}/api"/>
-
-    <javadoc
-           destdir="docs/api"
+    <javadoc 
+	   destdir="${docs}/api"
            author="true"
            version="true"
            use="true"
-           windowtitle="NeEM API">
-	   overview="${src}/NEEM.html"
+           windowtitle="NeEM API"
+	   overview="${src}/overview.html">
 
-      <fileset dir="src" defaultexcludes="yes">
-        <include name="**"/>
-        <exclude name="com/dummy/test/doc-files/**"/>
+      <fileset dir="${src}" defaultexcludes="yes">
+        <include name="**/*.java"/>
       </fileset>
 
       <doctitle><![CDATA[<h1>NeEM - Network-friendly Epidemic Multicast Protocol</h1>]]></doctitle>
@@ -55,13 +55,40 @@
     </javadoc>
   </target>
 
-  <target name="compress" description="pack it up nicely">
-    <tar destfile="${basedir}/neem.tar"
-         basedir="${basedir}"
+  <target name="compress" depends="javadoc" description="pack it up nicely">
+    <tar destfile="${basedir}/tmp.tar">
+	 <tarfileset dir="${basedir}" prefix="neem-0.1">
+           <exclude name="*.sh"/>
+           <exclude name="*.xml"/>
+           <exclude name="*.gz"/>
+           <exclude name="test/**"/>
+           <exclude name="run"/>
+           <exclude name="{arch}/**"/>
+           <exclude name="neem/**"/>
+           <exclude name="build/**"/>
+           <exclude name="*~"/>
+	 </tarfileset>
+    </tar>
+    <gzip zipfile="neem-0.1.tar.gz" src="tmp.tar"
     />
-    <gzip zipfile="neem.tar.gz" src="neem.tar"
+    <delete file="${basedir}/tmp.tar"/>
+  </target>
+
+  <target name="src" description="src tarball">
+    <tar destfile="${basedir}/tmp.tar">
+	 <tarfileset dir="${basedir}" prefix="neem-0.1-src">   
+	   <include name="test/Chat.java"/>
+	   <include name="neem/*.java"/>
+	   <include name="neem/*.html"/>
+	   <include name="build.xml"/>
+	   <include name="README"/>
+	   <exclude name="*~"/>
+	   <exclude name="*.swp"/>
+	 </tarfileset>
+    </tar>
+    <gzip zipfile="neem-0.1-src.tar.gz" src="tmp.tar"
     />
-    <delete file="${basedir}/neem.tar"/>
+    <delete file="${basedir}/tmp.tar"/>
   </target>
 
   <target name="clean"
@@ -70,7 +97,11 @@
     <delete dir="${build}"/>
     <delete dir="${dist}"/>
     <delete dir="${docs}"/>
-    <delete file="${basedir}/neem.tar.gz"/>
+    <delete file="${basedir}/neem-0.1.tar.gz"/>
+    <delete file="${basedir}/neem-0.1-src.tar.gz"/>
+    <delete file="${src}/*.class"/>
+    <delete file="${test}/*.class"/>
   </target>
 </project>
+
 <!-- arch-tag: 5c1f191b-7aa3-41c2-ad0b-80401dde9c87 -->

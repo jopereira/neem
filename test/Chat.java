@@ -25,7 +25,7 @@ public class Chat implements App {
     
     public static void main(String[] args) {
         if (args.length < 1) {
-            System.err.println("Usage: Chat local_ip peer ... ");
+            System.err.println("Usage: Chat local_ip peer1 ... peerN");
             System.exit(0);
         }
 
