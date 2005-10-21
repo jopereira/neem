@@ -108,15 +108,19 @@ public class Queue {
                 this.q.add(o); // appends to the end of the array
                 this.count++; // the queue now has a new element
             } else {
-                q.remove(0);
+                int pos = rand.nextInt(this.count - 1);
+
+                q.remove(pos);
                 this.q.add(o);
 		this.dropped++;
 		this.lastdrop=System.nanoTime();
             }
         } // */
-        // otherwise, sure drop one of the elder
+        // otherwise, sure drop a random one
         else {
-            q.remove(0);
+            int pos = rand.nextInt(this.count - 1);
+
+            q.remove(pos);
             this.q.add(o);
 	    this.dropped++;
 	    this.lastdrop=System.nanoTime();
