@@ -70,8 +70,9 @@ public abstract class AbstractGossipImpl {
         Transport.Connection info;
         Transport.Connection[] conns = net.connections();
 
-		if (conns.length < 1)
+        if (conns.length < 1) {
 			return;
+        }
 
         for (int i = 0; i < fanout; i++) {
             int index = rand.nextInt(conns.length);

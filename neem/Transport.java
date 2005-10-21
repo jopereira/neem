@@ -122,9 +122,11 @@ public class Transport implements Runnable {
      */
     public synchronized void schedule(Runnable task, long delay) {
         Long key=new Long(System.currentTimeMillis()+delay);
+
         timers.put(key,task);
-        if (key==timers.firstKey())
+        if (key == timers.firstKey()) {
             selector.wakeup();
+    }
     }
 
     /**
@@ -211,16 +213,18 @@ public class Transport implements Runnable {
                     if (!timers.isEmpty()) {
                         long now=System.currentTimeMillis();
                         Long key=timers.firstKey();
-                        if (key<=now)
+
+                        if (key <= now) {
                             task=timers.remove(key);
-                        else
+                        } else {
                             delay=key-now;
                     }
                 }
+                }
             
-                if (task != null)
+                if (task != null) {
                         task.run();
-                else {    
+                } else {    
                     int s = selector.select(delay);
                             
                     // Execute pending event-handlers.
@@ -296,8 +300,7 @@ public class Transport implements Runnable {
                 }
             
                 if (info.outgoing != null) {
-                    long n = info.sock.write(info.outgoing, 0,
-                            info.outgoing.length);
+                long n = info.sock.write(info.outgoing, 0, info.outgoing.length);
 
                     info.outremaining -= n;
                     if (info.outremaining == 0) {
@@ -416,7 +419,8 @@ public class Transport implements Runnable {
                 final ByteBuffer[] msg = (ByteBuffer[]) info.incomingmb.toArray(
                         new ByteBuffer[info.incomingmb.size()]);
 
-                queue(new Runnable() {
+                queue(
+                        new Runnable() {
                     public void run() {
                         DataListener handler = handlers.get(prt);
 
@@ -425,7 +429,8 @@ public class Transport implements Runnable {
                         } catch (NullPointerException npe) {
                             // npe.printStackTrace();
                             System.out.println(
-                                    "DataListener@port not found: " + prt.intValue());//there wasn't a gossip layer registered here at that port
+                                    "DataListener@port not found: "
+                                            + prt.shortValue()); // there wasn't a gossip layer registered here at that port
                         }
                     }
                 });

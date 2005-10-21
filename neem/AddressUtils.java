@@ -113,8 +113,9 @@ public abstract class AddressUtils {
 	    ia=InetAddress.getByAddress(dst);
             addr = new InetSocketAddress(InetAddress.getByAddress(dst),
                     (int) port);
-        } catch (IOException e) {}
-	catch (IllegalArgumentException iae) {System.out.println("Prob: "+ia.toString()+":"+port);}
+        } catch (IOException e) {} catch (IllegalArgumentException iae) {
+            System.out.println("Prob: " + ia.toString() + ":" + port);
+        }
 	//catch (UnknownHostException uhe) {}
         return addr;
     }
