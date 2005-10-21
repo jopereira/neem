@@ -188,7 +188,7 @@ public class Transport implements Runnable {
      * Adds a reference to a gossip event handler.
      */
     public void handler(DataListener handler, short port) {
-        this.handlers.put(new Integer(port), handler);
+        this.handlers.put(new Short(port), handler);
     }
         
     /** Sets the reference to the membership event handler.
@@ -409,7 +409,7 @@ public class Transport implements Runnable {
 
             info.incomingmb.add(slice);
             info.msgsize -= slicesize;
-            final Integer prt = new Integer(info.port);
+            final Short prt = new Short(info.port);
 
             // Is the message complete?
             if (info.msgsize == 0) {
@@ -575,7 +575,7 @@ public class Transport implements Runnable {
 
     /** Storage for DataListener protocol events handlers
      */
-    private Hashtable<Integer, DataListener> handlers;
+    private Hashtable<Short, DataListener> handlers;
 
     /** Reference for Membership events handler
      */
