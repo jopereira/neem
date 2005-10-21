@@ -27,7 +27,7 @@ public class Big implements App {
         this.cicle = i;
     }
     
-    public static void sendMessage(String message, Gossip gimpl, int id) {
+    public static void sendMessage(String message, Neem gimpl, int id) {
         ByteArrayOutputStream baos;
         ObjectOutputStream os;
         byte[] ret1, ret2, ret3;
@@ -54,9 +54,9 @@ public class Big implements App {
             ret3 = new byte[baos.size()];
             ret3 = baos.toByteArray();
                 
-            ByteBuffer msg1 = ByteBuffer.allocate(ret1.length);
-            ByteBuffer msg2 = ByteBuffer.allocate(ret2.length);
-            ByteBuffer msg3 = ByteBuffer.allocate(ret3.length);
+            ByteBuffer msg1 = ByteBuffer.allocate(1048);
+            ByteBuffer msg2 = ByteBuffer.allocate(1048);
+            ByteBuffer msg3 = ByteBuffer.allocate(1048);
 
             msg1.put(ret1);
             msg1.flip();
@@ -73,16 +73,21 @@ public class Big implements App {
             
             gimpl.multicast(out);
             String s = new String(
-                    "send: " + gimpl.net().idString() + " " + System.nanoTime()
-                    + " " + id + "\n");
+                    "send: " + gimpl.getTransportIdAsString() + " "
+                    + System.nanoTime() + " " + id + "\n");
 
             //System.out.println(s);
-            FileOps.write(s, "exec." + gimpl.net().idString() + ".log");
+            FileOps.write(s, "exec." + gimpl.getTransportIdAsString() + ".log");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
     
+    /**
+     * 
+     * @param msg 
+     * @param gimpl 
+     */
     public void deliver(ByteBuffer[] msg, Gossip gimpl) {
         ByteBuffer rec = Buffers.compact(msg);
         ByteArrayInputStream bais;
@@ -156,42 +161,41 @@ public class Big implements App {
         short g_syncport = 1;
         short m_syncport = 0;
         String address = new String("192.168.82.137");
-        GossipImpl[] gimpls = new GossipImpl[group_size];
-        Membership[] mimpls = new Membership[group_size];
+        // GossipImpl[] gimpls = new GossipImpl[group_size];
+        // Membership[] mimpls = new Membership[group_size];
         Random random = new Random();
-        Transport trans = null;
+        // Transport trans = null;
+        Neem[] neems = new Neem[group_size];
 
         inet_s_arr = new InetSocketAddress[group_size];
 
         for (int i = 0; i < group_size; i++) {
-            boolean connected = true;
+            // boolean connected = true;
             int port = 12346;
 
-            do {
-                try {
-                    trans = new Transport(new InetSocketAddress(args[0], port));
-                    connected = true;		    
-                } catch (BindException be) {
-                    port++;
-                    connected = false;
-                } catch (IOException ie) {
-                    ie.printStackTrace();
-                    port++;
-                    connected = false;
-                }
-            } while (!connected);
-
-            inet_s_arr[i] = trans.id();
+            // do {
+            // try {
+            // trans = new Transport(new InetSocketAddress(args[0], port));
+            // connected = true;		    
+            // } catch (BindException be) {
+            // port++;
+            // connected = false;
+            // } catch (IOException ie) {
+            // ie.printStackTrace();
+            // port++;
+            // connected = false;
+            // }
+            // } while (!connected);
+            neems[i] = new Neem(args[0], port, g_syncport, m_syncport, fanout,
+                    group_size);
 	    
-            gimpls[i] = new GossipImpl(trans, g_syncport, fanout, group_size);
+            inet_s_arr[i] = neems[i].getTransportId();
+            //
+            // gimpls[i] = new GossipImpl(trans, g_syncport, fanout, group_size);
+            //
+            // mimpls[i] = new MembershipImpl(trans, m_syncport, fanout, group_size);
             
-            mimpls[i] = new MembershipImpl(trans, m_syncport, fanout, group_size);
-            
-            gimpls[i].handler(new Big(i));
-            
-            Thread t = new Thread(trans);
-
-            t.start();
+            neems[i].setHandler(new Big(i));
         }
 	
         try {
@@ -200,9 +204,8 @@ public class Big implements App {
 
         for (int i = 0; i < group_size; i++) {
             for (int j = 0; j < fanout; j++) {
-                gimpls[i].add(
-                        new InetSocketAddress(args[1],
-                        (12345 + random.nextInt(group_size))));
+                neems[i].add(args[1], (12345 + random.nextInt(group_size)));
+                        
             }
         }
 
@@ -214,7 +217,7 @@ public class Big implements App {
 
         while (true) {
             int index = random.nextInt(group_size);
-            Gossip gimpl = gimpls[index];
+            Neem gimpl = neems[index];
 
             sendMessage(
                     inet_s_arr[index].getHostName()
