@@ -51,9 +51,6 @@ import java.lang.*;
 import java.util.*;
 
 
-
-
-
 /**
  *  This class implements the Membership interface. Its methods handle events
  * related with changes in local group membership as well as exchanging local
@@ -103,8 +100,8 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     }
     
     public void close(InetSocketAddress addr) {
-        //System.out.println(
-          //      "CLOSE@" + net.id().toString() + " : " + addr.toString());
+        // System.out.println(
+        // "CLOSE@" + net.id().toString() + " : " + addr.toString());
         this.nb_members--;
     }
     
@@ -123,7 +120,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         Transport.Connection[] conns = this.net.connections();
         int nc = conns.length;
 
-        if (nb_members == grp_size-1) {
+        if (nb_members == grp_size - 1) {
             Transport.Connection info = conns[rand.nextInt(nc)];
 
             this.net.remove(info.addr);
@@ -146,11 +143,13 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     private void distributeConnections() {
         Transport.Connection[] conns = this.net.connections();
         int nc = conns.length;
-    if(nc > 0){
-        InetSocketAddress addr = conns[rand.nextInt(nc)].addr;
-        relay(new ByteBuffer[] { AddressUtils.writeAddressToBuffer(addr)},
-                this.fanout, this.syncport);
-    }
+
+        if (nc > 0) {
+            InetSocketAddress addr = conns[rand.nextInt(nc)].addr;
+
+            relay(new ByteBuffer[] { AddressUtils.writeAddressToBuffer(addr)},
+                    this.fanout, this.syncport);
+        }
     }
     
     protected HashSet<UUID> msgs;

@@ -76,7 +76,7 @@ public class Big implements App {
                     "send: " + gimpl.getTransportIdAsString() + " "
                     + System.nanoTime() + " " + id + "\n");
 
-            //System.out.println(s);
+            // System.out.println(s);
             FileOps.write(s, "exec." + gimpl.getTransportIdAsString() + ".log");
         } catch (IOException e) {
             e.printStackTrace();
@@ -166,7 +166,7 @@ public class Big implements App {
         Random random = new Random();
         // Transport trans = null;
         Neem[] neems = new Neem[group_size];
-
+	
         inet_s_arr = new InetSocketAddress[group_size];
 
         for (int i = 0; i < group_size; i++) {

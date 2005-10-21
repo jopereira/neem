@@ -51,8 +51,8 @@ import java.nio.channels.spi.*;
  */
 public class Transport implements Runnable {
     public Transport(InetSocketAddress local) throws IOException, BindException {
-        timers = new TreeMap<Long,Runnable>();
-        handlers = new Hashtable<Integer, DataListener>();
+        timers = new TreeMap<Long, Runnable>();
+        handlers = new Hashtable<Short, DataListener>();
         ssock = ServerSocketChannel.open();
         ssock.configureBlocking(false);
         
@@ -121,12 +121,12 @@ public class Transport implements Runnable {
      * @param delay delay before execution
      */
     public synchronized void schedule(Runnable task, long delay) {
-        Long key=new Long(System.currentTimeMillis()+delay);
+        Long key = new Long(System.currentTimeMillis() + delay);
 
-        timers.put(key,task);
+        timers.put(key, task);
         if (key == timers.firstKey()) {
             selector.wakeup();
-    }
+        }
     }
 
     /**
@@ -154,7 +154,7 @@ public class Transport implements Runnable {
     }
     
     public void remove(InetSocketAddress addr) {
-        //System.out.println("Closing: " + addr.toString());
+        // System.out.println("Closing: " + addr.toString());
         Connection info = info = connections.get(addr);
         
         SelectionKey key = info.key;
@@ -206,24 +206,24 @@ public class Transport implements Runnable {
         while (true) {
             try {
                 // Execute pending tasks.
-                Runnable task=null;
-                long delay=0;
+                Runnable task = null;
+                long delay = 0;
 
                 synchronized (this) {
                     if (!timers.isEmpty()) {
-                        long now=System.currentTimeMillis();
-                        Long key=timers.firstKey();
+                        long now = System.currentTimeMillis();
+                        Long key = timers.firstKey();
 
                         if (key <= now) {
-                            task=timers.remove(key);
+                            task = timers.remove(key);
                         } else {
-                            delay=key-now;
+                            delay = key - now;
+                        }
                     }
-                }
                 }
             
                 if (task != null) {
-                        task.run();
+                    task.run();
                 } else {    
                     int s = selector.select(delay);
                             
@@ -266,55 +266,55 @@ public class Transport implements Runnable {
     private void handleWrite(SelectionKey key) {
         final Connection info = (Connection) key.attachment();
         
-        if (info.msg_q.isEmpty() && info.outgoing==null) {
+        if (info.msg_q.isEmpty() && info.outgoing == null) {
             key.interestOps(SelectionKey.OP_READ);
             return;
         }
 
-            try {
-                if (info.outgoing == null) {
-                    Bucket b = (Bucket) info.msg_q.pop();
-                    Integer portI = b.getPort();
+        try {
+            if (info.outgoing == null) {
+                Bucket b = (Bucket) info.msg_q.pop();
+                Integer portI = b.getPort();
                 
-                    ByteBuffer[] msg = b.getMsg();
+                ByteBuffer[] msg = b.getMsg();
 
-                    if (msg == null || portI == null) {
-                        return;
-                    }
-                    short port = portI.shortValue();
-                    int size = 0;
-
-                    for (int i = 0; i < msg.length; i++) {
-                        size += msg[i].remaining();
-                    }
-
-                    ByteBuffer header = ByteBuffer.allocate(6);
-
-                    header.putInt(size);
-                    header.putShort(port);
-                    header.flip();
-                    info.outgoing = new ByteBuffer[msg.length + 1];
-                    info.outgoing[0] = header;
-                    System.arraycopy(msg, 0, info.outgoing, 1, msg.length);
-                    info.outremaining = size + 6;
+                if (msg == null || portI == null) {
+                    return;
                 }
+                short port = portI.shortValue();
+                int size = 0;
+
+                for (int i = 0; i < msg.length; i++) {
+                    size += msg[i].remaining();
+                }
+
+                ByteBuffer header = ByteBuffer.allocate(6);
+
+                header.putInt(size);
+                header.putShort(port);
+                header.flip();
+                info.outgoing = new ByteBuffer[msg.length + 1];
+                info.outgoing[0] = header;
+                System.arraycopy(msg, 0, info.outgoing, 1, msg.length);
+                info.outremaining = size + 6;
+            }
             
-                if (info.outgoing != null) {
+            if (info.outgoing != null) {
                 long n = info.sock.write(info.outgoing, 0, info.outgoing.length);
 
-                    info.outremaining -= n;
-                    if (info.outremaining == 0) {
-                        info.writable = true;
-                        info.outgoing = null;
-                    }
-                    key.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
-                }            
-            } catch (IOException e) {
-                handleClose(key);
-                return;
-            } catch (CancelledKeyException cke) {
-                membership_handler.close(info.addr);
-            }
+                info.outremaining -= n;
+                if (info.outremaining == 0) {
+                    info.writable = true;
+                    info.outgoing = null;
+                }
+                key.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
+            }            
+        } catch (IOException e) {
+            handleClose(key);
+            return;
+        } catch (CancelledKeyException cke) {
+            membership_handler.close(info.addr);
+        }
         
     }
 
@@ -354,7 +354,7 @@ public class Transport implements Runnable {
                 if (info.copy.remaining() >= 6) {
                     if (info.firsttime) {
                         addr = AddressUtils.readAddress(info); // n devia ser criado um novo info? este está associado a um endereço diferente
-                        //System.out.println("READ: " + addr.toString()); // n devia haver problema, a não ser o n  de connections
+                        // System.out.println("READ: " + addr.toString()); // n devia haver problema, a não ser o n  de connections
                         info.addr = addr;
                         info.firsttime = false;
                         Connection outro = null;
@@ -402,7 +402,7 @@ public class Transport implements Runnable {
                 slice.limit(slicesize);
                 info.copy.position(info.copy.position() + slicesize);
             } catch (Exception e) {
-                System.out.println("GOTCHA");//if anything happens here we want to know about it, but drop & go
+                System.out.println("GOTCHA"); // if anything happens here we want to know about it, but drop & go
             }
 
             // Is it a new message?

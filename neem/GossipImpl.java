@@ -44,6 +44,7 @@ import java.io.*;
 import java.net.*;
 import java.lang.Thread;
 
+
 /**
  * This class implements the Gossip interface. Its methods provide message 
  * exchanging between group members. Provides methods for applications to send
@@ -107,7 +108,7 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
     public void receive(ByteBuffer[] msg, Transport.Connection info) {
         // Check uuid
         try {
-            //System.out.println("Receive@Gossip: " + msg.length);
+            // System.out.println("Receive@Gossip: " + msg.length);
             ByteBuffer[] in = Buffers.clone(msg);
             ByteBuffer[] out = Buffers.clone(msg);
             

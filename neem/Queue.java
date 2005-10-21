@@ -74,8 +74,8 @@ public class Queue {
         this.max_threshold = size;
         this.p = 1.0;
         this.count = 0;
-	this.dropped = 0;
-	this.lastdrop = 0;
+        this.dropped = 0;
+        this.lastdrop = 0;
     }
     
     /**
@@ -90,7 +90,7 @@ public class Queue {
         this.p = p;
         this.count = 0;
         this.dropped = 0;
-	this.lastdrop = 0;
+        this.lastdrop = 0;
     }
     
     /** Inserts (enqueues) an Object to this queue.
@@ -112,8 +112,8 @@ public class Queue {
 
                 q.remove(pos);
                 this.q.add(o);
-		this.dropped++;
-		this.lastdrop=System.nanoTime();
+                this.dropped++;
+                this.lastdrop = System.nanoTime();
             }
         } // */
         // otherwise, sure drop a random one
@@ -122,8 +122,8 @@ public class Queue {
 
             q.remove(pos);
             this.q.add(o);
-	    this.dropped++;
-	    this.lastdrop=System.nanoTime();
+            this.dropped++;
+            this.lastdrop = System.nanoTime();
         }
     }
     
@@ -163,13 +163,14 @@ public class Queue {
     
     /** Get the number of dropped messages in this queue*/
     public int droppedMessages() {
-	return this.dropped;
+        return this.dropped;
     }
     
     /** Get the time of the last drop*/
     public long lastDrop() {
-	return this.lastdrop;
+        return this.lastdrop;
     }
+
     /** Object storage vector*/
     private Vector<Object> q;
 
@@ -191,8 +192,8 @@ public class Queue {
     /** Last point in time where a message got purged from the queue*/
     private long lastdrop;
 
-	/** Random number generator for random purging */
-	private Random rand=new Random();
+    /** Random number generator for random purging */
+    private Random rand = new Random();
 }
 
 

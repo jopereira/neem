@@ -100,9 +100,9 @@ public abstract class AddressUtils {
      */
     public static InetSocketAddress readAddressFromBuffer(ByteBuffer[] msg) {
         InetSocketAddress addr = null;
-	short port=0;
-	byte[] dst=null;
-	InetAddress ia=null;
+        short port = 0;
+        byte[] dst = null;
+        InetAddress ia = null;
 	
         try {
             dst = new byte[4];
@@ -110,13 +110,13 @@ public abstract class AddressUtils {
 
             tmp.get(dst, 0, dst.length);
             port = tmp.getShort();
-	    ia=InetAddress.getByAddress(dst);
+            ia = InetAddress.getByAddress(dst);
             addr = new InetSocketAddress(InetAddress.getByAddress(dst),
                     (int) port);
         } catch (IOException e) {} catch (IllegalArgumentException iae) {
             System.out.println("Prob: " + ia.toString() + ":" + port);
         }
-	//catch (UnknownHostException uhe) {}
+        // catch (UnknownHostException uhe) {}
         return addr;
     }
 }
