@@ -152,8 +152,9 @@ public class Big implements App {
     }
 
     public static void main(String[] args) {
-        if (args.length < 2) {
-            System.err.print("Usage: Big local_ip remote_ip");
+        
+        if (args.length < 1) {
+            System.err.println("Usage: Big local_ip remote_ip");
             System.exit(0);
         }
         int fanout = 10;
@@ -186,16 +187,22 @@ public class Big implements App {
             // connected = false;
             // }
             // } while (!connected);
-            neems[i] = new Neem(args[0], port, g_syncport, m_syncport, fanout,
-                    group_size);
-	    
-            inet_s_arr[i] = neems[i].getTransportId();
+            neems[i] = ConfigLoader.load(args[0]);
+            // neems[i] = new Neem(args[0], port, g_syncport, m_syncport, fanout,
+            // group_size);
             //
             // gimpls[i] = new GossipImpl(trans, g_syncport, fanout, group_size);
             //
             // mimpls[i] = new MembershipImpl(trans, m_syncport, fanout, group_size);
             
             neems[i].setHandler(new Big(i));
+            if (neems[i] != null) {
+                neems[i].connect();
+            } else {
+                neems[i] = new Neem(args[0], port, g_syncport, m_syncport,
+                        fanout, group_size);
+            }
+            inet_s_arr[i] = neems[i].getTransportId();
         }
 	
         try {
