@@ -49,6 +49,8 @@ package neem;
 import java.net.*;
 import java.io.*;
 import java.nio.*;
+import java.nio.channels.*;
+import java.util.*;
 
 
 /**
@@ -56,48 +58,68 @@ import java.nio.*;
  * @author psantos@gsd.di.uminho.pt
  * 
  */
-public class Neem {
+public class NeEMChannel implements InterruptibleChannel, ReadableByteChannel, WritableByteChannel {
     
     /** Creates a new instance of Neem */
-    public Neem(String local, int port, short g_syncport, short m_syncport, int fanout, int group_size) {
-        this.listenon = port;
-        while (!connected) {
-            this.listenon = port;
-            try {
-                trans = new Transport(
-                        new InetSocketAddress(local, this.listenon));
-                this.connected = true;
-            } catch (BindException be) {
-                port++;
-                connected = false;
-            } catch (IOException ie) {
-                ie.printStackTrace();
-                port++;
-                connected = false;
-            }
-        }
-		
-        gimpls = new GossipImpl(trans, g_syncport, fanout, group_size);
-	
-        mimpls = new MembershipImpl(trans, m_syncport, fanout, group_size);
-    }
-    
-    public void connect() {
-        Thread t = new Thread(trans);
-
+    public NeEMChannel(InetSocketAddress local, int fanout, int group_size) throws IOException {
+        trans = new Transport(local);
+        gimpls = new GossipImpl(trans, (short)0, fanout, group_size);
+        mimpls = new MembershipImpl(trans, (short)1, fanout, group_size);
+		gimpls.handler(new App() {
+			public void deliver(ByteBuffer[] buf, Gossip gimpl) {
+				enqueue(buf);
+			}
+		});
+        t = new Thread(trans);
         t.setDaemon(true);
         t.start();
     }
-    
-    /** If someone wants to find out wether i'm connected*/
-    public boolean getConnected() {
-        return this.connected;
+
+	public synchronized boolean isOpen() {
+		return !isClosed;
+	}
+
+	public synchronized void close() {
+		if (isClosed)
+			return;
+		isClosed=true;
+		notifyAll();
+		trans.close();
+	}
+
+    public synchronized int write(ByteBuffer msg) throws IOException {
+		if (isClosed)
+			throw new ClosedChannelException();
+		final ByteBuffer cmsg=Buffers.compact(new ByteBuffer[]{msg});
+		int ret=cmsg.remaining();
+		trans.queue(new Runnable() {
+			public void run() {
+        		gimpls.multicast(new ByteBuffer[]{cmsg});
+			}
+		});
+		return ret;
     }
-    
-    /** If someone wants to find out where i'm connected*/
-    public int getListenOn() {
-        return this.listenon;
-    }
+
+	public synchronized int read(ByteBuffer msg) throws IOException {
+		if (isClosed)
+			throw new ClosedChannelException();
+		try {
+			while(queue.isEmpty() && !isClosed)
+				wait();
+		} catch(InterruptedException ie) {
+			close();
+			throw new ClosedByInterruptException();
+		}
+		if (isClosed)
+			throw new AsynchronousCloseException();
+		ByteBuffer[] buf=queue.removeFirst();
+		return Buffers.copy(msg, buf);
+	}
+
+	private synchronized void enqueue(ByteBuffer[] buf) {
+		queue.add(buf);
+		notify();
+	}
     
     /** Get my Transport's id*/
     public InetSocketAddress getTransportId() {
@@ -109,17 +131,8 @@ public class Neem {
         return this.trans.idString();
     }
     
-    /** Set my gossip related events handler*/
-    public void setHandler(App handler) {
-        this.gimpls.handler(handler);
-    }
-    
-    public void add(String args1, int args2) {
-        gimpls.add(new InetSocketAddress(args1, args2));
-    }
-    
-    public void multicast(ByteBuffer[] msg) {
-        gimpls.multicast(msg);
+    public void add(InetSocketAddress peer) {
+        gimpls.add(peer);
     }
     
     /** Transport layer*/
@@ -131,11 +144,11 @@ public class Neem {
     /** Membership layer*/
     private Membership mimpls = null;
 
-    /** Am I Up?*/
-    private boolean connected = false;
+	private boolean isClosed;
 
-    /** Where am i up?*/
-    private int listenon;
+	private LinkedList<ByteBuffer[]> queue=new LinkedList<ByteBuffer[]>();
+
+	private Thread t;
 }
 
  

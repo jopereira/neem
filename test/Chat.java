@@ -14,44 +14,55 @@ import java.net.*;
 /**
  * Simple chat application.
  */
-public class Chat implements App {
-    public void deliver(ByteBuffer[] msg, Gossip gimpl) {
-        ByteBuffer rec = Buffers.compact(msg);
+public class Chat extends Thread {
+	public Chat(NeEMChannel neem) {
+		this.neem=neem;
+	}
+
+	private NeEMChannel neem;
+	
+    public void deliver(ByteBuffer rec) {
         byte[] buf = new byte[rec.remaining()];
 
         rec.get(buf);
         System.out.println(new String(buf));
     }
+
+	public void run() {
+		try {
+			while(true) {
+				ByteBuffer bb=ByteBuffer.allocate(1000);
+				neem.read(bb);
+				bb.flip();
+				deliver(bb);
+			}
+		} catch(Exception e) {e.printStackTrace();}
+	}
     
     public static void main(String[] args) {
         if (args.length < 1) {
-            System.err.println("Usage: Chat local_ip peer1 ... peerN");
+            System.err.println("Usage: Chat port peer1 ... peerN");
             System.exit(0);
         }
 
         int fanout = 10;
         int group_size = 20;
-        short g_syncport = 1;
-        short m_syncport = 0;
-        int port = 12345;
+        int port = Integer.parseInt(args[0]);
 
         try {
 
-            Transport trans = new Transport(new InetSocketAddress(args[0], port));
-            GossipImpl gimpl = new GossipImpl(trans, g_syncport, fanout,
-                    group_size);
-            MembershipImpl mimpl = new MembershipImpl(trans, m_syncport, fanout,
-                    group_size);
-		
-            gimpl.handler(new Chat());
-            Thread t = new Thread(trans);
+			NeEMChannel neem = new NeEMChannel(new InetSocketAddress(port), fanout, group_size);
 
-            t.setDaemon(true);
+			System.out.println("Started: "+neem.getTransportId());
 
-            t.start();
+			Chat chat=new Chat(neem);	
+            chat.setDaemon(true);
+            chat.start();
 
             for (int i = 1; i < args.length; i++) {
-                gimpl.add(new InetSocketAddress(args[i], port));
+				String[] peer=args[i].split(":");
+        		port = Integer.parseInt(peer[1]);
+                neem.add(new InetSocketAddress(peer[0], port));
             }
         
             BufferedReader r = new BufferedReader(
@@ -59,9 +70,10 @@ public class Chat implements App {
             String line;
 
             while ((line = r.readLine()) != null) {
-                gimpl.multicast(
-                        new ByteBuffer[] { ByteBuffer.wrap(line.getBytes())});
+                neem.write(ByteBuffer.wrap(line.getBytes()));
             }
+
+			neem.close();
 	
         } catch (IOException e) {
             e.printStackTrace();

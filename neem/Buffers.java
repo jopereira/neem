@@ -115,20 +115,37 @@ public class Buffers {
      * are returned in a single freshly allocated buffer.
      */
     public static ByteBuffer compact(ByteBuffer[] buffer) {
+        int size = count(buffer);
+        ByteBuffer res = ByteBuffer.allocate(size);
+		copy(res, buffer);
+        res.rewind();
+        return res;
+    }
+
+    /**
+	 * Count remaining bytes in a buffer array.
+     */
+    public static int count(ByteBuffer[] buffer) {
         int size = 0;
 
         for (int i = 0; i < buffer.length; i++) {
             size += buffer[i].remaining();
         }
-        ByteBuffer res = ByteBuffer.allocate(size);
+		return size;
+	}
 
+    /**
+     * Copy a buffer array to a single buffer.
+     */
+    public static int copy(ByteBuffer res, ByteBuffer[] buffer) {
+		int cnt=0;
         for (int i = 0; i < buffer.length; i++) {
             while (buffer[i].hasRemaining()) {
                 res.put(buffer[i].get());
+				cnt++;
             }
         }
-        res.rewind();
-        return res;
+        return cnt;
     }
 
     /**

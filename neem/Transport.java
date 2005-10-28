@@ -109,6 +109,27 @@ public class Transport implements Runnable {
         }
     }
 
+	/**
+	 * Close all socket connections and release polling thread.
+	 */
+	public synchronized void close() {
+		if (closed)
+			return;
+		closed=true;
+		selector.wakeup();
+		for(Connection info: connections.values())
+			try {
+				info.sock.close();
+			} catch(IOException e) {
+				// nada
+			}
+		try {
+			ssock.close();
+		} catch(IOException e) {
+			// nada
+		}
+	}
+
     /**
      * Queue processing task.
      */
@@ -226,6 +247,8 @@ public class Transport implements Runnable {
                     task.run();
                 } else {    
                     int s = selector.select(delay);
+					if (closed)
+						break;
                             
                     // Execute pending event-handlers.
                             
@@ -585,6 +608,8 @@ public class Transport implements Runnable {
     /** Reference for Membership events handler
      */
     private Membership membership_handler;
+
+	private boolean closed;
 
     /**
      * Socket manipulation utilities.
