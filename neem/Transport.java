@@ -372,7 +372,7 @@ public class Transport implements Runnable {
                 // is too full to contain a header.
                 if (info.copy.remaining() >= 6) {
                     if (info.firsttime) {
-                        addr = AddressUtils.readAddress(info); // n devia ser criado um novo info? este está associado a um endereço diferente
+                        addr = AddressUtils.readAddressFromBuffer(info.copy); // n devia ser criado um novo info? este está associado a um endereço diferente
                         // System.out.println("READ: " + addr.toString()); // n devia haver problema, a não ser o n  de connections
                         info.addr = addr;
                         info.firsttime = false;

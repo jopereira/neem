@@ -82,7 +82,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     public void receive(ByteBuffer[] msg, Transport.Connection info) {
         // System.out.println("Membership Receiving Message");
         try {
-            InetSocketAddress addr = AddressUtils.readAddressFromBuffer(msg);
+            InetSocketAddress addr = AddressUtils.readAddressFromBuffer(Buffers.sliceCompact(msg,6));
 
             // System.out.println("Receive Address: " + addr.toString());
             this.net.add(addr);

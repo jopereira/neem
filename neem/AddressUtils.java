@@ -74,31 +74,11 @@ public abstract class AddressUtils {
         return msg;
     }
     
-    /** Read a socket address from a Connection
-     * @param info The connection to read the address from.
-     * @return The address read.
-     */
-    public static InetSocketAddress readAddress(Transport.Connection info) {
-        InetSocketAddress addr = null;
-
-        try {
-            byte[] dst = new byte[4];
-
-            info.copy.get(dst, 0, dst.length);
-            InetAddress ia = InetAddress.getByAddress(dst);
-            short port = info.copy.getShort();
-
-            addr = new InetSocketAddress(ia, (int) port);
-            // System.out.println("READ: "+addr.toString());
-        } catch (IOException e) {}
-        return addr;
-    }
-    
     /** Read a socket address from an array of ByteBuffers into an InetSocketAddress.
-     * @param msg The array from wich to read the address from.
+     * @param msg The buffer from which to read the address from.
      * @return The address read.
      */
-    public static InetSocketAddress readAddressFromBuffer(ByteBuffer[] msg) {
+    public static InetSocketAddress readAddressFromBuffer(ByteBuffer tmp) {
         InetSocketAddress addr = null;
         short port = 0;
         byte[] dst = null;
@@ -106,8 +86,6 @@ public abstract class AddressUtils {
 	
         try {
             dst = new byte[4];
-            ByteBuffer tmp = Buffers.sliceCompact(msg, 6);
-
             tmp.get(dst, 0, dst.length);
             port = tmp.getShort();
             ia = InetAddress.getByAddress(dst);
