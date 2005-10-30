@@ -61,7 +61,7 @@ public class Transport implements Runnable {
         selector = SelectorProvider.provider().openSelector();
         ssock.register(selector, SelectionKey.OP_ACCEPT);
         connections = new Hashtable<InetSocketAddress, Connection>();
-        id = new String(local.getHostName() + ":" + local.getPort());
+        id = new InetSocketAddress(InetAddress.getLocalHost(), local.getPort());
                 
     }
     
@@ -69,13 +69,9 @@ public class Transport implements Runnable {
      * Get local id.
      */
     public InetSocketAddress id() {
-        return (InetSocketAddress) ssock.socket().getLocalSocketAddress();
+        return id;
     }
 
-    public String idString() {
-        return this.id;
-    }
-    
     /**
      * Get ids of all direct peers.
      */
@@ -109,26 +105,26 @@ public class Transport implements Runnable {
         }
     }
 
-	/**
-	 * Close all socket connections and release polling thread.
-	 */
-	public synchronized void close() {
-		if (closed)
-			return;
-		closed=true;
-		selector.wakeup();
-		for(Connection info: connections.values())
-			try {
-				info.sock.close();
-			} catch(IOException e) {
-				// nada
-			}
-		try {
-			ssock.close();
-		} catch(IOException e) {
-			// nada
-		}
-	}
+    /**
+     * Close all socket connections and release polling thread.
+     */
+    public synchronized void close() {
+        if (closed)
+            return;
+        closed=true;
+        selector.wakeup();
+        for(Connection info: connections.values())
+            try {
+                info.sock.close();
+            } catch(IOException e) {
+                // nada
+            }
+        try {
+            ssock.close();
+        } catch(IOException e) {
+            // nada
+        }
+    }
 
     /**
      * Queue processing task.
@@ -247,8 +243,8 @@ public class Transport implements Runnable {
                     task.run();
                 } else {    
                     int s = selector.select(delay);
-					if (closed)
-						break;
+                    if (closed)
+                        break;
                             
                     // Execute pending event-handlers.
                             
@@ -573,9 +569,9 @@ public class Transport implements Runnable {
         }
     }
 
-    /** ID String for each instance
+    /** Local id for each instance
      */
-    private String id;
+    private InetSocketAddress id;
     
     /** Socket used to listen for connections
      */
@@ -609,7 +605,7 @@ public class Transport implements Runnable {
      */
     private Membership membership_handler;
 
-	private boolean closed;
+    private boolean closed;
 
     /**
      * Socket manipulation utilities.

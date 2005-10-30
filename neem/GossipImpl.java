@@ -67,18 +67,6 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
         net.handler(this, this.syncport);
     }
     
-    /**
-     *  Used only by the handler to add the address of the Rendezvous Point (RP).
-     * @param addr The address of the RP.
-     **/
-    public void add(final InetSocketAddress addr) {
-        this.net.queue(new Runnable() {
-            public void run() {
-                net.add(addr);
-            }
-        });
-    }
-
     public void handler(App handler) {
         this.handler = handler;
     }

@@ -65,74 +65,83 @@ public class NeEMChannel implements InterruptibleChannel, ReadableByteChannel, W
         trans = new Transport(local);
         gimpls = new GossipImpl(trans, (short)0, fanout, group_size);
         mimpls = new MembershipImpl(trans, (short)1, fanout, group_size);
-		gimpls.handler(new App() {
-			public void deliver(ByteBuffer[] buf, Gossip gimpl) {
-				enqueue(buf);
-			}
-		});
+        gimpls.handler(new App() {
+            public void deliver(ByteBuffer[] buf, Gossip gimpl) {
+                enqueue(buf);
+            }
+        });
         t = new Thread(trans);
         t.setDaemon(true);
         t.start();
     }
 
-	public synchronized boolean isOpen() {
-		return !isClosed;
-	}
-
-	public synchronized void close() {
-		if (isClosed)
-			return;
-		isClosed=true;
-		notifyAll();
-		trans.close();
-	}
-
-    public synchronized int write(ByteBuffer msg) throws IOException {
-		if (isClosed)
-			throw new ClosedChannelException();
-		final ByteBuffer cmsg=Buffers.compact(new ByteBuffer[]{msg});
-		int ret=cmsg.remaining();
-		trans.queue(new Runnable() {
-			public void run() {
-        		gimpls.multicast(new ByteBuffer[]{cmsg});
-			}
-		});
-		return ret;
+    public synchronized boolean isOpen() {
+        return !isClosed;
     }
 
-	public synchronized int read(ByteBuffer msg) throws IOException {
-		if (isClosed)
-			throw new ClosedChannelException();
-		try {
-			while(queue.isEmpty() && !isClosed)
-				wait();
-		} catch(InterruptedException ie) {
-			close();
-			throw new ClosedByInterruptException();
-		}
-		if (isClosed)
-			throw new AsynchronousCloseException();
-		ByteBuffer[] buf=queue.removeFirst();
-		return Buffers.copy(msg, buf);
-	}
+    public synchronized void close() {
+        if (isClosed)
+            return;
+        isClosed=true;
+        notifyAll();
+        trans.close();
+    }
 
-	private synchronized void enqueue(ByteBuffer[] buf) {
-		queue.add(buf);
-		notify();
-	}
+    public synchronized int write(ByteBuffer msg) throws IOException {
+        if (isClosed)
+            throw new ClosedChannelException();
+        final ByteBuffer cmsg=Buffers.compact(new ByteBuffer[]{msg});
+        int ret=cmsg.remaining();
+        trans.queue(new Runnable() {
+            public void run() {
+                gimpls.multicast(new ByteBuffer[]{cmsg});
+            }
+        });
+        return ret;
+    }
+
+    public synchronized int read(ByteBuffer msg) throws IOException {
+        if (isClosed)
+            throw new ClosedChannelException();
+        try {
+            while(queue.isEmpty() && !isClosed)
+                wait();
+        } catch(InterruptedException ie) {
+            close();
+            throw new ClosedByInterruptException();
+        }
+        if (isClosed)
+            throw new AsynchronousCloseException();
+        ByteBuffer[] buf=queue.removeFirst();
+        return Buffers.copy(msg, buf);
+    }
+
+    private synchronized void enqueue(ByteBuffer[] buf) {
+        queue.add(buf);
+        notify();
+    }
     
-    /** Get my Transport's id*/
-    public InetSocketAddress getTransportId() {
+    /**
+     * Get the address that is being advertised to peers.
+     */
+    public InetSocketAddress getLocalSocketAddress() {
         return this.trans.id();
     }
     
-    /** Get my Transport's id as a printable string*/
-    public String getTransportIdAsString() {
-        return this.trans.idString();
-    }
-    
-    public void add(InetSocketAddress peer) {
-        gimpls.add(peer);
+    /**
+     * Add an address of a remote peer. This is used to add the address of
+     * peers that act as rendezvous points when joining the group. Any peer
+     * can be used, as the protocol is fully symmetrical. This can be called
+     * a number of times to more quickly build a local membership.
+     *
+     * @param peer The address of the peer.
+     */
+    public void connect(final InetSocketAddress peer) {
+        trans.queue(new Runnable() {
+            public void run() {
+                trans.add(peer);
+            }
+        });
     }
     
     /** Transport layer*/
@@ -144,11 +153,11 @@ public class NeEMChannel implements InterruptibleChannel, ReadableByteChannel, W
     /** Membership layer*/
     private Membership mimpls = null;
 
-	private boolean isClosed;
+    private boolean isClosed;
 
-	private LinkedList<ByteBuffer[]> queue=new LinkedList<ByteBuffer[]>();
+    private LinkedList<ByteBuffer[]> queue=new LinkedList<ByteBuffer[]>();
 
-	private Thread t;
+    private Thread t;
 }
 
  

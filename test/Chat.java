@@ -15,12 +15,12 @@ import java.net.*;
  * Simple chat application.
  */
 public class Chat extends Thread {
-	public Chat(NeEMChannel neem) {
-		this.neem=neem;
-	}
+    public Chat(NeEMChannel neem) {
+        this.neem=neem;
+    }
 
-	private NeEMChannel neem;
-	
+    private NeEMChannel neem;
+    
     public void deliver(ByteBuffer rec) {
         byte[] buf = new byte[rec.remaining()];
 
@@ -28,16 +28,16 @@ public class Chat extends Thread {
         System.out.println(new String(buf));
     }
 
-	public void run() {
-		try {
-			while(true) {
-				ByteBuffer bb=ByteBuffer.allocate(1000);
-				neem.read(bb);
-				bb.flip();
-				deliver(bb);
-			}
-		} catch(Exception e) {e.printStackTrace();}
-	}
+    public void run() {
+        try {
+            while(true) {
+                ByteBuffer bb=ByteBuffer.allocate(1000);
+                neem.read(bb);
+                bb.flip();
+                deliver(bb);
+            }
+        } catch(Exception e) {e.printStackTrace();}
+    }
     
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -51,18 +51,20 @@ public class Chat extends Thread {
 
         try {
 
-			NeEMChannel neem = new NeEMChannel(new InetSocketAddress(port), fanout, group_size);
+            NeEMChannel neem = new NeEMChannel(new InetSocketAddress(port), fanout, group_size);
 
-			System.out.println("Started: "+neem.getTransportId());
+            System.out.println("Started: "+neem.getLocalSocketAddress());
+            if (neem.getLocalSocketAddress().getAddress().isLoopbackAddress())
+                System.out.println("WARNING: Hostname resolves to loopback address! Please fix network configuration\nor expect only local peers to connect.");
 
-			Chat chat=new Chat(neem);	
+            Chat chat=new Chat(neem);    
             chat.setDaemon(true);
             chat.start();
 
             for (int i = 1; i < args.length; i++) {
-				String[] peer=args[i].split(":");
-        		port = Integer.parseInt(peer[1]);
-                neem.add(new InetSocketAddress(peer[0], port));
+                String[] peer=args[i].split(":");
+                port = Integer.parseInt(peer[1]);
+                neem.connect(new InetSocketAddress(peer[0], port));
             }
         
             BufferedReader r = new BufferedReader(
@@ -73,8 +75,8 @@ public class Chat extends Thread {
                 neem.write(ByteBuffer.wrap(line.getBytes()));
             }
 
-			neem.close();
-	
+            neem.close();
+    
         } catch (IOException e) {
             e.printStackTrace();
         }
