@@ -1,103 +1,71 @@
-<project name="NeEM - Network Friendly Epidemic Multicast" default="compress" basedir=".">
-    <description>
-        Makefile for NeEM Project
+<project name="NeEM - Network Friendly Epidemic Multicast" default="tars" basedir=".">
+	<description>
+        See http://neem.sf.net for details.
     </description>
-  <!-- set global properties for this build -->
-  <property name="src" location="src/"/>
-  <property name="build" location=",build"/>
-  <property name="dist"  location=",build/dist"/>
-  <property name="docs"  location=",build/docs"/>
 
-  <target name="init">
-    <!-- Create the time stamp -->
-    <tstamp/>
-    <!-- Create the build directory structure used by compile -->
-    <mkdir dir="${build}"/>
-    <mkdir dir="${docs}"/>
-  </target>
+	<property name="src" location="src/" />
+	<property name="build" location=",build" />
+	<property name="dist" location=",build/dist" />
+	<property name="docs" location=",build/docs" />
 
-  <target name="compile" depends="init"
-        description="compile the source " >
-    <!-- Compile the java code from ${src} into ${build} -->
-    <mkdir dir="${build}/classes"/>
-    <javac srcdir="${src}" destdir="${build}/classes"/>
-  </target>
-  
-  <target name="dist" depends="compile"
-        description="generate the distribution" >
-    <!-- Create the distribution directory -->
-    <mkdir dir="${dist}/lib"/>
+	<target name="tars" depends="bintar,srctar" />
 
-    <!-- Put everything in ${build} into the NeEM-${DSTAMP}.jar file -->
-    <jar jarfile="${dist}/lib/NeEM-${DSTAMP}.jar" basedir="${build}/classes"/>
-  </target>
- 
-  <target name="javadoc" depends="dist" description="Generate Javadoc for NeEM">
-    <mkdir dir="${docs}/api"/>
-    <javadoc 
-	   destdir="${docs}/api"
-           author="true"
-           version="true"
-           use="true"
-           windowtitle="NeEM API"
-	   overview="${src}/overview.html">
+	<target name="init">
+		<tstamp />
+		<mkdir dir="${build}" />
+		<mkdir dir="${docs}" />
+	</target>
 
-      <fileset dir="${src}" defaultexcludes="yes">
-        <include name="**/*.java"/>
-      </fileset>
+	<target name="compile" depends="init" description="compile the source ">
+		<mkdir dir="${build}/classes" />
+		<javac srcdir="${src}" destdir="${build}/classes" />
+	</target>
 
-      <doctitle><![CDATA[<h1>NeEM - Network-friendly Epidemic Multicast Protocol</h1>]]></doctitle>
-      <bottom><![CDATA[<i>Copyright &#169; 20005 University of Minho, Braga, Portugal. All Rights Reserved.</i>]]></bottom>
-    </javadoc>
-  </target>
+	<target name="jar" depends="compile" description="generate the distribution">
+		<mkdir dir="${dist}/lib" />
+		<jar jarfile="${dist}/lib/neem.jar" basedir="${build}/classes" />
+	</target>
 
-  <target name="compress" depends="javadoc" description="pack it up nicely">
-    <tar destfile="${build}/tmp.tar">
-	 <tarfileset dir="${basedir}" prefix="neem-0.1">
-			 <include name="src/neem/**"/>
-			 <include name="src/test/Chat.java"/>
-			 <include name="README"/>
-		   <exclude name="**/.arch-ids/**"/>
-			 <!--           <exclude name="*.sh"/>
-           <exclude name="*.xml"/>
-           <exclude name="*.gz"/>
-           <exclude name="*.conf"/>
-           <exclude name="test/**"/>
-           <exclude name="run"/>
-           <exclude name="{arch}/**"/>
-		   <exclude name="**/.arch-ids/**"/>
-           <exclude name="neem/**"/>
-           <exclude name=",build/**"/>
-		   <exclude name="*~"/> -->
-	 </tarfileset>
-    </tar>
-	<gzip zipfile="${build}/neem-0.1.tar.gz" src="${build}/tmp.tar"
-    />
-    <delete file="${build}/tmp.tar"/>
-  </target>
+	<target name="javadoc" depends="init" description="Generate Javadoc for NeEM">
+		<mkdir dir="${docs}/api" />
+		<javadoc destdir="${docs}/api" author="true" version="true" use="true" windowtitle="NeEM API" sourcepath="${src}" packagenames="neem,neem.impl" overview="${src}/overview.html">
+			<doctitle><![CDATA[<h1>NeEM - Network-friendly Epidemic Multicast Protocol</h1>]]></doctitle>
+			<bottom><![CDATA[<i>Copyright &#169; 20005 University of Minho, Braga, Portugal. All Rights Reserved.</i>]]></bottom>
+		</javadoc>
+	</target>
 
-  <target name="src" description="src tarball">
-    <tar destfile="${basedir}/tmp.tar">
-	 <tarfileset dir="${basedir}" prefix="neem-0.1-src">   
-	   <include name="test/Chat.java"/>
-	   <include name="neem/*.java"/>
-	   <include name="neem/*.html"/>
-	   <include name="build.xml"/>
-	   <include name="README"/>
-	   <exclude name="*~"/>
-	   <exclude name="*.swp"/>
-	 </tarfileset>
-    </tar>
-    <gzip zipfile="neem-0.1-src.tar.gz" src="tmp.tar"
-    />
-    <delete file="${basedir}/tmp.tar"/>
-  </target>
+	<target name="bintar" depends="javadoc,jar" description="pack it up nicely">
+		<tar destfile="${build}/neem-${DSTAMP}-bin.tar.gz" compression="gzip">
+			<tarfileset dir="${basedir}" prefix="neem-${DSTAMP}">
+				<include name="README" />
+				<include name="src/test/**" />
+				<exclude name="**/.arch-ids/**" />
+			</tarfileset>
+			<tarfileset dir="${dist}" prefix="neem-${DSTAMP}">
+				<exclude name="**/.arch-ids/**" />
+			</tarfileset>
+			<tarfileset dir="${docs}" prefix="neem-${DSTAMP}">
+				<exclude name="**/.arch-ids/**" />
+			</tarfileset>
+		</tar>
+	</target>
 
-  <target name="clean"
-        description="clean up" >
-    <!-- Delete the ${build}, ${dist} and ${docs} directory trees -->
-    <delete dir="${build}"/>
-  </target>
+	<target name="srctar" depends="init" description="src tarball">
+		<tar destfile="${build}/neem-${DSTAMP}.tar.gz" compression="gzip">
+			<tarfileset dir="${basedir}" prefix="neem-${DSTAMP}">
+				<include name="src/neem/**" />
+				<include name="src/test/**" />
+				<include name="build.xml" />
+				<include name="README" />
+				<exclude name="**/.arch-ids/**" />
+			</tarfileset>
+		</tar>
+	</target>
+
+	<target name="clean" description="clean up">
+		<delete dir="${build}" />
+	</target>
+
 </project>
 
 <!-- arch-tag: 5c1f191b-7aa3-41c2-ad0b-80401dde9c87 -->
