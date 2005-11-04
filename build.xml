@@ -18,12 +18,12 @@
 
 	<target name="compile" depends="init" description="compile the source ">
 		<mkdir dir="${build}/classes" />
-		<javac srcdir="${src}" destdir="${build}/classes" />
+		<javac srcdir="${src}" destdir="${build}/classes"/>
 	</target>
 
 	<target name="jar" depends="compile" description="generate the distribution">
 		<mkdir dir="${dist}/lib" />
-		<jar jarfile="${dist}/lib/neem.jar" basedir="${build}/classes" />
+		<jar jarfile="${dist}/lib/neem.jar" basedir="${build}/classes" excludes="test/**"/>
 	</target>
 
 	<target name="javadoc" depends="init" description="Generate Javadoc for NeEM">

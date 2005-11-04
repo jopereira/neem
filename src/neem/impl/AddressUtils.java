@@ -75,10 +75,10 @@ public abstract class AddressUtils {
     }
     
     /** Read a socket address from an array of ByteBuffers into an InetSocketAddress.
-     * @param msg The buffer from which to read the address from.
+     * @param buf The buffer from which to read the address from.
      * @return The address read.
      */
-    public static InetSocketAddress readAddressFromBuffer(ByteBuffer tmp) {
+    public static InetSocketAddress readAddressFromBuffer(ByteBuffer buf) {
         InetSocketAddress addr = null;
         short port = 0;
         byte[] dst = null;
@@ -86,8 +86,8 @@ public abstract class AddressUtils {
 	
         try {
             dst = new byte[4];
-            tmp.get(dst, 0, dst.length);
-            port = tmp.getShort();
+            buf.get(dst, 0, dst.length);
+            port = buf.getShort();
             ia = InetAddress.getByAddress(dst);
             addr = new InetSocketAddress(InetAddress.getByAddress(dst),
                     (int) port);
