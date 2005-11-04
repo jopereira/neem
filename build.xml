@@ -5,14 +5,15 @@
 
 	<property name="src" location="src/" />
 	<property name="build" location=",build" />
-	<property name="dist" location=",build/dist" />
-	<property name="docs" location=",build/docs" />
+	<property name="dist" location=",build/lib" />
+	<property name="docs" location=",build/api" />
 
 	<target name="tars" depends="bintar,srctar" />
 
 	<target name="init">
 		<tstamp />
 		<mkdir dir="${build}" />
+		<mkdir dir="${dist}" />
 		<mkdir dir="${docs}" />
 	</target>
 
@@ -22,13 +23,11 @@
 	</target>
 
 	<target name="jar" depends="compile" description="generate the distribution">
-		<mkdir dir="${dist}/lib" />
-		<jar jarfile="${dist}/lib/neem.jar" basedir="${build}/classes" excludes="test/**"/>
+		<jar jarfile="${dist}/neem.jar" basedir="${build}/classes" excludes="test/**"/>
 	</target>
 
 	<target name="javadoc" depends="init" description="Generate Javadoc for NeEM">
-		<mkdir dir="${docs}/api" />
-		<javadoc destdir="${docs}/api" author="true" version="true" use="true" windowtitle="NeEM API" sourcepath="${src}" packagenames="neem,neem.impl" overview="${src}/overview.html">
+		<javadoc destdir="${docs}" author="true" version="true" use="true" windowtitle="NeEM API" sourcepath="${src}" packagenames="neem,neem.impl" overview="${src}/overview.html">
 			<doctitle><![CDATA[<h1>NeEM - Network-friendly Epidemic Multicast Protocol</h1>]]></doctitle>
 			<bottom><![CDATA[<i>Copyright &#169; 20005 University of Minho, Braga, Portugal. All Rights Reserved.</i>]]></bottom>
 		</javadoc>
@@ -41,11 +40,9 @@
 				<include name="src/test/**" />
 				<exclude name="**/.arch-ids/**" />
 			</tarfileset>
-			<tarfileset dir="${dist}" prefix="neem-${DSTAMP}">
-				<exclude name="**/.arch-ids/**" />
-			</tarfileset>
-			<tarfileset dir="${docs}" prefix="neem-${DSTAMP}">
-				<exclude name="**/.arch-ids/**" />
+			<tarfileset dir="${build}" prefix="neem-${DSTAMP}">
+				<include name="lib/**" />
+				<include name="api/**" />
 			</tarfileset>
 		</tar>
 	</target>
@@ -53,8 +50,7 @@
 	<target name="srctar" depends="init" description="src tarball">
 		<tar destfile="${build}/neem-${DSTAMP}.tar.gz" compression="gzip">
 			<tarfileset dir="${basedir}" prefix="neem-${DSTAMP}">
-				<include name="src/neem/**" />
-				<include name="src/test/**" />
+				<include name="src/**" />
 				<include name="build.xml" />
 				<include name="README" />
 				<exclude name="**/.arch-ids/**" />
