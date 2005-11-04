@@ -15,11 +15,11 @@ import java.net.*;
  * Simple chat application.
  */
 public class Chat extends Thread {
-    public Chat(NeEMChannel neem) {
+    public Chat(MulticastChannel neem) {
         this.neem=neem;
     }
 
-    private NeEMChannel neem;
+    private MulticastChannel neem;
     
     public void run() {
         try {
@@ -44,7 +44,7 @@ public class Chat extends Thread {
 
         try {
 
-            NeEMChannel neem = new NeEMChannel(new InetSocketAddress(port), fanout, group_size);
+            MulticastChannel neem = new MulticastChannel(new InetSocketAddress(port), fanout, group_size);
 
             System.out.println("Started: "+neem.getLocalSocketAddress());
             if (neem.getLocalSocketAddress().getAddress().isLoopbackAddress())

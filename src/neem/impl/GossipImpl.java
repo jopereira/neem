@@ -40,9 +40,6 @@ package neem.impl;
 
 import java.util.*;
 import java.nio.*;
-import java.io.*;
-import java.net.*;
-import java.lang.Thread;
 
 
 /**
@@ -58,9 +55,8 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
     /**
      *  Creates a new instance of GossipImpl.
      */
-    public GossipImpl(Transport net, short port, int fanout, int grp_size) {
+    public GossipImpl(Transport net, short port, int fanout) {
         this.fanout = fanout;
-        this.grp_size = grp_size;
         this.net = net;
         this.syncport = port;
         this.msgs = new HashSet<UUID>();
@@ -130,11 +126,6 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
      *  Number of peers to relay messages to.
      */
     private int fanout;
-
-    /**
-     *  Maximum number of members on local membership.
-     */
-    private int grp_size;
 
     /**
      *  The Transport port used by the Gossip class instances to exchange messages. 

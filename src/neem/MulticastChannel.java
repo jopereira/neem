@@ -59,12 +59,12 @@ import java.util.*;
  * @author psantos@gsd.di.uminho.pt
  * 
  */
-public class NeEMChannel implements InterruptibleChannel, ReadableByteChannel, WritableByteChannel {
+public class MulticastChannel implements InterruptibleChannel, ReadableByteChannel, WritableByteChannel {
     
     /** Creates a new instance of Neem */
-    public NeEMChannel(InetSocketAddress local, int fanout, int group_size) throws IOException {
+    public MulticastChannel(InetSocketAddress local, int fanout, int group_size) throws IOException {
         trans = new Transport(local);
-        gimpls = new GossipImpl(trans, (short)0, fanout, group_size);
+        gimpls = new GossipImpl(trans, (short)0, fanout);
         mimpls = new MembershipImpl(trans, (short)1, fanout, group_size);
         gimpls.handler(new App() {
             public void deliver(ByteBuffer[] buf, Gossip gimpl) {

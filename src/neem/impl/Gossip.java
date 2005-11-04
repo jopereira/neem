@@ -38,9 +38,7 @@
 package neem.impl;
 
 
-import java.net.*;
 import java.nio.*;
-import java.lang.Thread;
 
 
 /** Methods necessary for implementing this Gossip Multicast Protocol.

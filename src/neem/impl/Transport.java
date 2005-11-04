@@ -242,7 +242,7 @@ public class Transport implements Runnable {
                 if (task != null) {
                     task.run();
                 } else {    
-                    int s = selector.select(delay);
+                    selector.select(delay);
                     if (closed)
                         break;
                             
@@ -479,9 +479,7 @@ public class Transport implements Runnable {
     private void handleAccept(SelectionKey key) throws IOException {
                 
         SocketChannel sock = ssock.accept();
-        ByteArrayInputStream bais = null;
-        ObjectInputStream ois = null;
-        
+       
         if (sock == null) {
             return;
         }
@@ -492,7 +490,6 @@ public class Transport implements Runnable {
             sock.socket().setReceiveBufferSize(1024);
             SelectionKey nkey = sock.register(selector,
                     SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-            InetSocketAddress addr = (InetSocketAddress) sock.socket().getRemoteSocketAddress();
             final Connection info = new Connection(nkey);
 
             nkey.attach(info);
@@ -588,10 +585,6 @@ public class Transport implements Runnable {
     /** Queue for tasks
      */
     private SortedMap<Long, Runnable> timers;
-
-    /** DUH nb 2
-     */
-    private int busy;
 
     /** don't know rigth now
      */
