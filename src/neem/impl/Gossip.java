@@ -35,32 +35,41 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * App.java
- *
- * Created on March 15, 2005, 4:12 PM
- */
-package neem;
+package neem.impl;
 
 
+import java.net.*;
 import java.nio.*;
+import java.lang.Thread;
 
 
-/**
- * Applications that intend to use the Gossip Multicast Protocol MUST implement this Interface.
- * @author psantos@GSD
+/** Methods necessary for implementing this Gossip Multicast Protocol.
+ * Classes that intend to implement this Gossip Multicast Protocol MUST implement
+ * all methods defined here.
+ *
+ *@author psantos@GSD
  */
-public interface App {
+public interface Gossip extends DataListener {
 
     /**
-     *  This method decodes the message received. It must be inverse to the one used for encoding.
-     * It's called by the gossip layer.
-     * @param msg The message being delivered.
+     *  Sets the application to wich every received 
+     * message must be delivered.
+     * @param app The application wich is interessed in the messages.
      */
-    public void deliver(ByteBuffer[] msg, Gossip gimpl);
+    public void handler(App app);
+    
+    /**
+     *  This method is called by this class's instance handler whenever it wishes 
+     * to send a messages using the neem multicast protocol. This method sends a 
+     * copy of the message to each registred peer.
+     * @param msg Message to be multicasted.
+     */
+    public void multicast(ByteBuffer[] msg);
+
+    public Transport net();
 }
 
 
 ;
 
-// arch-tag: 6b30f28e-5375-46ef-9963-8296bf64f9eb
+// arch-tag: 87a87e28-12f1-44ae-a156-6f4f6d5266b6

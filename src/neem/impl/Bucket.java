@@ -36,70 +36,41 @@
  */
 
 /*
- * AddressUtils.java
+ * Bucket.java
  *
- * Created on April 15, 2005, 5:02 PM
+ * Created on May 2, 2005, 7:04 PM
  */
 
-package neem;
+package neem.impl;
 
 
-import java.io.*;
-import java.net.*;
 import java.nio.*;
 
 
 /**
- *  This abstract class provides methods to read/write InetSocketAddress 
- * addresses from/to a ByteBuffer Object or a Transport.Connection.
- *
- * @author psantos@GSD
+ * Message and port wrapper for distribution enqueueing.
+ * @author psantos
  */
-public abstract class AddressUtils {
-
-    /** Write a socket address to a ByteBuffer.
-     * @param addr The address to be written.
-     * @return The Buffer with the address written into.
-     */
-    public static ByteBuffer writeAddressToBuffer(InetSocketAddress addr) {
-        ByteBuffer msg = null;
-
-        try {
-            msg = ByteBuffer.allocate(6);
-            msg.put(addr.getAddress().getAddress());
-            msg.putShort((short) addr.getPort());
-            msg.flip();
-            // info.sock.write(msg);
-        } catch (Exception e) {}
-        return msg;
+public class Bucket {
+    
+    /** Creates a new instance of Bucket */
+    public Bucket(ByteBuffer[] msg, Integer port) {
+        this.msg = msg;
+        this.port = port;
     }
     
-    /** Read a socket address from an array of ByteBuffers into an InetSocketAddress.
-     * @param msg The buffer from which to read the address from.
-     * @return The address read.
-     */
-    public static InetSocketAddress readAddressFromBuffer(ByteBuffer tmp) {
-        InetSocketAddress addr = null;
-        short port = 0;
-        byte[] dst = null;
-        InetAddress ia = null;
-	
-        try {
-            dst = new byte[4];
-            tmp.get(dst, 0, dst.length);
-            port = tmp.getShort();
-            ia = InetAddress.getByAddress(dst);
-            addr = new InetSocketAddress(InetAddress.getByAddress(dst),
-                    (int) port);
-        } catch (IOException e) {} catch (IllegalArgumentException iae) {
-            System.out.println("Prob: " + ia.toString() + ":" + port);
-        }
-        // catch (UnknownHostException uhe) {}
-        return addr;
+    /** Returns the message in this Bucket */
+    public ByteBuffer[] getMsg() {
+        return(this.msg);
     }
+    
+    /** Returns the port to wich the message is intended */
+    public Integer getPort() {
+        return (this.port);
+    }
+    
+    private ByteBuffer[] msg;
+    private Integer port;
 }
 
-
-;
-
-// arch-tag: f387d158-3ec6-4001-af1b-5d4a8fb441eb
+// arch-tag: b07a5de4-0eca-4ba3-9bf5-c1564cd9cece

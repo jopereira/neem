@@ -36,76 +36,70 @@
  */
 
 /*
- * AbstractGossipImpl.java
+ * AddressUtils.java
  *
- * Created on April 11, 2005, 4:21 PM
+ * Created on April 15, 2005, 5:02 PM
  */
 
-package neem;
+package neem.impl;
 
 
 import java.io.*;
-import java.lang.*;
-import java.nio.*;
 import java.net.*;
-import java.util.*;
+import java.nio.*;
 
 
 /**
- *  This class provides a method to relay a message represented as an array of 
- * ByteBuffers to a fanout number of group members.
+ *  This abstract class provides methods to read/write InetSocketAddress 
+ * addresses from/to a ByteBuffer Object or a Transport.Connection.
  *
  * @author psantos@GSD
  */
-public abstract class AbstractGossipImpl {
+public abstract class AddressUtils {
 
-    /**
-     *  This method sends a copy of the original message to a fanout of peers of the local memberhip.
-     * @param msg The original message
-     * @param fanout Number of peers to send the copy of the message to.
-     * @param syncport The synchronization port (Gossip or Memberhip) which the message is to be delivered to. 
+    /** Write a socket address to a ByteBuffer.
+     * @param addr The address to be written.
+     * @return The Buffer with the address written into.
      */
-    public void relay(ByteBuffer[] msg, int fanout, short syncport) {
-        // System.out.println("Relaying message");
-        Transport.Connection info;
-        Transport.Connection[] conns = net.connections();
+    public static ByteBuffer writeAddressToBuffer(InetSocketAddress addr) {
+        ByteBuffer msg = null;
 
-        if (conns.length < 1) {
-            return;
-        }
-
-        for (int i = 0; i < fanout; i++) {
-            int index = rand.nextInt(conns.length);
-            
-            if (conns[index].key.isValid()) {
-                info = conns[index];
-
-                /* System.out.println(
-                 "Message from " + net.id().toString() + " to : "
-                 + info.addr.toString());*/
-                net.send(msg, info, syncport);
-            }
-            
-        }
-    }
-
-    public Transport net() {
-        return this.net;
+        try {
+            msg = ByteBuffer.allocate(6);
+            msg.put(addr.getAddress().getAddress());
+            msg.putShort((short) addr.getPort());
+            msg.flip();
+            // info.sock.write(msg);
+        } catch (Exception e) {}
+        return msg;
     }
     
-    /**
-     *  Transport instance through wich the message will be sent. 
-     * It's a reference to the invoking class' transport layer instance.
+    /** Read a socket address from an array of ByteBuffers into an InetSocketAddress.
+     * @param msg The buffer from which to read the address from.
+     * @return The address read.
      */
-    protected Transport net;
-
-    /**
-     * Random number generator for selecting targets.
-     */
-    protected Random rand = new Random();
+    public static InetSocketAddress readAddressFromBuffer(ByteBuffer tmp) {
+        InetSocketAddress addr = null;
+        short port = 0;
+        byte[] dst = null;
+        InetAddress ia = null;
+	
+        try {
+            dst = new byte[4];
+            tmp.get(dst, 0, dst.length);
+            port = tmp.getShort();
+            ia = InetAddress.getByAddress(dst);
+            addr = new InetSocketAddress(InetAddress.getByAddress(dst),
+                    (int) port);
+        } catch (IOException e) {} catch (IllegalArgumentException iae) {
+            System.out.println("Prob: " + ia.toString() + ":" + port);
+        }
+        // catch (UnknownHostException uhe) {}
+        return addr;
+    }
 }
 
 
 ;
 
-// arch-tag: 300b42e8-72a0-4788-b298-a9c377ec4d05
+// arch-tag: f387d158-3ec6-4001-af1b-5d4a8fb441eb

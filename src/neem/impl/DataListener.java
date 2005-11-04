@@ -35,41 +35,40 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package neem;
-
-
-import java.net.*;
-import java.nio.*;
-import java.lang.Thread;
-
-
-/** Methods necessary for implementing this Gossip Multicast Protocol.
- * Classes that intend to implement this Gossip Multicast Protocol MUST implement
- * all methods defined here.
+/*
+ * DataListener.java
  *
- *@author psantos@GSD
+ * Created on April 7, 2005, 11:51 AM
  */
-public interface Gossip extends DataListener {
+
+package neem.impl;
+
+
+import java.io.*;
+import java.lang.*;
+import java.nio.*;
+import java.net.*;
+import java.util.*;
+
+
+/**
+ *  This inteface depicts the methods that a class, wishing to receive messages
+ * using this implementation of the Gossip Multicast protocol, MUST provide.
+ *
+ * @author psantos@GSD
+ */
+public interface DataListener {
 
     /**
-     *  Sets the application to wich every received 
-     * message must be delivered.
-     * @param app The application wich is interessed in the messages.
+     *  This method allows classes that implement it, to receive messages through the Transport class, wich implements the NEEM Protocol.
+     * This method is called by the Transport class
+     * @param msg The incoming message.
+     * @param info The connection through wich the message is being received.
      */
-    public void handler(App app);
-    
-    /**
-     *  This method is called by this class's instance handler whenever it wishes 
-     * to send a messages using the neem multicast protocol. This method sends a 
-     * copy of the message to each registred peer.
-     * @param msg Message to be multicasted.
-     */
-    public void multicast(ByteBuffer[] msg);
-
-    public Transport net();
+    public void receive(ByteBuffer[] msg, Transport.Connection info);
 }
 
 
 ;
 
-// arch-tag: 87a87e28-12f1-44ae-a156-6f4f6d5266b6
+// arch-tag: b3b8ed98-df7f-419d-b0b4-14484e44419c

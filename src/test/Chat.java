@@ -21,20 +21,13 @@ public class Chat extends Thread {
 
     private NeEMChannel neem;
     
-    public void deliver(ByteBuffer rec) {
-        byte[] buf = new byte[rec.remaining()];
-
-        rec.get(buf);
-        System.out.println(new String(buf));
-    }
-
     public void run() {
         try {
             while(true) {
-                ByteBuffer bb=ByteBuffer.allocate(1000);
+        		byte[] buf = new byte[1000];
+                ByteBuffer bb=ByteBuffer.wrap(buf);
                 neem.read(bb);
-                bb.flip();
-                deliver(bb);
+        		System.out.println(new String(buf));
             }
         } catch(Exception e) {e.printStackTrace();}
     }
@@ -67,8 +60,7 @@ public class Chat extends Thread {
                 neem.connect(new InetSocketAddress(peer[0], port));
             }
         
-            BufferedReader r = new BufferedReader(
-                    new InputStreamReader(System.in));
+            BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
             String line;
 
             while ((line = r.readLine()) != null) {
