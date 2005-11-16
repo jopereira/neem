@@ -1,94 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
 <body>
- <p>The NeEM library provides an implementation of epidemic multicast (also called probabilistic or gossip-based) in wide-area networks by using multiple TCP/IP connections in a non-blocking fashion. The resulting overlay network is automatically managed by the protocol.</p>	
 
- <p>This text will describe the steps to take, in order to design an aplication that resorts to the NEEM protocol for group comunication, and serve as reference to this process.</p>
+<p>The NeEM library provides an implementation of epidemic multicast
+(also called probabilistic or gossip-based) in wide-area networks by
+using multiple TCP/IP connections in a non-blocking fashion. The
+resulting overlay network is automatically managed by the protocol.</p>
 
+<p>This text will describe the steps to take, in order to design an
+aplication that resorts to the NEEM protocol for group comunication, and
+serve as reference to this process.</p>
 
 <h2>How to start?</h2>
 
 <ol>
-<li>
- <p>First of all, such application MUST conform with the App interface,  thereby 
- implementing every method of this class.</p>
-</li>
+	<li>
+	<p>First of all, such application MUST conform with the App interface,
+	thereby implementing every method of this class.</p>
+	</li>
 
-<li>
- <p>The implementation of the methods in the App interface is free. As long as the methods of the underlying classes are used correctly, the application WILL work as expected.</p>
-</li>
+	<li>
+	<p>The implementation of the methods in the App interface is free. As
+	long as the methods of the underlying classes are used correctly, the
+	application WILL work as expected.</p>
+	</li>
 
-<li>
- <p> Two synchronization ports must be defined. One where messages related with membership can be relayed between group members (m_syncport). The other port is used to relay messages sent from the application layer (g_syncport). The transport layer supports more than one gossip, to provide support for several applications sending messages to the same group, while sharing the transport layer, and it's connections. Such support, led to where every message that is sent to the group must state wich port it's intended for. If this stated port equals m_syncport, then it's delivered to the MembershipImpl class instance associated with each Transport class instance. If it's not, it'll have to be delivered to the GossipImpl class instance. As at the transport level there's a Map of Gossips indexed by port, an atempt is made to deliver the message to the GossipImpl instance at the port the message states. If a Gossip exists at that index, the message is delivered to it, if not it's dropped.</p>
-</li>
-<li>
- <p> At the Gossip and Membership layer, for each message message to be sent, an unique identifier  is generated using the UUID class. This unique identifier is stored in a HashSet class instance. If the incoming message has already been received by either layer, i.e., its identifier is present in the HashSet, the message is dropped silently.</p>
-</li>
-<li>
- <p> An aditional port must be defined, this is the network port wich the transport layer class will bind it's socket at.</p>
-</li>
+	<li>
+	<p>Two synchronization ports must be defined. One where messages
+	related with membership can be relayed between group members
+	(m_syncport). The other port is used to relay messages sent from the
+	application layer (g_syncport). The transport layer supports more than
+	one gossip, to provide support for several applications sending
+	messages to the same group, while sharing the transport layer, and it's
+	connections. Such support, led to where every message that is sent to
+	the group must state wich port it's intended for. If this stated port
+	equals m_syncport, then it's delivered to the MembershipImpl class
+	instance associated with each Transport class instance. If it's not,
+	it'll have to be delivered to the GossipImpl class instance. As at the
+	transport level there's a Map of Gossips indexed by port, an atempt is
+	made to deliver the message to the GossipImpl instance at the port the
+	message states. If a Gossip exists at that index, the message is
+	delivered to it, if not it's dropped.</p>
+	</li>
+	
+	<li>
+	<p>At the Gossip and Membership layer, for each message message to be
+	sent, an unique identifier is generated using the UUID class. This
+	unique identifier is stored in a HashSet class instance. If the
+	incoming message has already been received by either layer, i.e., its
+	identifier is present in the HashSet, the message is dropped silently.</p>
+	</li>
+	
+	<li>
+	<p>An aditional port must be defined, this is the network port wich the
+	transport layer class will bind it's socket at.</p>
+	</li>
 </ol>
 
 <h2>What is needed to run?</h2>
 
- <p> The usage of the NeEM protocol is explained here by depicting the process of building a simple chat application. This application grabs text from console, and sends it to the group. In the command line used to start it, one must pass the ip address where it will bind at, and also of, at least a peer. If there are no peers active, then one can put the local ip address, and when a peer connects the dynamic membership will add it transparently.</p>
+<p>The usage of the NeEM protocol is explained here by depicting the
+process of building a simple chat application. This application grabs
+text from console, and sends it to the group. In the command line used
+to start it, one must pass the ip address where it will bind at, and
+also of, at least a peer. If there are no peers active, then one can put
+the local ip address, and when a peer connects the dynamic membership
+will add it transparently.</p>
 
 <ul>
-<LI>
- <p> As stated above, the App interface must be implemented by the Application layer class. Here's the chat aplication's.</p>
-<pre>	public void deliver(ByteBuffer[] msg, Gossip gimpl) {
+	<LI>
+	<p>As stated above, the App interface must be implemented by the
+	Application layer class. Here's the chat aplication's.</p>
+	<pre>	public void deliver(ByteBuffer[] msg, Gossip gimpl) {
         	ByteBuffer rec = Buffers.compact(msg);
         	byte[] buf = new byte[rec.remaining()];
         	rec.get(buf);
         	System.out.println(new String(buf));
     	}</pre>
-</LI>
-<LI>
- <p> As soon as the application layer class has implemented the methods of the App interface, it's time to begin piling up all the layers. The application WILL require 1 (one), or more, instance(s) of the GossipImpl class ( for multicast and receive), 1 (one) instance of the MembershipImpl class ( to deal with local group membership changes) and one instance of the Transport class ( wich provides comunication primitives to both previously refered classes, and is shared between them). Before creating these instances, there are two values that play a crucial role in the protocol's mechanics. They are the group size, or local membership size, and the fanout, i.e., the number of local members that will relay the aplication's message.</p>
-<pre>	int group_size = 20;
+    </LI>
+    	
+	<LI>
+	<p>As soon as the application layer class has implemented the methods
+	of the App interface, it's time to begin piling up all the layers. The
+	application WILL require 1 (one), or more, instance(s) of the
+	GossipImpl class ( for multicast and receive), 1 (one) instance of the
+	MembershipImpl class ( to deal with local group membership changes) and
+	one instance of the Transport class ( wich provides comunication
+	primitives to both previously refered classes, and is shared between
+	them). Before creating these instances, there are two values that play
+	a crucial role in the protocol's mechanics. They are the group size, or
+	local membership size, and the fanout, i.e., the number of local
+	members that will relay the aplication's message.</p>
+	<pre>	int group_size = 20;
 	int fanout = 10;</pre>
-</LI>
-<LI>
- <p>Now the ports described in 3 must be defined.</p>
-<pre>	short g_syncport = 1;
+	</LI>
+
+	<LI>
+	<p>Now the ports described in 3 must be defined.</p>
+	<pre>	short g_syncport = 1;
         short m_syncport = 0;
         int port = 12345;</pre>
-</LI>
-<LI>
- <p>
-  To create an instance of the Transport class, the constructor of the class has to be called with 2 (two) arguments: the ip address and the port to bind at.</p>
-<pre>	Transport trans = new Transport(new InetSocketAddress(args[0], port));</pre>
-</LI>
-<LI>
- <p>
-  To instanciate the Gossip class, 4 (four) parameters MUST be supplied:
- the Transport class instance that provides comunication, the port thas is used by the transport class to deliver received gossip related messages, the fanout
- wich is the maximum number of local group members to adress each message and the group size, or, more accurately, the maximum local group size.</p>
-<pre>	GossipImpl gimpl = new GossipImpl(trans, g_syncport, fanout, group_size);</pre>
-</LI>
-<LI>
- <p>
-  Similar to the process to create a Gossip object, the creation of a Membership object takes 4 (four) parameters: the Transport class instance that provides 
- comunication, the port thas is used by the transport class to deliver received membership related messages, the fanout wich is the maximum number of local
- group members to adress each message and the group size, or, more accurately, the maximum local group size.</p>
-<pre>	MembershipImpl mimpl = new MembershipImpl(trans, m_syncport, fanout, group_size);</pre>
-</LI>
-<LI>
- <p>Now the top level handler must be set for the Gossip layer, since it's the only one that interacts with the top layer.</p>
-<pre>	gimpl.handler(new Chat());</pre>
-</LI>
-<LI>
- <p> Next step is to start the transport layer instance's thread. This thread is started as a Daemon</p>
-<pre>	Thread t = new Thread(trans);
+    </LI>
+
+	<LI>
+	<p>To create an instance of the Transport class, the constructor of the
+	class has to be called with 2 (two) arguments: the ip address and the
+	port to bind at.</p>
+	<pre>	Transport trans = new Transport(new InetSocketAddress(args[0], port));</pre>
+	</LI>
+
+	<LI>
+	<p>To instanciate the Gossip class, 4 (four) parameters MUST be
+	supplied: the Transport class instance that provides comunication, the
+	port thas is used by the transport class to deliver received gossip
+	related messages, the fanout wich is the maximum number of local group
+	members to adress each message and the group size, or, more accurately,
+	the maximum local group size.</p>
+	<pre>	GossipImpl gimpl = new GossipImpl(trans, g_syncport, fanout, group_size);</pre>
+	</LI>
+
+	<LI>
+	<p>Similar to the process to create a Gossip object, the creation of a
+	Membership object takes 4 (four) parameters: the Transport class
+	instance that provides comunication, the port thas is used by the
+	transport class to deliver received membership related messages, the
+	fanout wich is the maximum number of local group members to adress each
+	message and the group size, or, more accurately, the maximum local
+	group size.</p>
+	<pre>	MembershipImpl mimpl = new MembershipImpl(trans, m_syncport, fanout, group_size);</pre>
+	</LI>
+
+	<LI>
+	<p>Now the top level handler must be set for the Gossip layer, since
+	it's the only one that interacts with the top layer.</p>
+	<pre>	gimpl.handler(new Chat());</pre>
+	</LI>
+
+	<LI>
+	<p>Next step is to start the transport layer instance's thread. This
+	thread is started as a Daemon</p>
+	<pre>	Thread t = new Thread(trans);
 	t.setDaemon(true);
 	t.start();</pre>
-</LI>
- <p>It's now time to start adding peers to our local membership.</p>
-<pre>	for (int i = 1; i < args.length; i++) {
+	</LI>
+	
+	<li><p>It's now time to start adding peers to our local membership.</p>
+	<pre>	for (int i = 1; i < args.length; i++) {
 		gimpl.add(new InetSocketAddress(args[i], port));
 	}</pre>
-</LI>
-<LI>
- <p> Finally, grab a text line from console, encapsulate it in a ByteBuffer and use the multicast method of the Gossip layer to spread the message to the group</p>
-<pre>	BufferedReader r = new BufferedReader(
+	</li>
+
+	<LI>
+	<p>Finally, grab a text line from console, encapsulate it in a
+	ByteBuffer and use the multicast method of the Gossip layer to spread
+	the message to the group</p>
+	<pre>	BufferedReader r = new BufferedReader(
                     new InputStreamReader(System.in));
 	String line;
 
@@ -96,9 +163,9 @@
                 gimpl.multicast(
                         new ByteBuffer[] { ByteBuffer.wrap(line.getBytes())});
             }</pre>
-</LI>
-
+    </LI>
 </ul>
-</body>
 
+</body>
+</html>
 <!-- arch-tag: f34eef08-cdd8-4c9b-a042-883fc482d377 -->
