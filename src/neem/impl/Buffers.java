@@ -139,8 +139,8 @@ public class Buffers {
      */
     public static int copy(ByteBuffer res, ByteBuffer[] buffer) {
 		int cnt=0;
-        for (int i = 0; i < buffer.length; i++) {
-            while (buffer[i].hasRemaining()) {
+        for (int i = 0; i < buffer.length && res.hasRemaining(); i++) {
+            while (buffer[i].hasRemaining() && res.hasRemaining()) {
                 res.put(buffer[i].get());
 				cnt++;
             }

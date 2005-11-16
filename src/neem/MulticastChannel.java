@@ -88,7 +88,14 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
         trans.close();
     }
 
-    public synchronized int write(ByteBuffer msg) throws IOException {
+    /**
+     * Send a message to members of the group. On return, there are no remaining bytes
+     * in the supplied buffer. 
+     * 
+     * @param msg bytes to be sent
+     * @return the number of bytes written
+     */
+    public synchronized int write(ByteBuffer msg) throws ClosedChannelException {
         if (isClosed)
             throw new ClosedChannelException();
         final ByteBuffer cmsg=Buffers.compact(new ByteBuffer[]{msg});
@@ -103,7 +110,20 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
         return ret;
     }
 
-    public synchronized int read(ByteBuffer msg) throws IOException {
+    /**
+     * Receive a message. The buffer should be large enough to handle incoming messages.
+     * Otherwise, the BufferOverflowException will be thrown and the message will
+     * be left untouched in the queue.
+     * 
+     * @param msg a byte buffer to be filled with the received message
+     * @return the number of bytes read
+     * @throws ClosedChannleException the channel was previously closed
+     * @throws ClosedByInterruptException the waiting thread has been interrupted
+     * @throws AsynchronousCloseException the channel has been closed while waiting
+     * @throws BufferTooSmallException the buffer was too small to read the next message
+     */
+    public synchronized int read(ByteBuffer msg)
+    	throws ClosedChannelException, ClosedByInterruptException, AsynchronousCloseException  {
         if (isClosed)
             throw new ClosedChannelException();
         try {
@@ -115,7 +135,10 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
         }
         if (isClosed)
             throw new AsynchronousCloseException();
-        ByteBuffer[] buf=queue.removeFirst();
+        ByteBuffer[] buf=queue.getFirst();
+        if (msg.remaining()<Buffers.count(buf) && !truncate)
+        	throw new BufferOverflowException();
+        buf=queue.removeFirst();
         return Buffers.copy(msg, buf);
     }
 
@@ -151,7 +174,7 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
      * Setting the loopback mode tries to reproduce the same feature on regular
      * java.net.MulticastSocket. Unfortunately (search Java Bug#4686717), Sun has
      * made a mess out of this and their documentation contradicts their implementation
-     * as of JDK1.4. 
+     * as of JDK1.4. *sigh*
      */
     
     /**
@@ -174,6 +197,28 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
     	loopback=mode;
     }
     
+    /**
+     * Disable/enable local message truncate mode. When false and the buffer supplied to
+     * read is too small, an exception is thrown and the message is left untouched. When
+     * true, the remainder of the datagram is discarded.
+     * 
+     * @param mode true to enable truncate mode
+     */
+    public synchronized void setTruncateMode(boolean mode) {
+    	truncate=mode;
+    }
+    
+    /**
+     * Query local message truncate mode. When false and the buffer supplied to
+     * read is too small, an exception is thrown and the message is left untouched. When
+     * true, the remainder of the datagram is discarded.
+     * 
+     * @return true if truncate mode is enabled
+     */
+    public synchronized boolean getTruncateMode() {
+    	return truncate;
+    }
+    
     /** Transport layer*/
     private Transport trans = null;
 
@@ -185,7 +230,7 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
 
     private boolean isClosed;
 
-    private boolean loopback;
+    private boolean loopback, truncate;
     
     private LinkedList<ByteBuffer[]> queue=new LinkedList<ByteBuffer[]>();
 
