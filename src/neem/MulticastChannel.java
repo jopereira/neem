@@ -35,14 +35,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Neem.java
- *
- * Created on July 15, 2005, 3:46 PM
- *
- * @author psantos@lsd.di.uminho.pt
- */
-
 package neem;
 
 import neem.impl.*;
@@ -53,19 +45,28 @@ import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 
-
 /**
- * Encapsulates Transport, Gossip and Membership layers into an easy-to-use/instanciate class
- * @author psantos@gsd.di.uminho.pt
- * 
+ * This class provides a friendly programming interface to NeEM multicast.
+ * It is thread and aliasing safe, and thus can be used by multiple threads and
+ * all buffers used as parameters can immediatly be reused by the application.
+ * <p>
+ * After creating the channel, it must be connected to at least one previously
+ * known peer in the desired group. Such peer must be determined by the application.
+ * A good strategy is to maintain a list of known peers and connect to them all to
+ * cope with transient failures.
  */
-public class MulticastChannel implements InterruptibleChannel, ReadableByteChannel, WritableByteChannel {
+public class MulticastChannel implements
+	InterruptibleChannel, ReadableByteChannel, WritableByteChannel {
     
-    /** Creates a new instance of Neem */
-    public MulticastChannel(InetSocketAddress local, int fanout, int group_size) throws IOException {
+    /**
+     * Creates a new instance of a multicast channel.
+     * 
+     * @param local the local address to bind to
+     */
+    public MulticastChannel(InetSocketAddress local) throws IOException {
         trans = new Transport(local);
-        gimpls = new GossipImpl(trans, (short)0, fanout);
-        mimpls = new MembershipImpl(trans, (short)1, fanout, group_size);
+        gimpls = new GossipImpl(trans, (short)0, 4);
+        mimpls = new MembershipImpl(trans, (short)1, 4, 10);
         gimpls.handler(new App() {
             public void deliver(ByteBuffer[] buf, Gossip gimpl) {
                 enqueue(buf);
@@ -76,10 +77,18 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
         t.start();
     }
 
+    /**
+     * True if the channel has not yet been (explicitly or implicitly) closed.
+     * 
+     * @return false if the channel has been closed
+     */
     public synchronized boolean isOpen() {
         return !isClosed;
     }
 
+    /**
+     * Close the channel. This will wakeup all threads blocked on {@link #read(ByteBuffer)}.
+     */
     public synchronized void close() {
         if (isClosed)
             return;
@@ -94,6 +103,7 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
      * 
      * @param msg bytes to be sent
      * @return the number of bytes written
+     * @throws ClosedChannelException the channel has already been closed
      */
     public synchronized int write(ByteBuffer msg) throws ClosedChannelException {
         if (isClosed)
@@ -111,9 +121,11 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
     }
 
     /**
-     * Receive a message. The buffer should be large enough to handle incoming messages.
-     * Otherwise, the BufferOverflowException will be thrown and the message will
-     * be left untouched in the queue.
+     * Receive a message. If the truncate mode is not set (the default), the buffer
+     * should be large enough to handle incoming messages.
+     * Otherwise, a {@link BufferTooSmallException} will be thrown and the message will
+     * be left untouched in the queue. If the truncate mode is set, the remainder of
+     * the message will be silently discarded.
      * 
      * @param msg a byte buffer to be filled with the received message
      * @return the number of bytes read
@@ -149,6 +161,8 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
     
     /**
      * Get the address that is being advertised to peers.
+     * 
+     * @return the address being advertised to peers
      */
     public InetSocketAddress getLocalSocketAddress() {
         return this.trans.id();
@@ -219,13 +233,13 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
     	return truncate;
     }
     
-    /** Transport layer*/
+    /* Transport layer */
     private Transport trans = null;
 
-    /** Gossip layer*/
+    /* Gossip layer */
     private GossipImpl gimpls = null;
 
-    /** Membership layer*/
+    /* Membership layer */
     private Membership mimpls = null;
 
     private boolean isClosed;
@@ -236,6 +250,5 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
 
     private Thread t;
 }
-
  
 // arch-tag: cd998499-184b-4c75-a0a0-34180eb3c92c

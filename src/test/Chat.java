@@ -38,13 +38,11 @@ public class Chat extends Thread {
             System.exit(0);
         }
 
-        int fanout = 10;
-        int group_size = 20;
         int port = Integer.parseInt(args[0]);
 
         try {
 
-            MulticastChannel neem = new MulticastChannel(new InetSocketAddress(port), fanout, group_size);
+            MulticastChannel neem = new MulticastChannel(new InetSocketAddress(port));
             neem.setLoopbackMode(false);
             System.out.println("Started: "+neem.getLocalSocketAddress());
             if (neem.getLocalSocketAddress().getAddress().isLoopbackAddress())
