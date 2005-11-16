@@ -27,7 +27,7 @@ public class Chat extends Thread {
         		byte[] buf = new byte[1000];
                 ByteBuffer bb=ByteBuffer.wrap(buf);
                 neem.read(bb);
-        		System.out.println(new String(buf));
+        		System.out.println("> "+new String(buf));
             }
         } catch(Exception e) {e.printStackTrace();}
     }
@@ -45,7 +45,7 @@ public class Chat extends Thread {
         try {
 
             MulticastChannel neem = new MulticastChannel(new InetSocketAddress(port), fanout, group_size);
-
+            neem.setLoopbackMode(false);
             System.out.println("Started: "+neem.getLocalSocketAddress());
             if (neem.getLocalSocketAddress().getAddress().isLoopbackAddress())
                 System.out.println("WARNING: Hostname resolves to loopback address! Please fix network configuration\nor expect only local peers to connect.");

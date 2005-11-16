@@ -92,6 +92,8 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
         if (isClosed)
             throw new ClosedChannelException();
         final ByteBuffer cmsg=Buffers.compact(new ByteBuffer[]{msg});
+        if (!loopback)
+        	enqueue(Buffers.clone(new ByteBuffer[]{cmsg}));
         int ret=cmsg.remaining();
         trans.queue(new Runnable() {
             public void run() {
@@ -145,6 +147,33 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
         });
     }
     
+    /*
+     * Setting the loopback mode tries to reproduce the same feature on regular
+     * java.net.MulticastSocket. Unfortunately (search Java Bug#4686717), Sun has
+     * made a mess out of this and their documentation contradicts their implementation
+     * as of JDK1.4. 
+     */
+    
+    /**
+     * Query local loopback mode status. When false, messages multicast locally will
+     * be delivered back to the sender.
+     * 
+     * @return if true then loopback mode is disabled
+     */
+    public synchronized boolean getLoopbackMode() {
+    	return loopback;
+    }
+    
+    /**
+     * Disable/enable local loopback mode. When false, messages multicast locally will
+     * be delivered back to the sender.
+     *  
+     * @param mode true to disable loopback mode
+     */
+    public synchronized void setLoopbackMode(boolean mode) {
+    	loopback=mode;
+    }
+    
     /** Transport layer*/
     private Transport trans = null;
 
@@ -156,6 +185,8 @@ public class MulticastChannel implements InterruptibleChannel, ReadableByteChann
 
     private boolean isClosed;
 
+    private boolean loopback;
+    
     private LinkedList<ByteBuffer[]> queue=new LinkedList<ByteBuffer[]>();
 
     private Thread t;
