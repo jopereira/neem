@@ -10,8 +10,12 @@
 
 	<target name="tars" depends="bintar,srctar" />
 
-	<target name="init">
+	<target name="relname" unless="RELEASE.set">
 		<tstamp />
+		<property name="RELEASE" value="${DSTAMP}"/>
+	</target>
+
+	<target name="init">
 		<mkdir dir="${build}" />
 		<mkdir dir="${dist}" />
 		<mkdir dir="${docs}" />
@@ -28,27 +32,27 @@
 
 	<target name="javadoc" depends="init" description="Generate Javadoc for NeEM">
 		<javadoc destdir="${docs}" author="true" version="true" use="true" windowtitle="NeEM API" sourcepath="${src}" packagenames="neem,neem.impl" overview="${src}/overview.html">
-			<bottom><![CDATA[<i>Copyright &#169; 20005 University of Minho, Portugal. All Rights Reserved.</i>]]></bottom>
+			<bottom><![CDATA[<i>Copyright &#169; 2005 University of Minho, Portugal. All Rights Reserved.</i>]]></bottom>
 		</javadoc>
 	</target>
 
-	<target name="bintar" depends="javadoc,jar" description="pack it up nicely">
-		<tar destfile="${build}/neem-${DSTAMP}-bin.tar.gz" compression="gzip">
-			<tarfileset dir="${basedir}" prefix="neem-${DSTAMP}">
+	<target name="bintar" depends="javadoc,jar,relname" description="pack it up nicely">
+		<tar destfile="${build}/neem-${RELEASE}-bin.tar.gz" compression="gzip">
+			<tarfileset dir="${basedir}" prefix="neem-${RELEASE}">
 				<include name="README" />
 				<include name="src/test/**" />
 				<exclude name="**/.arch-ids/**" />
 			</tarfileset>
-			<tarfileset dir="${build}" prefix="neem-${DSTAMP}">
+			<tarfileset dir="${build}" prefix="neem-${RELEASE}">
 				<include name="lib/**" />
 				<include name="api/**" />
 			</tarfileset>
 		</tar>
 	</target>
 
-	<target name="srctar" depends="init" description="src tarball">
-		<tar destfile="${build}/neem-${DSTAMP}.tar.gz" compression="gzip">
-			<tarfileset dir="${basedir}" prefix="neem-${DSTAMP}">
+	<target name="srctar" depends="init,relname" description="src tarball">
+		<tar destfile="${build}/neem-${RELEASE}.tar.gz" compression="gzip">
+			<tarfileset dir="${basedir}" prefix="neem-${RELEASE}">
 				<include name="src/**" />
 				<include name="build.xml" />
 				<include name="README" />
