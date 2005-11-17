@@ -3,7 +3,7 @@
 
 <body>
 
-<p>Building blocks of NeEM for 
+<p>Contains building blocks of NeEM for 
 protocol development and customization.</p>
 
 <p>The epidemic multicast concept means that a message destined to every
@@ -11,25 +11,25 @@ member of a group is not, directly, sent to every member of that group.
 Instead, it is sent to a minority of members. Each member that receives
 the message for the first time, delivers it and relays it to others. If
 the same message is received a second time, it's discarded. This is
-beeing done by adding an unique identifier to each message.</p>
+being done by adding an unique identifier to each message.</p>
 
-<p>This behaviour is achieved by, at each member, maintaing a dynamic
-local membership, wich is to say that this membership is constantly
+<p>This behavior is achieved by, at each member, maintaining a dynamic
+local membership, which is to say that this membership is constantly
 changing through time. This reduces the impact of joins and departures
 of members to/from the group. When a message is to be sent, it is sent
 to a few members of the sender's local membership. These relay the
 message to a few members of their local group and so on, until everyone
 has received the message.</p>
 
-<p>This text describes how the frontend {@link neem.MulticastChannel} is built from
-individual components. It is also useful if one wants to avoid the frontend and
+<p>This text describes how the front-end {@link neem.MulticastChannel} is built from
+individual components. It is also useful if one wants to avoid the front-end and
 directly interface with protocol components.</p>
 
 <h3>Overview</h3>
 
 <ol>
 	<li>
-	<p>First of all, an application or frontend must conform with the App interface,
+	<p>First of all, an application or front-end must conform with the App interface,
 	thereby implementing every method of this class.</p>
 	</li>
 
@@ -41,11 +41,11 @@ directly interface with protocol components.</p>
 	one gossip, to provide support for several applications sending
 	messages to the same group, while sharing the transport layer, and it's
 	connections. Such support, led to where every message that is sent to
-	the group must state wich port it's intended for. If this stated port
+	the group must state which port it's intended for. If this stated port
 	equals m_syncport, then it's delivered to the MembershipImpl class
 	instance associated with each Transport class instance. If it's not,
 	it'll have to be delivered to the GossipImpl class instance. As at the
-	transport level there's a Map of Gossips indexed by port, an atempt is
+	transport level there's a Map of Gossips indexed by port, an attempt is
 	made to deliver the message to the GossipImpl instance at the port the
 	message states. If a Gossip exists at that index, the message is
 	delivered to it, if not it's dropped.</p>
@@ -60,7 +60,7 @@ directly interface with protocol components.</p>
 	</li>
 	
 	<li>
-	<p>An aditional port must be defined, this is the network port wich the
+	<p>An additional port must be defined, this is the network port which the
 	transport layer class will bind it's socket at.</p>
 	</li>
 </ol>
@@ -74,7 +74,7 @@ text from console, and sends it to the group.</p>
 <ul>
 	<LI>
 	<p>As stated above, the App interface must be implemented by the
-	Application layer class. Here's the chat aplication's.</p>
+	Application layer class. Here's the chat application's.</p>
 	<pre>public void deliver(ByteBuffer[] msg, Gossip gimpl) {
   ByteBuffer rec = Buffers.compact(msg);
   byte[] buf = new byte[rec.remaining()];
@@ -89,12 +89,12 @@ text from console, and sends it to the group.</p>
 	application WILL require 1 (one), or more, instance(s) of the
 	GossipImpl class ( for multicast and receive), 1 (one) instance of the
 	MembershipImpl class ( to deal with local group membership changes) and
-	one instance of the Transport class ( wich provides comunication
-	primitives to both previously refered classes, and is shared between
+	one instance of the Transport class ( which provides communication
+	primitives to both previously referred classes, and is shared between
 	them). Before creating these instances, there are two values that play
 	a crucial role in the protocol's mechanics. They are the group size, or
 	local membership size, and the fanout, i.e., the number of local
-	members that will relay the aplication's message.</p>
+	members that will relay the application's message.</p>
 	<pre>int group_size = 20;
 int fanout = 10;</pre>
 	</LI>
@@ -108,17 +108,17 @@ int port = 12345;</pre>
 
 	<LI>
 	<p>To create an instance of the Transport class, the constructor of the
-	class has to be called with the ip address and the
+	class has to be called with the IP address and the
 	port to bind at.</p>
 	<pre>Transport trans = new Transport(new InetSocketAddress(port));</pre>
 	</LI>
 
 	<LI>
-	<p>To instanciate the Gossip class, 4 (four) parameters MUST be
-	supplied: the Transport class instance that provides comunication, the
-	port thas is used by the transport class to deliver received gossip
-	related messages, the fanout wich is the maximum number of local group
-	members to adress each message and the group size, or, more accurately,
+	<p>To instantiate the Gossip class, 4 (four) parameters MUST be
+	supplied: the Transport class instance that provides communication, the
+	port that is used by the transport class to deliver received gossip
+	related messages, the fanout which is the maximum number of local group
+	members to address each message and the group size, or, more accurately,
 	the maximum local group size.</p>
 	<pre>GossipImpl gimpl = new GossipImpl(trans, g_syncport, fanout, group_size);</pre>
 	</LI>
@@ -126,9 +126,9 @@ int port = 12345;</pre>
 	<LI>
 	<p>Similar to the process to create a Gossip object, the creation of a
 	Membership object takes 4 (four) parameters: the Transport class
-	instance that provides comunication, the port thas is used by the
+	instance that provides communication, the port that is used by the
 	transport class to deliver received membership related messages, the
-	fanout wich is the maximum number of local group members to adress each
+	fanout which is the maximum number of local group members to address each
 	message and the group size, or, more accurately, the maximum local
 	group size.</p>
 	<pre>MembershipImpl mimpl = new MembershipImpl(trans, m_syncport, fanout, group_size);</pre>
