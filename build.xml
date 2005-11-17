@@ -28,8 +28,7 @@
 
 	<target name="javadoc" depends="init" description="Generate Javadoc for NeEM">
 		<javadoc destdir="${docs}" author="true" version="true" use="true" windowtitle="NeEM API" sourcepath="${src}" packagenames="neem,neem.impl" overview="${src}/overview.html">
-			<doctitle><![CDATA[<h1>NeEM - Network-friendly Epidemic Multicast Protocol</h1>]]></doctitle>
-			<bottom><![CDATA[<i>Copyright &#169; 20005 University of Minho, Braga, Portugal. All Rights Reserved.</i>]]></bottom>
+			<bottom><![CDATA[<i>Copyright &#169; 20005 University of Minho, Portugal. All Rights Reserved.</i>]]></bottom>
 		</javadoc>
 	</target>
 

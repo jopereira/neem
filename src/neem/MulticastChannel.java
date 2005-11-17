@@ -46,8 +46,8 @@ import java.nio.channels.*;
 import java.util.*;
 
 /**
- * This class provides a friendly programming interface to NeEM multicast.
- * It is thread and aliasing safe, and thus can be used by multiple threads and
+ * Channel interface to a NeEM epidemic multicast group.
+ * This interface is thread and aliasing safe, and thus can be used by multiple threads and
  * all buffers used as parameters can immediatly be reused by the application.
  * <p>
  * After creating the channel, it must be connected to at least one previously

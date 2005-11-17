@@ -40,6 +40,7 @@ package neem;
 import java.io.*;
 
 /**
+ * Attempt to receive with a buffer too small.
  * This exception is thrown when an attempt is made to receive a message
  * with a buffer too small and the channel is not configured to truncate
  * messages. It should be used as an indication to use a larger buffer.
