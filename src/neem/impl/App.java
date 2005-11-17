@@ -36,51 +36,31 @@
  */
 
 /*
- * Membership.java
+ * App.java
  *
- * Created on March 17, 2005, 4:07 PM
+ * Created on March 15, 2005, 4:12 PM
  */
-package neem;
+package neem.impl;
 
-
-import java.io.*;
-
-import java.net.*;
 
 import java.nio.*;
 
-import java.util.*;
-
 
 /**
- *  This interface defines the methods to handle events related with changes in 
- * local group. Events about new connections, closing of open connections 
- * and selection of peers for fanout from the members of the group must be
- * handled by these methods.
- *
+ * Applications that intend to use the Gossip Multicast Protocol MUST implement this Interface.
  * @author psantos@GSD
  */
-public interface Membership {
-    
-    /**
-     *  This method is called from Transport whenever a member joins the group.
-     * When called, if it's the first time it's called starts 
-     * periodically telling our peers of our open 
-     * connections. Then it'll randomly select a peer to be evicted from our local 
-     * membership. If it's not the first time this method is called, only the 2nd 
-     * step will be executed.
-     * @param info The connection to the new peer.
-     */
-    public void open(Transport.Connection info, int i); // event
+public interface App {
 
     /**
-     *  This method is called from Transport whenever a member leaves the group.
-     * When called, decreases the number of connected members by one, as the connection
-     * to the now disconnected peer has already been removed at the transport layer.
-     * @param addr The address of the now closed connection.
+     *  This method decodes the message received. It must be inverse to the one used for encoding.
+     * It's called by the gossip layer.
+     * @param msg The message being delivered.
      */
-    public void close(InetSocketAddress addr); // event
+    public void deliver(ByteBuffer[] msg, Gossip gimpl);
 }
 
 
-; // arch-tag: ffede092-c2f3-43d3-a370-e70051be1ede
+;
+
+// arch-tag: 6b30f28e-5375-46ef-9963-8296bf64f9eb

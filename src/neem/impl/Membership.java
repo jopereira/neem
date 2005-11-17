@@ -36,76 +36,45 @@
  */
 
 /*
- * AbstractGossipImpl.java
+ * Membership.java
  *
- * Created on April 11, 2005, 4:21 PM
+ * Created on March 17, 2005, 4:07 PM
  */
+package neem.impl;
 
-package neem;
 
-
-import java.io.*;
-import java.lang.*;
-import java.nio.*;
 import java.net.*;
-import java.util.*;
 
 
 /**
- *  This class provides a method to relay a message represented as an array of 
- * ByteBuffers to a fanout number of group members.
+ *  This interface defines the methods to handle events related with changes in 
+ * local group. Events about new connections, closing of open connections 
+ * and selection of peers for fanout from the members of the group must be
+ * handled by these methods.
  *
  * @author psantos@GSD
  */
-public abstract class AbstractGossipImpl {
-
-    /**
-     *  This method sends a copy of the original message to a fanout of peers of the local memberhip.
-     * @param msg The original message
-     * @param fanout Number of peers to send the copy of the message to.
-     * @param syncport The synchronization port (Gossip or Memberhip) which the message is to be delivered to. 
-     */
-    public void relay(ByteBuffer[] msg, int fanout, short syncport) {
-        // System.out.println("Relaying message");
-        Transport.Connection info;
-        Transport.Connection[] conns = net.connections();
-
-        if (conns.length < 1) {
-            return;
-        }
-
-        for (int i = 0; i < fanout; i++) {
-            int index = rand.nextInt(conns.length);
-            
-            if (conns[index].key.isValid()) {
-                info = conns[index];
-
-                /* System.out.println(
-                 "Message from " + net.id().toString() + " to : "
-                 + info.addr.toString());*/
-                net.send(msg, info, syncport);
-            }
-            
-        }
-    }
-
-    public Transport net() {
-        return this.net;
-    }
+public interface Membership {
     
     /**
-     *  Transport instance through wich the message will be sent. 
-     * It's a reference to the invoking class' transport layer instance.
+     *  This method is called from Transport whenever a member joins the group.
+     * When called, if it's the first time it's called starts 
+     * periodically telling our peers of our open 
+     * connections. Then it'll randomly select a peer to be evicted from our local 
+     * membership. If it's not the first time this method is called, only the 2nd 
+     * step will be executed.
+     * @param info The connection to the new peer.
      */
-    protected Transport net;
+    public void open(Transport.Connection info, int i); // event
 
     /**
-     * Random number generator for selecting targets.
+     *  This method is called from Transport whenever a member leaves the group.
+     * When called, decreases the number of connected members by one, as the connection
+     * to the now disconnected peer has already been removed at the transport layer.
+     * @param addr The address of the now closed connection.
      */
-    protected Random rand = new Random();
+    public void close(InetSocketAddress addr); // event
 }
 
 
-;
-
-// arch-tag: 300b42e8-72a0-4788-b298-a9c377ec4d05
+; // arch-tag: ffede092-c2f3-43d3-a370-e70051be1ede

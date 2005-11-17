@@ -36,31 +36,73 @@
  */
 
 /*
- * App.java
+ * AbstractGossipImpl.java
  *
- * Created on March 15, 2005, 4:12 PM
+ * Created on April 11, 2005, 4:21 PM
  */
-package neem;
+
+package neem.impl;
 
 
 import java.nio.*;
+import java.util.*;
 
 
 /**
- * Applications that intend to use the Gossip Multicast Protocol MUST implement this Interface.
+ *  This class provides a method to relay a message represented as an array of 
+ * ByteBuffers to a fanout number of group members.
+ *
  * @author psantos@GSD
  */
-public interface App {
+public abstract class AbstractGossipImpl {
 
     /**
-     *  This method decodes the message received. It must be inverse to the one used for encoding.
-     * It's called by the gossip layer.
-     * @param msg The message being delivered.
+     *  This method sends a copy of the original message to a fanout of peers of the local memberhip.
+     * @param msg The original message
+     * @param fanout Number of peers to send the copy of the message to.
+     * @param syncport The synchronization port (Gossip or Memberhip) which the message is to be delivered to. 
      */
-    public void deliver(ByteBuffer[] msg, Gossip gimpl);
+    public void relay(ByteBuffer[] msg, int fanout, short syncport) {
+        // System.out.println("Relaying message");
+        Transport.Connection info;
+        Transport.Connection[] conns = net.connections();
+
+        if (conns.length < 1) {
+            return;
+        }
+
+        for (int i = 0; i < fanout; i++) {
+            int index = rand.nextInt(conns.length);
+            
+            if (conns[index].key.isValid()) {
+                info = conns[index];
+
+                /* System.out.println(
+                 "Message from " + net.id().toString() + " to : "
+                 + info.addr.toString());*/
+                net.send(msg, info, syncport);
+            }
+            
+        }
+    }
+
+    public Transport net() {
+        return this.net;
+    }
+    
+    /**
+     *  Transport instance through wich the message will be sent. 
+     * It's a reference to the invoking class' transport layer instance.
+     */
+    protected Transport net;
+
+    /**
+     * Random number generator for selecting targets.
+     */
+    protected Random rand = new Random();
 }
 
 
 ;
 
-// arch-tag: 6b30f28e-5375-46ef-9963-8296bf64f9eb
+// arch-tag: 300b42e8-72a0-4788-b298-a9c377ec4d05

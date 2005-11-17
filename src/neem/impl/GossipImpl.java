@@ -35,14 +35,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package neem;
+package neem.impl;
 
 
 import java.util.*;
 import java.nio.*;
-import java.io.*;
-import java.net.*;
-import java.lang.Thread;
 
 
 /**
@@ -58,27 +55,15 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
     /**
      *  Creates a new instance of GossipImpl.
      */
-    public GossipImpl(Transport net, short port, int fanout, int grp_size) {
+    public GossipImpl(Transport net, short port, int fanout) {
         this.fanout = fanout;
-        this.grp_size = grp_size;
         this.net = net;
         this.syncport = port;
-        this.msgs = new HashSet<UUID>();
+        this.maxIds = 100;
+        this.msgs = new LinkedHashSet<UUID>();
         net.handler(this, this.syncport);
     }
     
-    /**
-     *  Used only by the handler to add the address of the Rendezvous Point (RP).
-     * @param addr The address of the RP.
-     **/
-    public void add(final InetSocketAddress addr) {
-        this.net.queue(new Runnable() {
-            public void run() {
-                net.add(addr);
-            }
-        });
-    }
-
     public void handler(App handler) {
         this.handler = handler;
     }
@@ -102,7 +87,8 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
         // send to a fanout of the groupview members
         
         relay(out.clone(), fanout, this.syncport);
-        this.msgs.add(uuid);
+        msgs.add(uuid);
+        purgeMsgs();
     }
     
     public void receive(ByteBuffer[] msg, Transport.Connection info) {
@@ -117,15 +103,23 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
             long lsb = tmp.getLong();
             UUID uuid = new UUID(msb, lsb);
 
-            if (!msgs.contains(uuid)) {
+            if (msgs.add(uuid)) {
+            	purgeMsgs();
                 // only pass to application a clean message => NO HEADERS FROM LOWER LAYERS
                 this.handler.deliver(in, this);
-                msgs.add(uuid);
                 relay(out, this.fanout, this.syncport);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+    
+    private void purgeMsgs() {
+    	Iterator<UUID> i=msgs.iterator();
+    	while(i.hasNext() && msgs.size()>maxIds) {
+    		i.next();
+    		i.remove();
+    	}
     }
     
     /**
@@ -136,7 +130,7 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
     /**
      *  Set of received messages identifiers.
      */
-    private HashSet<UUID> msgs; // grows unlimitedly
+    private LinkedHashSet<UUID> msgs;
 
     /**
      *  Number of peers to relay messages to.
@@ -144,14 +138,14 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
     private int fanout;
 
     /**
-     *  Maximum number of members on local membership.
-     */
-    private int grp_size;
-
-    /**
      *  The Transport port used by the Gossip class instances to exchange messages. 
      */
-    private short syncport = 1;      
+    private short syncport = 1;
+    
+    /**
+     * Maximum number of stored ids.
+     */
+    private int maxIds;
 }
 
 

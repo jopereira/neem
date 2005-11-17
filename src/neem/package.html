@@ -1,0 +1,66 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<body>
+
+<p>A simple and safe interface to NeEM 
+targeted at the application programmer.
+As an example, consider a simple group chat application.
+This application grabs text from console, and sends it to the group.
+All messages delivered are printed to the console. Step by step:
+<ul>
+	<li>
+	<p>The first step is to create an instance of {@link neem.MulticastChannel}:</p>
+	<pre>
+MulticastChannel neem = new MulticastChannel(new InetSocketAddress(port));
+</pre></li>
+
+	<LI>
+	<p>After the channel is created, peers are added to connect to the
+	overlay network:</p>
+	<pre>
+for(InetSocketAddress addr: knownPeers)
+  neem.connect(addr);
+</pre>
+	<p>Any number of peers can be connected. The channel will keep only the
+	appropriate number of active connections. A single peer is sufficient
+	to boot, as the dynamic membership protocol will grow the number of
+	local peers. Peers can be added at any time, for instance, to merge two
+	partitions.</p>
+	</li>
+
+	<li>
+	<p>Our chat application must then start a thread to poll for incoming
+	messages using the channel interface using the following code:
+	<p>
+	<pre>
+public void run() {
+  try {
+    while(true) {
+      byte[] buf = new byte[1000];
+      ByteBuffer bb=ByteBuffer.wrap(buf);
+      neem.read(bb);
+      System.out.println(new String(buf));
+    }
+  } catch(Exception e) {e.printStackTrace();}
+}</pre>
+	</LI>
+
+	<LI>
+	<p>Finally, grab each text line from the console, encapsulate it in a
+	ByteBuffer and use the write method to spread the message to the group:</p>
+	<pre>
+BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
+String line;
+
+while ((line = r.readLine()) != null) {
+  neem.write(ByteBuffer.wrap(line.getBytes()));
+}
+
+neem.close();</pre>
+</LI>
+</ul>
+
+</body>
+</html>
+
+<!-- arch-tag: beaa9a7a-7309-42d6-b2ee-f429ea561c10 -->

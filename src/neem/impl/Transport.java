@@ -35,7 +35,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package neem;
+package neem.impl;
 
 
 import java.net.*;
@@ -61,7 +61,7 @@ public class Transport implements Runnable {
         selector = SelectorProvider.provider().openSelector();
         ssock.register(selector, SelectionKey.OP_ACCEPT);
         connections = new Hashtable<InetSocketAddress, Connection>();
-        id = new String(local.getHostName() + ":" + local.getPort());
+        id = new InetSocketAddress(InetAddress.getLocalHost(), local.getPort());
                 
     }
     
@@ -69,13 +69,9 @@ public class Transport implements Runnable {
      * Get local id.
      */
     public InetSocketAddress id() {
-        return (InetSocketAddress) ssock.socket().getLocalSocketAddress();
+        return id;
     }
 
-    public String idString() {
-        return this.id;
-    }
-    
     /**
      * Get ids of all direct peers.
      */
@@ -106,6 +102,27 @@ public class Transport implements Runnable {
             } else {
                 info.dirty = false;
             }
+        }
+    }
+
+    /**
+     * Close all socket connections and release polling thread.
+     */
+    public synchronized void close() {
+        if (closed)
+            return;
+        closed=true;
+        selector.wakeup();
+        for(Connection info: connections.values())
+            try {
+                info.sock.close();
+            } catch(IOException e) {
+                // nada
+            }
+        try {
+            ssock.close();
+        } catch(IOException e) {
+            // nada
         }
     }
 
@@ -225,7 +242,9 @@ public class Transport implements Runnable {
                 if (task != null) {
                     task.run();
                 } else {    
-                    int s = selector.select(delay);
+                    selector.select(delay);
+                    if (closed)
+                        break;
                             
                     // Execute pending event-handlers.
                             
@@ -353,7 +372,7 @@ public class Transport implements Runnable {
                 // is too full to contain a header.
                 if (info.copy.remaining() >= 6) {
                     if (info.firsttime) {
-                        addr = AddressUtils.readAddress(info); // n devia ser criado um novo info? este está associado a um endereço diferente
+                        addr = AddressUtils.readAddressFromBuffer(info.copy); // n devia ser criado um novo info? este está associado a um endereço diferente
                         // System.out.println("READ: " + addr.toString()); // n devia haver problema, a não ser o n  de connections
                         info.addr = addr;
                         info.firsttime = false;
@@ -460,9 +479,7 @@ public class Transport implements Runnable {
     private void handleAccept(SelectionKey key) throws IOException {
                 
         SocketChannel sock = ssock.accept();
-        ByteArrayInputStream bais = null;
-        ObjectInputStream ois = null;
-        
+       
         if (sock == null) {
             return;
         }
@@ -473,7 +490,6 @@ public class Transport implements Runnable {
             sock.socket().setReceiveBufferSize(1024);
             SelectionKey nkey = sock.register(selector,
                     SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-            InetSocketAddress addr = (InetSocketAddress) sock.socket().getRemoteSocketAddress();
             final Connection info = new Connection(nkey);
 
             nkey.attach(info);
@@ -550,9 +566,9 @@ public class Transport implements Runnable {
         }
     }
 
-    /** ID String for each instance
+    /** Local id for each instance
      */
-    private String id;
+    private InetSocketAddress id;
     
     /** Socket used to listen for connections
      */
@@ -570,10 +586,6 @@ public class Transport implements Runnable {
      */
     private SortedMap<Long, Runnable> timers;
 
-    /** DUH nb 2
-     */
-    private int busy;
-
     /** don't know rigth now
      */
     public int accepted = 0;
@@ -585,6 +597,8 @@ public class Transport implements Runnable {
     /** Reference for Membership events handler
      */
     private Membership membership_handler;
+
+    private boolean closed;
 
     /**
      * Socket manipulation utilities.

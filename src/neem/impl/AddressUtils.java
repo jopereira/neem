@@ -36,39 +36,70 @@
  */
 
 /*
- * DataListener.java
+ * AddressUtils.java
  *
- * Created on April 7, 2005, 11:51 AM
+ * Created on April 15, 2005, 5:02 PM
  */
 
-package neem;
+package neem.impl;
 
 
 import java.io.*;
-import java.lang.*;
-import java.nio.*;
 import java.net.*;
-import java.util.*;
+import java.nio.*;
 
 
 /**
- *  This inteface depicts the methods that a class, wishing to receive messages
- * using this implementation of the Gossip Multicast protocol, MUST provide.
+ *  This abstract class provides methods to read/write InetSocketAddress 
+ * addresses from/to a ByteBuffer Object or a Transport.Connection.
  *
  * @author psantos@GSD
  */
-public interface DataListener {
+public abstract class AddressUtils {
 
-    /**
-     *  This method allows classes that implement it, to receive messages through the Transport class, wich implements the NEEM Protocol.
-     * This method is called by the Transport class
-     * @param msg The incoming message.
-     * @param info The connection through wich the message is being received.
+    /** Write a socket address to a ByteBuffer.
+     * @param addr The address to be written.
+     * @return The Buffer with the address written into.
      */
-    public void receive(ByteBuffer[] msg, Transport.Connection info);
+    public static ByteBuffer writeAddressToBuffer(InetSocketAddress addr) {
+        ByteBuffer msg = null;
+
+        try {
+            msg = ByteBuffer.allocate(6);
+            msg.put(addr.getAddress().getAddress());
+            msg.putShort((short) addr.getPort());
+            msg.flip();
+            // info.sock.write(msg);
+        } catch (Exception e) {}
+        return msg;
+    }
+    
+    /** Read a socket address from an array of ByteBuffers into an InetSocketAddress.
+     * @param buf The buffer from which to read the address from.
+     * @return The address read.
+     */
+    public static InetSocketAddress readAddressFromBuffer(ByteBuffer buf) {
+        InetSocketAddress addr = null;
+        short port = 0;
+        byte[] dst = null;
+        InetAddress ia = null;
+	
+        try {
+            dst = new byte[4];
+            buf.get(dst, 0, dst.length);
+            port = buf.getShort();
+            ia = InetAddress.getByAddress(dst);
+            addr = new InetSocketAddress(InetAddress.getByAddress(dst),
+                    (int) port);
+        } catch (IOException e) {} catch (IllegalArgumentException iae) {
+            System.out.println("Prob: " + ia.toString() + ":" + port);
+        }
+        // catch (UnknownHostException uhe) {}
+        return addr;
+    }
 }
 
 
 ;
 
-// arch-tag: b3b8ed98-df7f-419d-b0b4-14484e44419c
+// arch-tag: f387d158-3ec6-4001-af1b-5d4a8fb441eb

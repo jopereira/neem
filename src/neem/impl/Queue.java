@@ -41,13 +41,11 @@
  * Created on April 27, 2005, 12:34 PM
  */
 
-package neem;
+package neem.impl;
 
 
-import java.lang.*;
 import java.util.*;
 import java.math.*;
-import java.lang.*;
 
 
 /**
