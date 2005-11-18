@@ -1,4 +1,4 @@
-<project name="NeEM - Network Friendly Epidemic Multicast" default="build" basedir=".">
+<project name="NeEM - Network-friendly Epidemic Multicast" default="build" basedir=".">
 	<description>
         See http://neem.sf.net for details.
     </description>
