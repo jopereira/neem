@@ -339,8 +339,6 @@ public class Transport implements Runnable {
 
     private void handleRead(SelectionKey key) {
         final Connection info = (Connection) key.attachment();
-        InetSocketAddress addr = null;
-        
         // New buffer?
         if (info.incoming == null || info.incoming.remaining() == 0) {
             
@@ -371,37 +369,9 @@ public class Transport implements Runnable {
                 // See below what happens when the current buffer
                 // is too full to contain a header.
                 if (info.copy.remaining() >= 6) {
-                    if (info.firsttime) {
-                        addr = AddressUtils.readAddressFromBuffer(info.copy); // n devia ser criado um novo info? este está associado a um endereço diferente
-                        // System.out.println("READ: " + addr.toString()); // n devia haver problema, a não ser o n  de connections
-                        info.addr = addr;
-                        info.firsttime = false;
-                        Connection outro = null;
-
-                        try {
-                            outro = this.connections.put(addr, info); // adiciona o addr recebido as connections
-                        } catch (NullPointerException npe) {}
-                        // info.incoming=null;
-                        if (outro == null) {
-                            queue(new Runnable() {
-                                public void run() {
-                                    membership_handler.open(info, 2);
-                                }
-                            });
-                        } else {
-                            try {
-                                outro.key.channel().close();
-                                outro.key.cancel();        
-                                outro.sock.close();
-                            } catch (IOException e) {}
-                            // membership_handler.open(info, 2); not done here because we're just replacing the connection, it's not a new one
-                        }
-                        
-                    } else {
-                        info.msgsize = info.copy.getInt();
-                        info.port = info.copy.getShort();
-                        // System.out.println("Port: " + info.port);
-                    }
+                    info.msgsize = info.copy.getInt();
+                    info.port = info.copy.getShort();
+                    // System.out.println("Port: " + info.port);
                 } else {
                     break;
                 }
@@ -490,10 +460,17 @@ public class Transport implements Runnable {
             sock.socket().setReceiveBufferSize(1024);
             SelectionKey nkey = sock.register(selector,
                     SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-            final Connection info = new Connection(nkey);
+            InetSocketAddress addr=(InetSocketAddress)sock.socket().getLocalSocketAddress();
+            final Connection info = new Connection(addr, nkey, null);
 
             nkey.attach(info);
-            info.firsttime = true;
+
+            this.connections.put(addr, info); // adiciona o addr recebido as connections
+            queue(new Runnable() {
+                public void run() {
+                	membership_handler.open(info, 2);
+                }
+            });
             this.accepted++;
         } catch (IOException e) {// Just drop it.
         }
@@ -511,8 +488,7 @@ public class Transport implements Runnable {
             if (info.sock.finishConnect()) {
                 info.sock.socket().setReceiveBufferSize(1024);
                 info.sock.socket().setSendBufferSize(1024);
-                // Write my accepting socket to socket
-                info.sock.write(AddressUtils.writeAddressToBuffer(this.id()));
+
                 Connection other = connections.put(info.addr, info);
 
                 if (other == null) {
@@ -612,12 +588,6 @@ public class Transport implements Runnable {
             this.sock = (SocketChannel) key.channel();
         }
 
-        Connection(SelectionKey key) {
-            this.msg_q = new Queue(10);
-            this.key = key;
-            this.sock = (SocketChannel) key.channel();
-        }
-
         public int hashCode() {
             return addr.hashCode();
         }
@@ -639,7 +609,7 @@ public class Transport implements Runnable {
         int msgsize;
         ByteBuffer[] outgoing;
         int outremaining;
-        boolean writable, dirty, firsttime;
+        boolean writable, dirty;
         short port;
 
         /** Message queue
