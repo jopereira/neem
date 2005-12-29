@@ -414,7 +414,7 @@ public class Transport implements Runnable {
                         DataListener handler = handlers.get(prt);
 
                         try {
-                            handler.receive(msg, info);    
+                            handler.receive(msg, info, prt);    
                         } catch (NullPointerException npe) {
                             // npe.printStackTrace();
                             System.out.println(
@@ -468,7 +468,7 @@ public class Transport implements Runnable {
             this.connections.put(addr, info); // adiciona o addr recebido as connections
             queue(new Runnable() {
                 public void run() {
-                	membership_handler.open(info, 2);
+                	membership_handler.open(info);
                 }
             });
             this.accepted++;
@@ -494,7 +494,7 @@ public class Transport implements Runnable {
                 if (other == null) {
                     queue(new Runnable() {
                         public void run() {
-                            membership_handler.open(info, 1);
+                            membership_handler.open(info);
                         }
                     });
                     key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);

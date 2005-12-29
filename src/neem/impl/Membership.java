@@ -65,7 +65,7 @@ public interface Membership {
      * step will be executed.
      * @param info The connection to the new peer.
      */
-    public void open(Transport.Connection info, int i); // event
+    public void open(Transport.Connection info); // event
 
     /**
      *  This method is called from Transport whenever a member leaves the group.

@@ -73,27 +73,33 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         this.msgs = new HashSet<UUID>();
         // this.peers = new HashSet<InetSocketAddress>();
         net.handler(this, this.syncport);
+        net.handler(this, (short)3);
         net.membership_handler(this);
         
     }
     
-    public void receive(ByteBuffer[] msg, Transport.Connection info) {
+    public void receive(ByteBuffer[] msg, Transport.Connection info, short port) {
         // System.out.println("Membership Receiving Message");
         try {
             InetSocketAddress addr = AddressUtils.readAddressFromBuffer(Buffers.sliceCompact(msg,6));
 
-            // System.out.println("Receive Address: " + addr.toString());
-            this.net.add(addr);
+            if (port==syncport) {
+            	// System.out.println("Receive Address: " + addr.toString());
+            	this.net.add(addr);
+            } else {
+            	System.out.println("Discovered that "+info.addr+" is "+addr);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
     
-    public void open(Transport.Connection info, int i) {
+    public void open(Transport.Connection info) {
         if (this.firsttime) {
             net.schedule(this, 5000);
             firsttime = false;
         }
+        net.send(new ByteBuffer[]{ AddressUtils.writeAddressToBuffer(net.id()) }, info, (short)3);
         probably_remove();
     }
     
