@@ -51,13 +51,14 @@ import java.nio.*;
  */
 
 public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListener {
-    
+
     /**
      *  Creates a new instance of GossipImpl.
      */
-    public GossipImpl(Transport net, short port, int fanout) {
+    public GossipImpl(MembershipImpl memb, short port, int fanout) {
         this.fanout = fanout;
-        this.net = net;
+        this.net = memb.net();
+        this.memb = memb;
         this.syncport = port;
         this.maxIds = 100;
         this.msgs = new LinkedHashSet<UUID>();
@@ -86,7 +87,7 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
                 
         // send to a fanout of the groupview members
         
-        relay(out.clone(), fanout, this.syncport);
+        relay(out.clone(), fanout, this.syncport, memb.connections());
         msgs.add(uuid);
         purgeMsgs();
     }
@@ -107,7 +108,7 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
             	purgeMsgs();
                 // only pass to application a clean message => NO HEADERS FROM LOWER LAYERS
                 this.handler.deliver(in, this);
-                relay(out, this.fanout, this.syncport);
+                relay(out, this.fanout, this.syncport, memb.connections());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -122,6 +123,11 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
     	}
     }
     
+    /**
+     * Membership management module.
+     */
+    private MembershipImpl memb;
+
     /**
      *  Represents the class to which messages must be delivered.
      */

@@ -145,15 +145,25 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
      * peers.
      */ 
     private void distributeConnections() {
-        Transport.Connection[] conns = this.net.connections();
+        Transport.Connection[] conns = connections();
         int nc = conns.length;
 
+        System.out.println("ping");
         if (nc > 0) {
         	InetSocketAddress addr = conns[rand.nextInt(nc)].addr;
 
+        	System.out.println("Disseminating "+addr);
             relay(new ByteBuffer[] { AddressUtils.writeAddressToBuffer(addr)},
-                    this.fanout, this.syncport);
+                    this.fanout, this.syncport, conns);
         }
+    }
+    
+    /**
+     * Get all connections.
+     * TODO Organize a list of non-duplicate connections
+     */
+    public Transport.Connection[] connections() {
+    	return net.connections();
     }
     
     protected HashSet<UUID> msgs;
