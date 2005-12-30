@@ -67,7 +67,8 @@ public abstract class AddressUtils {
         try {
             msg = ByteBuffer.allocate(6);
             msg.put(addr.getAddress().getAddress());
-            msg.putShort((short) addr.getPort());
+            int port=addr.getPort();
+            msg.putShort((short)port);
             msg.flip();
             // info.sock.write(msg);
         } catch (Exception e) {}
@@ -80,17 +81,16 @@ public abstract class AddressUtils {
      */
     public static InetSocketAddress readAddressFromBuffer(ByteBuffer buf) {
         InetSocketAddress addr = null;
-        short port = 0;
+        int port = 0;
         byte[] dst = null;
         InetAddress ia = null;
 	
         try {
             dst = new byte[4];
             buf.get(dst, 0, dst.length);
-            port = buf.getShort();
+            port=((int)buf.getShort())&0xffff;
             ia = InetAddress.getByAddress(dst);
-            addr = new InetSocketAddress(InetAddress.getByAddress(dst),
-                    (int) port);
+            addr = new InetSocketAddress(ia, port);
         } catch (IOException e) {} catch (IllegalArgumentException iae) {
             System.out.println("Prob: " + ia.toString() + ":" + port);
         }

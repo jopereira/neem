@@ -84,7 +84,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
             InetSocketAddress addr = AddressUtils.readAddressFromBuffer(Buffers.sliceCompact(msg,6));
 
             if (port==syncport) {
-            	// System.out.println("Receive Address: " + addr.toString());
+            	// System.out.println("Receive from "+info.addr+"+ address "+addr);
             	this.net.add(addr);
             } else {
             	System.out.println("Discovered that "+info.addr+" is "+addr);
@@ -149,7 +149,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         int nc = conns.length;
 
         if (nc > 0) {
-            InetSocketAddress addr = conns[rand.nextInt(nc)].addr;
+        	InetSocketAddress addr = conns[rand.nextInt(nc)].addr;
 
             relay(new ByteBuffer[] { AddressUtils.writeAddressToBuffer(addr)},
                     this.fanout, this.syncport);

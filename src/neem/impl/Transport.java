@@ -138,8 +138,10 @@ public class Transport implements Runnable {
      * @param delay delay before execution
      */
     public synchronized void schedule(Runnable task, long delay) {
-        Long key = new Long(System.currentTimeMillis() + delay);
+        Long key = new Long(System.nanoTime() + delay*1000000);
 
+        while(timers.containsKey(key))
+        	key=key+1;
         timers.put(key, task);
         if (key == timers.firstKey()) {
             selector.wakeup();
@@ -228,7 +230,7 @@ public class Transport implements Runnable {
 
                 synchronized (this) {
                     if (!timers.isEmpty()) {
-                        long now = System.currentTimeMillis();
+                        long now = System.nanoTime();
                         Long key = timers.firstKey();
 
                         if (key <= now) {
@@ -242,7 +244,7 @@ public class Transport implements Runnable {
                 if (task != null) {
                     task.run();
                 } else {    
-                    selector.select(delay);
+                    selector.select(delay/1000000);
                     if (closed)
                         break;
                             
@@ -350,7 +352,7 @@ public class Transport implements Runnable {
             long read = 0;
 
             while ((read = info.sock.read(info.incoming)) > 0) {
-                ;
+            	;
             }
             if (read < 0) {
                 handleClose(key);
@@ -407,12 +409,11 @@ public class Transport implements Runnable {
             if (info.msgsize == 0) {
                 final ByteBuffer[] msg = (ByteBuffer[]) info.incomingmb.toArray(
                         new ByteBuffer[info.incomingmb.size()]);
+                final DataListener handler = handlers.get(prt);
 
                 queue(
                         new Runnable() {
                     public void run() {
-                        DataListener handler = handlers.get(prt);
-
                         try {
                             handler.receive(msg, info, prt);    
                         } catch (NullPointerException npe) {
@@ -460,7 +461,7 @@ public class Transport implements Runnable {
             sock.socket().setReceiveBufferSize(1024);
             SelectionKey nkey = sock.register(selector,
                     SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-            InetSocketAddress addr=(InetSocketAddress)sock.socket().getLocalSocketAddress();
+            InetSocketAddress addr=(InetSocketAddress)sock.socket().getRemoteSocketAddress();
             final Connection info = new Connection(addr, nkey, null);
 
             nkey.attach(info);
