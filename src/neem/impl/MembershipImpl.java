@@ -59,38 +59,42 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
 	/**
      *  Creates a new instance of MembershipImpl
      * @param net Instance of Transport that will be used to pass messages between peers
-     * @param port Synchronization port, i.e., the port to wich membership related messages must be sent. Specifies a logic, not socket, port.
-     * @param fanout The number of peers to be warned of local membership changes or local group members addresses.
-     * @param grp_size The maximum number of members on the local group.
+	 * @param port Synchronization port, i.e., the port to wich membership related messages must be sent. Specifies a logic, not socket, port.
+	 * @param idport Identification port, i.e., the port to which identification messages must be sent.
+	 * @param fanout The number of peers to be warned of local membership changes or local group members addresses.
+	 * @param grp_size The maximum number of members on the local group.
      */
-    public MembershipImpl(Transport net, short port, int fanout, int grp_size) {
+    public MembershipImpl(Transport net, short port, short idport, int fanout, int grp_size) {
         this.net = net;
         this.fanout = fanout;
         this.grp_size = grp_size;
         this.syncport = port;
+        this.idport = idport;
+        this.myId=net.id();
         this.peers = new HashMap<InetSocketAddress,Transport.Connection>();
         net.handler(this, this.syncport);
-        net.handler(this, (short)3);
+        net.handler(this, this.idport);
         net.membership_handler(this);
-        
     }
     
     public void receive(ByteBuffer[] msg, Transport.Connection info, short port) {
         // System.out.println("Membership Receiving Message");
         try {
-            InetSocketAddress addr = AddressUtils.readAddressFromBuffer(Buffers.sliceCompact(msg,6));
-
             if (port==syncport) {
+                InetSocketAddress addr = AddressUtils.readAddressFromBuffer(Buffers.sliceCompact(msg,6));
+
             	 // System.out.println("Receive from "+info.addr+"+ address "+addr);
-            	if (!peers.containsKey(addr) && !addr.equals(net.id()))
+            	if (!peers.containsKey(addr) && !addr.equals(myId))
             		this.net.add(addr);
-            } else {
+            } else if (port==idport) {
+                InetSocketAddress id = AddressUtils.readAddressFromBuffer(Buffers.sliceCompact(msg,6));
+
             	// System.out.println("Discovered that "+info.addr+" is "+addr);
-            	if (peers.containsKey(addr))
+            	if (peers.containsKey(id))
             		net.remove(info.addr);
             	else {
-            		peers.put(addr, info);
-            		info.id=addr;
+            		peers.put(id, info);
+            		info.id=id;
             	}
             }
         } catch (Exception e) {
@@ -103,13 +107,13 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
             net.schedule(this, 5000);
             firsttime = false;
         }
-        net.send(new ByteBuffer[]{ AddressUtils.writeAddressToBuffer(net.id()) }, info, (short)3);
+        net.send(new ByteBuffer[]{ AddressUtils.writeAddressToBuffer(myId) }, info, idport);
         probably_remove();
     }
     
     public void close(Transport.Connection info) {
         // System.out.println(
-        // "CLOSE@" + net.id().toString() + " : " + addr.toString());
+        // "CLOSE@" + myId + " : " + addr.toString());
     	if (info.id!=null)
     		peers.remove(info.id);
     }
@@ -153,10 +157,10 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
      */ 
     private void distributeConnections() {
         Transport.Connection[] conns = connections();
-       	InetSocketAddress addr = conns[rand.nextInt(conns.length)].id;
+       	InetSocketAddress id = conns[rand.nextInt(conns.length)].id;
 
        	// System.out.println("Disseminating "+addr);
-        relay(new ByteBuffer[] { AddressUtils.writeAddressToBuffer(addr)},
+        relay(new ByteBuffer[] { AddressUtils.writeAddressToBuffer(id)},
             this.fanout, this.syncport, conns);
     }
     
@@ -169,9 +173,10 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     
     
     private Map<InetSocketAddress,Transport.Connection> peers;
-    private short syncport;
+    private short syncport, idport;
     private int fanout, grp_size;
     private boolean firsttime = true;
+	private InetSocketAddress myId;
 }
 
  
