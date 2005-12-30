@@ -80,7 +80,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     public void receive(ByteBuffer[] msg, Transport.Connection info, short port) {
         // System.out.println("Membership Receiving Message");
         try {
-            UUID id = UUIDUtils.readAddressFromBuffer(msg);
+            UUID id = UUIDUtils.readUUIDFromBuffer(msg);
             InetSocketAddress addr = AddressUtils.readAddressFromBuffer(msg);
 
             if (port==syncport) {

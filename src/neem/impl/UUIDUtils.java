@@ -20,7 +20,7 @@ public class UUIDUtils {
      * @param msg The buffer from which to read the UUID from.
      * @return The address read.
      */
-    public static UUID readAddressFromBuffer(ByteBuffer[] msg) {
+    public static UUID readUUIDFromBuffer(ByteBuffer[] msg) {
     	ByteBuffer tmp = Buffers.sliceCompact(msg, 16); 
         long msb = tmp.getLong();
         long lsb = tmp.getLong();

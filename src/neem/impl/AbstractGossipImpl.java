@@ -76,9 +76,9 @@ public abstract class AbstractGossipImpl {
         for (int i = 0; i < fanout; i++) {
             int index;
             if (fanout==conns.length)
-            	index = rand.nextInt(conns.length);
-            else
             	index = i;
+            else
+            	index = rand.nextInt(conns.length);
             
             if (conns[index].key.isValid()) {
                 info = conns[index];
@@ -86,9 +86,8 @@ public abstract class AbstractGossipImpl {
                 /* System.out.println(
                  "Message from " + net.id().toString() + " to : "
                  + info.addr.toString());*/
-                net.send(msg, info, syncport);
+                net.send(Buffers.clone(msg), info, syncport);
             }
-            
         }
     }
 

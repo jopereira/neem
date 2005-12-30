@@ -82,7 +82,7 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
                 
         // send to a fanout of the groupview members
         
-        relay(out.clone(), fanout, this.syncport, memb.connections());
+        relay(out, fanout, this.syncport, memb.connections());
         msgs.add(uuid);
         purgeMsgs();
     }
@@ -91,15 +91,14 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
         // Check uuid
         try {
             // System.out.println("Receive@Gossip: " + msg.length);
-            ByteBuffer[] in = Buffers.clone(msg);
             ByteBuffer[] out = Buffers.clone(msg);
             
-            UUID uuid = UUIDUtils.readAddressFromBuffer(in);
+            UUID uuid = UUIDUtils.readUUIDFromBuffer(msg);
 
             if (msgs.add(uuid)) {
             	purgeMsgs();
                 // only pass to application a clean message => NO HEADERS FROM LOWER LAYERS
-                this.handler.deliver(in, this);
+                this.handler.deliver(msg, this);
                 relay(out, this.fanout, this.syncport, memb.connections());
             }
         } catch (Exception e) {
@@ -138,7 +137,7 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
     /**
      *  The Transport port used by the Gossip class instances to exchange messages. 
      */
-    private short syncport = 1;
+    private short syncport;
     
     /**
      * Maximum number of stored ids.
