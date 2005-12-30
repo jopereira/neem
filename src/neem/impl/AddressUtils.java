@@ -76,15 +76,16 @@ public abstract class AddressUtils {
     }
     
     /** Read a socket address from an array of ByteBuffers into an InetSocketAddress.
-     * @param buf The buffer from which to read the address from.
+     * @param msg The buffer from which to read the address from.
      * @return The address read.
      */
-    public static InetSocketAddress readAddressFromBuffer(ByteBuffer buf) {
+    public static InetSocketAddress readAddressFromBuffer(ByteBuffer[] msg) {
         InetSocketAddress addr = null;
         int port = 0;
         byte[] dst = null;
         InetAddress ia = null;
 	
+        ByteBuffer buf=Buffers.sliceCompact(msg, 6);
         try {
             dst = new byte[4];
             buf.get(dst, 0, dst.length);
@@ -98,8 +99,5 @@ public abstract class AddressUtils {
         return addr;
     }
 }
-
-
-;
 
 // arch-tag: f387d158-3ec6-4001-af1b-5d4a8fb441eb

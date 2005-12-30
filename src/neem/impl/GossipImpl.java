@@ -71,13 +71,8 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
         
     public void multicast(ByteBuffer[] msg) {
         // Create uuid && add it to message (another header!!!)
-        UUID uuid;
-        ByteBuffer uuid_bytes = ByteBuffer.allocate(16);
-
-        uuid = UUID.randomUUID();
-        uuid_bytes.putLong(uuid.getMostSignificantBits());
-        uuid_bytes.putLong(uuid.getLeastSignificantBits());
-        uuid_bytes.flip();
+        UUID uuid = UUID.randomUUID();
+        ByteBuffer uuid_bytes = UUIDUtils.writeUUIDToBuffer(uuid);
 
         ByteBuffer[] out = new ByteBuffer[msg.length + 1];
 
@@ -99,10 +94,7 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
             ByteBuffer[] in = Buffers.clone(msg);
             ByteBuffer[] out = Buffers.clone(msg);
             
-            ByteBuffer tmp = Buffers.sliceCompact(in, 16); // gets N bytes from X positions in the ByteBuffer[] and puts them in one ByteBuffer 
-            long msb = tmp.getLong();
-            long lsb = tmp.getLong();
-            UUID uuid = new UUID(msb, lsb);
+            UUID uuid = UUIDUtils.readAddressFromBuffer(in);
 
             if (msgs.add(uuid)) {
             	purgeMsgs();
