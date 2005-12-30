@@ -48,7 +48,6 @@ import java.nio.*;
 import java.net.*;
 import java.util.*;
 
-
 /**
  *  This class implements the Membership interface. Its methods handle events
  * related with changes in local group membership as well as exchanging local
@@ -57,8 +56,7 @@ import java.util.*;
  * @author psantos@GSD
  */
 public class MembershipImpl extends AbstractGossipImpl implements Membership, DataListener, Runnable {
-    
-    /**
+	/**
      *  Creates a new instance of MembershipImpl
      * @param net Instance of Transport that will be used to pass messages between peers
      * @param port Synchronization port, i.e., the port to wich membership related messages must be sent. Specifies a logic, not socket, port.
@@ -70,8 +68,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         this.fanout = fanout;
         this.grp_size = grp_size;
         this.syncport = port;
-        this.msgs = new HashSet<UUID>();
-        // this.peers = new HashSet<InetSocketAddress>();
+        this.peers = new HashMap<InetSocketAddress,Transport.Connection>();
         net.handler(this, this.syncport);
         net.handler(this, (short)3);
         net.membership_handler(this);
@@ -84,10 +81,17 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
             InetSocketAddress addr = AddressUtils.readAddressFromBuffer(Buffers.sliceCompact(msg,6));
 
             if (port==syncport) {
-            	// System.out.println("Receive from "+info.addr+"+ address "+addr);
-            	this.net.add(addr);
+            	 // System.out.println("Receive from "+info.addr+"+ address "+addr);
+            	if (!peers.containsKey(addr) && !addr.equals(net.id()))
+            		this.net.add(addr);
             } else {
-            	System.out.println("Discovered that "+info.addr+" is "+addr);
+            	// System.out.println("Discovered that "+info.addr+" is "+addr);
+            	if (peers.containsKey(addr))
+            		net.remove(info.addr);
+            	else {
+            		peers.put(addr, info);
+            		info.id=addr;
+            	}
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -103,10 +107,11 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         probably_remove();
     }
     
-    public void close(InetSocketAddress addr) {
+    public void close(Transport.Connection info) {
         // System.out.println(
         // "CLOSE@" + net.id().toString() + " : " + addr.toString());
-        this.nb_members--;
+    	if (info.id!=null)
+    		peers.remove(info.id);
     }
     
     /**
@@ -121,22 +126,24 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
      * increases by one the number of members.
      */
     private void probably_remove() {
-        Transport.Connection[] conns = this.net.connections();
+        Transport.Connection[] conns = connections();
         int nc = conns.length;
 
-        if (nb_members == grp_size - 1) {
+        if (peers.size() >= grp_size) {
             Transport.Connection info = conns[rand.nextInt(nc)];
-
+            info.id=null;
             this.net.remove(info.addr);
-            nb_members++;
-        } else {
-            nb_members++;
         }
     }
     
     public void run() {
-        distributeConnections();
-        net.schedule(this, 5000);
+    	// System.out.println("--- current peers: "+peers);
+        if (peers.size()==0)
+        	this.firsttime=true;
+        else {
+            distributeConnections();
+        	net.schedule(this, 5000);
+        }
     }
 
     /**
@@ -146,30 +153,24 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
      */ 
     private void distributeConnections() {
         Transport.Connection[] conns = connections();
-        int nc = conns.length;
+       	InetSocketAddress addr = conns[rand.nextInt(conns.length)].id;
 
-        System.out.println("ping");
-        if (nc > 0) {
-        	InetSocketAddress addr = conns[rand.nextInt(nc)].addr;
-
-        	System.out.println("Disseminating "+addr);
-            relay(new ByteBuffer[] { AddressUtils.writeAddressToBuffer(addr)},
-                    this.fanout, this.syncport, conns);
-        }
+       	// System.out.println("Disseminating "+addr);
+        relay(new ByteBuffer[] { AddressUtils.writeAddressToBuffer(addr)},
+            this.fanout, this.syncport, conns);
     }
     
     /**
      * Get all connections.
-     * TODO Organize a list of non-duplicate connections
      */
     public Transport.Connection[] connections() {
-    	return net.connections();
+    	return peers.values().toArray(new Transport.Connection[peers.size()]);
     }
     
-    protected HashSet<UUID> msgs;
+    
+    private Map<InetSocketAddress,Transport.Connection> peers;
     private short syncport;
     private int fanout, grp_size;
-    private int nb_members = 0;
     private boolean firsttime = true;
 }
 

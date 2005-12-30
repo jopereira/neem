@@ -244,7 +244,12 @@ public class Transport implements Runnable {
                 if (task != null) {
                     task.run();
                 } else {    
-                    selector.select(delay/1000000);
+                	if (delay>0 && delay<1000000)
+                		delay=1;
+                	else
+                		delay/=1000000;
+
+                	selector.select(delay);
                     if (closed)
                         break;
                             
@@ -334,7 +339,7 @@ public class Transport implements Runnable {
             handleClose(key);
             return;
         } catch (CancelledKeyException cke) {
-            membership_handler.close(info.addr);
+            membership_handler.close(info);
         }
         
     }
@@ -531,13 +536,13 @@ public class Transport implements Runnable {
         if (addr == null) {
             return;
         }     
-        Connection outra = connections.get(addr);
+        final Connection outra = connections.get(addr);
 
         if (info == outra) {
             connections.remove(info.addr);
             queue(new Runnable() {
                 public void run() {
-                    membership_handler.close(addr);
+                    membership_handler.close(outra);
                 }
             });
         }
@@ -616,6 +621,11 @@ public class Transport implements Runnable {
         /** Message queue
          */
         public Queue msg_q;
+        /**
+         * Used by membership management to assign an unique id to the
+         * remote process. Currently, this is an address.
+         */
+		public InetSocketAddress id;
     }
 
 
