@@ -70,8 +70,8 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         this.grp_size = grp_size;
         this.syncport = port;
         this.idport = idport;
-        this.myId=net.id();
-        this.peers = new HashMap<InetSocketAddress,Transport.Connection>();
+        this.myId=UUID.randomUUID();
+        this.peers = new HashMap<UUID,Transport.Connection>();
         net.handler(this, this.syncport);
         net.handler(this, this.idport);
         net.membership_handler(this);
@@ -80,21 +80,21 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     public void receive(ByteBuffer[] msg, Transport.Connection info, short port) {
         // System.out.println("Membership Receiving Message");
         try {
-            if (port==syncport) {
-                InetSocketAddress addr = AddressUtils.readAddressFromBuffer(Buffers.sliceCompact(msg,6));
+            UUID id = UUIDUtils.readAddressFromBuffer(msg);
+            InetSocketAddress addr = AddressUtils.readAddressFromBuffer(Buffers.sliceCompact(msg,6));
 
-            	 // System.out.println("Receive from "+info.addr+"+ address "+addr);
-            	if (!peers.containsKey(addr) && !addr.equals(myId))
+            if (port==syncport) {
+            	// System.out.println("Receive from "+info.addr+"+ id "+id);
+            	if (!peers.containsKey(id) && !id.equals(myId))
             		this.net.add(addr);
             } else if (port==idport) {
-                InetSocketAddress id = AddressUtils.readAddressFromBuffer(Buffers.sliceCompact(msg,6));
-
-            	// System.out.println("Discovered that "+info.addr+" is "+addr);
+                // System.out.println("Discovered that "+info.addr+" is "+id);
             	if (peers.containsKey(id))
             		net.remove(info.addr);
             	else {
             		peers.put(id, info);
             		info.id=id;
+            		info.listen=addr;
             	}
             }
         } catch (Exception e) {
@@ -107,7 +107,10 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
             net.schedule(this, 5000);
             firsttime = false;
         }
-        net.send(new ByteBuffer[]{ AddressUtils.writeAddressToBuffer(myId) }, info, idport);
+        net.send(new ByteBuffer[]{
+        		UUIDUtils.writeUUIDToBuffer(myId),
+        		AddressUtils.writeAddressToBuffer(net.id())
+        	}, info, idport);
         probably_remove();
     }
     
@@ -157,11 +160,13 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
      */ 
     private void distributeConnections() {
         Transport.Connection[] conns = connections();
-       	InetSocketAddress id = conns[rand.nextInt(conns.length)].id;
-
+       	Transport.Connection info = conns[rand.nextInt(conns.length)];
+        
        	// System.out.println("Disseminating "+addr);
-        relay(new ByteBuffer[] { AddressUtils.writeAddressToBuffer(id)},
-            this.fanout, this.syncport, conns);
+        relay(new ByteBuffer[] {
+        		UUIDUtils.writeUUIDToBuffer(info.id),
+        		AddressUtils.writeAddressToBuffer(info.listen)
+        	}, this.fanout, this.syncport, conns);
     }
     
     /**
@@ -170,13 +175,12 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     public Transport.Connection[] connections() {
     	return peers.values().toArray(new Transport.Connection[peers.size()]);
     }
-    
-    
-    private Map<InetSocketAddress,Transport.Connection> peers;
+        
+    private Map<UUID,Transport.Connection> peers;
     private short syncport, idport;
     private int fanout, grp_size;
     private boolean firsttime = true;
-	private InetSocketAddress myId;
+	private UUID myId;
 }
 
  

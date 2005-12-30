@@ -625,7 +625,13 @@ public class Transport implements Runnable {
          * Used by membership management to assign an unique id to the
          * remote process. Currently, this is an address.
          */
-		public InetSocketAddress id;
+		public UUID id;
+		
+		/**
+		 * Used by membership management to keep the socket where
+		 * this peer can be contacted.
+		 */
+		public InetSocketAddress listen;
     }
 
 
