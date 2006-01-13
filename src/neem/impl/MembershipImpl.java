@@ -161,6 +161,9 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     private void distributeConnections() {
         Transport.Connection[] conns = connections();
        	Transport.Connection info = conns[rand.nextInt(conns.length)];
+     
+       	if (info.id==null)
+       		return;
         
        	// System.out.println("Disseminating "+addr);
         relay(new ByteBuffer[] {

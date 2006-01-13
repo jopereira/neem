@@ -176,6 +176,9 @@ public class Transport implements Runnable {
         // System.out.println("Closing: " + addr.toString());
         Connection info = info = connections.get(addr);
         
+        if (info==null)
+        	return;
+        
         SelectionKey key = info.key;
 
         this.handleClose(key);
