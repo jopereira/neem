@@ -47,8 +47,13 @@ import net.sf.neem.impl.MembershipImpl;
 import net.sf.neem.impl.Transport;
 
 
+/**
+ * Implementation of the NeEM management bean.
+ * 
+ * @author jop
+ */
 public class Protocol implements ProtocolMBean {
-	public Protocol(Transport net, GossipImpl gossip, MembershipImpl membership) {
+	Protocol(Transport net, GossipImpl gossip, MembershipImpl membership) {
 		this.net = net;
 		this.g_impl = gossip;
 		this.m_impl = membership;

@@ -247,6 +247,12 @@ public class MulticastChannel implements InterruptibleChannel,
         return truncate;
     }
 
+    /**
+     * Obtain a reference to a JMX compliant management bean. This can be used
+     * to fine tune several protocol parameters.
+     * 
+     * @return the management bean
+     */
     public ProtocolMBean getProtocolMBean() {
         return new Protocol(this.trans, (GossipImpl) this.gimpls,
                 (MembershipImpl) this.mimpls);
