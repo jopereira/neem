@@ -97,7 +97,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
                 // System.out.println("Discovered that "+info.addr+" is "+id);
             	if (peers.containsKey(id))
             		net.remove(info.addr);
-            	else {
+            	else synchronized(this) {
             		peers.put(id, info);
             		info.id=id;
             		info.listen=addr;
@@ -120,7 +120,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         probably_remove();
     }
     
-    public void close(Transport.Connection info) {
+    public synchronized void close(Transport.Connection info) {
         // System.out.println(
         // "CLOSE@" + myId + " : " + addr.toString());
     	if (info.id!=null)
@@ -237,10 +237,16 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     /**
      * Get all connected peers.
      */
-    public UUID[] getPeers() {
+    public synchronized UUID[] getPeers() {
     	return peers.keySet().toArray(new UUID[peers.size()]);
     }
     
+    /**
+     * The peers variable can be queried by an external thread for JMX
+     * management. Therefore, all sections of the code that modify it must
+     * be synchronized. Sections that read it from the protocol thread need
+     * not be synchronized.
+     */
     private Map<UUID,Transport.Connection> peers;
     private short syncport, idport;
     private int fanout, grp_size;

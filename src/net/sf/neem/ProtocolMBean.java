@@ -45,9 +45,24 @@ import java.util.UUID;
 
 /**
  * Interface for a JMX management bean. This allows several protocol parameters
- * to be queried and set, in order to fine tune protocol behavior.
+ * to be queried and set, in order to fine tune protocol behavior. Available
+ * parameters will change as the protocol evolves, so this interface is far
+ * from set in stone. Don't rely on it too much.
  */
 public interface ProtocolMBean {
+	/**
+	 * Get the default size of buffer queues.
+	 * @return number of messages
+	 */
+	public int getQueueSize();
+	
+	/**
+	 * Set the default size of buffer queues. Currently, this does not modify
+	 * existing queues, only those that are created thereafter.
+	 * @param size number of messages
+	 */
+	public void setQueueSize(int size);
+	
 	/**
 	 * Get the number of gossip target for each round.
 	 * @return number of targets
@@ -119,7 +134,7 @@ public interface ProtocolMBean {
 	 * Get list of currently connected peer ids.
 	 * @return connected peer ids
 	 */
-    public UUID[] getPeersIds();
+    public UUID[] getPeerIds();
 }
 
 // arch-tag: 2c588950-1f71-46ed-be61-f801fb5c90f8

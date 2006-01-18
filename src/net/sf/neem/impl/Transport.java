@@ -53,7 +53,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.SortedMap;
@@ -483,7 +482,9 @@ public class Transport implements Runnable {
 
             nkey.attach(info);
 
-            this.connections.put(addr, info); // adiciona o addr recebido as connections
+            synchronized(this) {
+            	this.connections.put(addr, info); // adiciona o addr recebido as connections
+            }
             queue(new Runnable() {
                 public void run() {
                 	membership_handler.open(info);
@@ -507,7 +508,10 @@ public class Transport implements Runnable {
                 info.sock.socket().setReceiveBufferSize(1024);
                 info.sock.socket().setSendBufferSize(1024);
 
-                Connection other = connections.put(info.addr, info);
+                Connection other;
+                synchronized(this) {
+                	other = connections.put(info.addr, info);
+                }
 
                 if (other == null) {
                     queue(new Runnable() {
@@ -528,7 +532,9 @@ public class Transport implements Runnable {
             }
         } catch (Exception e) {// Fall through, see below:
         } 
-        connections.remove(info.addr);
+        synchronized(this) {
+        	connections.remove(info.addr);
+        }
         handleClose(key);
     }
 
@@ -551,7 +557,9 @@ public class Transport implements Runnable {
         final Connection outra = connections.get(addr);
 
         if (info == outra) {
-            connections.remove(info.addr);
+        	synchronized(this) {
+        		connections.remove(info.addr);
+        	}
             queue(new Runnable() {
                 public void run() {
                     membership_handler.close(outra);
@@ -573,6 +581,10 @@ public class Transport implements Runnable {
     private Selector selector;
 
     /** Storage for open connections to other group members
+     * This variable can be queried by an external thread for JMX
+     * management. Therefore, all sections of the code that modify it must
+     * be synchronized. Sections that read it from the protocol thread need
+     * not be synchronized.
      */
     private Hashtable<InetSocketAddress, Connection> connections;
 
@@ -673,10 +685,6 @@ public class Transport implements Runnable {
 		this.default_Q_size = default_Q_size;
 	}
 
-	public Enumeration<Connection> getConnections() {
-		return connections.elements();
-	}
-	
 	/**
      * Get ids of all direct peers.
      */

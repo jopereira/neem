@@ -60,6 +60,14 @@ public class Protocol implements ProtocolMBean {
 		this.m_impl = membership;
 	}
 	
+	public int getQueueSize() {
+		return net.getDefault_Q_size();
+	}
+
+	public void setQueueSize(int size) {
+		net.setDefault_Q_size(size);
+	}
+	
 	public int getFanout() {
 		return this.g_impl.getFanout();
 	}
@@ -104,7 +112,7 @@ public class Protocol implements ProtocolMBean {
         return this.net.getPeers();
     }
 	
-	public UUID[] getPeersIds() {
+	public UUID[] getPeerIds() {
 		return this.m_impl.getPeers();
 	}
 
