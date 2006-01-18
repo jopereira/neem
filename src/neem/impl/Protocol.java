@@ -39,8 +39,6 @@ package neem.impl;
 
 import java.net.InetSocketAddress;
 
-import neem.ProtocolMBean;
-
 
 public class Protocol implements ProtocolMBean {
 	public Protocol(Transport net, GossipImpl gossip, MembershipImpl membership) {
