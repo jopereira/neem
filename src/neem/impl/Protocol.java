@@ -35,23 +35,46 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package neem;
+package neem.impl;
 
 import java.net.InetSocketAddress;
 
-public interface ProtocolMBean {
+import neem.ProtocolMBean;
 
-	public int getFanout();
+
+public class Protocol implements ProtocolMBean {
+	public Protocol(Transport net, GossipImpl gossip, MembershipImpl membership) {
+		this.net = net;
+		this.g_impl = gossip;
+		this.m_impl = membership;
+	}
 	
-	public void setFanout(int fanout);
+	public int getFanout() {
+		return this.m_impl.getFanout();
+	}
 	
-	public int getGroupSize();
+	public void setFanout(int fanout) {
+		this.m_impl.setFanout(fanout);
+	}
 	
-	public void setGroupSize(int groupsize);
+	public int getGroupSize() {
+		return this.m_impl.getGrp_size();
+	}
+	
+	public void setGroupSize(int groupsize) {
+		this.m_impl.setGrp_size(groupsize);
+	}
     
-    public InetSocketAddress[] getPeers();
+    public InetSocketAddress[] getPeers() {
+        return this.net.getPeers();
+    }
+	
+	@SuppressWarnings("unused")
+	private Transport net;
+	@SuppressWarnings("unused")
+	private GossipImpl g_impl;
+	private MembershipImpl m_impl;
 }
-
 ;
 
-// arch-tag: 2c588950-1f71-46ed-be61-f801fb5c90f8
+// arch-tag: 08505269-5fca-435f-a7ae-8a87af222676 

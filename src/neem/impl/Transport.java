@@ -84,13 +84,7 @@ public class Transport implements Runnable {
         return id;
     }
 
-    /**
-     * Get ids of all direct peers.
-     */
-    public InetSocketAddress[] peers() {
-        return (InetSocketAddress[]) connections.keySet().toArray(
-                new InetSocketAddress[connections.size()]);
-    }
+    
     
     /**
      * Get all connections.
@@ -680,9 +674,13 @@ public class Transport implements Runnable {
 		return connections.elements();
 	}
 	
-	public Enumeration<InetSocketAddress> getPeers() {
-		return connections.keys();
-	}
+	/**
+     * Get ids of all direct peers.
+     */
+    public InetSocketAddress[] getPeers() {
+        return (InetSocketAddress[]) connections.keySet().toArray(
+                new InetSocketAddress[connections.size()]);
+    }
 	;
 }
 

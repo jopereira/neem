@@ -64,6 +64,11 @@ public interface Gossip extends DataListener {
      */
     public void multicast(ByteBuffer[] msg);
 
+    /**
+     * This method is used to get a reference to the transport layer of the protocol through
+     * the Gossip layer.
+     * @return A reference to this protocol's instance Transport layer.
+     */
     public Transport net();
 }
 

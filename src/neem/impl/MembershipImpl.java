@@ -44,9 +44,12 @@
 package neem.impl;
 
 
-import java.nio.*;
-import java.net.*;
-import java.util.*;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.UUID;
+import java.util.Map;
+import java.util.HashSet;
+import java.util.HashMap;
 
 /**
  *  This class implements the Membership interface. Its methods handle events
@@ -104,7 +107,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     
     public void open(Transport.Connection info) {
         if (this.firsttime) {
-            net.schedule(this, 5000);
+            net.schedule(this, this.syncWait * 1000);
             firsttime = false;
         }
         net.send(new ByteBuffer[]{
@@ -149,7 +152,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         	this.firsttime=true;
         else {
             distributeConnections();
-        	net.schedule(this, 5000);
+        	net.schedule(this, this.distConnsPeriod * 1000);
         }
     }
 
@@ -179,21 +182,72 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     	return peers.values().toArray(new Transport.Connection[peers.size()]);
     }
         
+    /**
+     * Gets the current fanout size. The fanout is the number of local group
+     * members to send a message to.
+     * @return The current fanout.
+     */
     public int getFanout() {
 		return fanout;
 	}
 
+    /**
+     * Sets the new fanout value.
+     * @param fanout The new fanout value
+     */
 	public void setFanout(int fanout) {
 		this.fanout = fanout;
 	}
 
+    /**
+     * Gets the current maximum size for the local membership.
+     * @return The current local membership's maximum size
+     */
 	public int getGrp_size() {
 		return grp_size;
 	}
 
+    /**
+     * Sets a new value for the maximum size of the local membership.
+     * @param grp_size The new maximum membership's size.
+     */
 	public void setGrp_size(int grp_size) {
 		this.grp_size = grp_size;
 	}
+
+    /**
+     * Gets the current period of the call to distributeConnections
+     * @return The current period
+     */
+    public int getDistConnsPeriod() {
+        return distConnsPeriod;
+    }
+
+    /**
+     * Sets a new period of the call to distributeConnections
+     * @param distConnsPeriod the new period
+     */
+    public void setDistConnsPeriod(int distConnsPeriod) {
+        this.distConnsPeriod = distConnsPeriod;
+    }
+
+    /**
+     * Gets the number of seconds to wait before being able to communicate
+     * with a new peer.
+     * @return The current number of seconds
+     */
+    public int getSyncWait() {
+        return syncWait;
+    }
+
+    /**
+     * Sets the number of seconds to wait before being able to communicate
+     * with a new peer.
+     * @param syncWait the new value
+     */
+    public void setSyncWait(int syncWait) {
+        this.syncWait = syncWait;
+    }
     
     private Map<UUID,Transport.Connection> peers;
     private short syncport, idport;
@@ -201,6 +255,8 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     protected HashSet<UUID> msgs;
     private boolean firsttime = true;
 	private UUID myId;
+    private int distConnsPeriod = 5;
+    private int syncWait = 5;
 }
 
  

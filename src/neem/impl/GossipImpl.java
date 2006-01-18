@@ -60,7 +60,7 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
         this.net = memb.net();
         this.memb = memb;
         this.syncport = port;
-        this.maxIds = 100;
+        //this.maxIds = 100;
         this.msgs = new LinkedHashSet<UUID>();
         net.handler(this, this.syncport);
     }
@@ -142,7 +142,33 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
     /**
      * Maximum number of stored ids.
      */
-    private int maxIds;
+    private int maxIds = 100;
+
+//Getters and Setters ---------------------------------------------------
+    
+    public int getFanout() {
+        return fanout;
+    }
+
+    public void setFanout(int fanout) {
+        this.fanout = fanout;
+    }
+
+    /**
+     * Get the maximum number of message ids to store locally.
+     * @return the current maximum
+     */
+    public int getMaxIds() {
+        return maxIds;
+    }
+
+    /**
+     * Set the maximum number of message ids to store locally.
+     * @param maxIds the new maximum
+     */
+    public void setMaxIds(int maxIds) {
+        this.maxIds = maxIds;
+    }
 }
 
 
