@@ -30,7 +30,7 @@
 	</target>
 
 	<target name="jar" depends="compile" description="generate the distribution">
-		<jar jarfile="${dist}/neem.jar" basedir="${build}/classes" excludes="test/**"/>
+		<jar jarfile="${dist}/neem.jar" basedir="${build}/classes"/>
 	</target>
 
 	<target name="javadoc" depends="init" description="Generate Javadoc for NeEM">
@@ -43,7 +43,6 @@
 		<tar destfile="${build}/neem-${RELEASE}-bin.tar.gz" compression="gzip">
 			<tarfileset dir="${basedir}" prefix="neem-${RELEASE}">
 				<include name="README" />
-				<include name="src/test/**" />
 				<exclude name="**/.arch-ids/**" />
 			</tarfileset>
 			<tarfileset dir="${build}" prefix="neem-${RELEASE}">
