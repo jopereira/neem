@@ -110,7 +110,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     
     public void open(Transport.Connection info) {
         if (this.firsttime) {
-            net.schedule(this, this.syncWait * 1000);
+            net.schedule(this, this.distConnsPeriod);
             firsttime = false;
         }
         net.send(new ByteBuffer[]{
@@ -155,7 +155,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         	this.firsttime=true;
         else {
             distributeConnections();
-        	net.schedule(this, this.distConnsPeriod * 1000);
+        	net.schedule(this, this.distConnsPeriod);
         }
     }
 
@@ -235,21 +235,10 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     }
 
     /**
-     * Gets the number of seconds to wait before being able to communicate
-     * with a new peer.
-     * @return The current number of seconds
+     * Get all connected peers.
      */
-    public int getSyncWait() {
-        return syncWait;
-    }
-
-    /**
-     * Sets the number of seconds to wait before being able to communicate
-     * with a new peer.
-     * @param syncWait the new value
-     */
-    public void setSyncWait(int syncWait) {
-        this.syncWait = syncWait;
+    public UUID[] getPeers() {
+    	return peers.keySet().toArray(new UUID[peers.size()]);
     }
     
     private Map<UUID,Transport.Connection> peers;
@@ -258,8 +247,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     protected HashSet<UUID> msgs;
     private boolean firsttime = true;
 	private UUID myId;
-    private int distConnsPeriod = 5;
-    private int syncWait = 5;
+    private int distConnsPeriod = 5000;
 }
 
  

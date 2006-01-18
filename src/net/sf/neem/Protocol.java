@@ -41,6 +41,7 @@
 package net.sf.neem;
 
 import java.net.InetSocketAddress;
+import java.util.UUID;
 
 import net.sf.neem.impl.GossipImpl;
 import net.sf.neem.impl.MembershipImpl;
@@ -60,11 +61,27 @@ public class Protocol implements ProtocolMBean {
 	}
 	
 	public int getFanout() {
-		return this.m_impl.getFanout();
+		return this.g_impl.getFanout();
 	}
 	
 	public void setFanout(int fanout) {
+		this.g_impl.setFanout(fanout);
+	}
+
+	public int getMembershipFanout() {
+		return this.m_impl.getFanout();
+	}
+	
+	public void setMembershipFanout(int fanout) {
 		this.m_impl.setFanout(fanout);
+	}
+	
+	public int getMaxIds() {
+		return g_impl.getMaxIds();
+	}
+
+	public void setMaxIds(int max) {
+		g_impl.setMaxIds(max);
 	}
 	
 	public int getGroupSize() {
@@ -75,16 +92,25 @@ public class Protocol implements ProtocolMBean {
 		this.m_impl.setGrp_size(groupsize);
 	}
     
+	public int getMembershipPeriod() {
+		return m_impl.getDistConnsPeriod();
+	}
+
+	public void setMembershipPeriod(int period) {
+		m_impl.setDistConnsPeriod(period);
+	}
+	
     public InetSocketAddress[] getPeers() {
         return this.net.getPeers();
     }
 	
-	@SuppressWarnings("unused")
+	public UUID[] getPeersIds() {
+		return this.m_impl.getPeers();
+	}
+
 	private Transport net;
-	@SuppressWarnings("unused")
 	private GossipImpl g_impl;
 	private MembershipImpl m_impl;
 }
-;
 
 // arch-tag: 08505269-5fca-435f-a7ae-8a87af222676 

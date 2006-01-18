@@ -684,10 +684,6 @@ public class Transport implements Runnable {
         return (InetSocketAddress[]) connections.keySet().toArray(
                 new InetSocketAddress[connections.size()]);
     }
-	;
 }
-
-
-;
 
 // arch-tag: d500660f-d7f0-498f-8f49-eb548dbe39f5

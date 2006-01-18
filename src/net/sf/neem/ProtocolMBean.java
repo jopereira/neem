@@ -41,6 +41,7 @@
 package net.sf.neem;
 
 import java.net.InetSocketAddress;
+import java.util.UUID;
 
 /**
  * Interface for a JMX management bean. This allows several protocol parameters
@@ -60,6 +61,43 @@ public interface ProtocolMBean {
 	public void setFanout(int fanout);
 	
 	/**
+	 * Get the number of gossip target for each round.
+	 * @return number of targets
+	 */
+	public int getMembershipFanout();
+	
+	/**
+	 * Set the number of gossip target for each round.
+	 * @param fanout number of targets
+	 */
+	public void setMembershipFanout(int fanout);
+	
+	/**
+	 * Get the maximum number of cached message ids.
+	 * @return number of ids
+	 */
+	public int getMaxIds();
+	
+	/**
+	 * Set the maximum number of cached message ids. Setting this too
+	 * low may result in duplicate message deliveries.
+	 * @param max number of ids
+	 */
+	public void setMaxIds(int max);
+
+	/**
+	 * Get the delay between periodic membership gossip rounds.
+	 * @return period in milliseconds
+	 */
+	public int getMembershipPeriod();
+	
+	/**
+	 * Set the delay between periodic membership gossip rounds.
+	 * @param period in milliseconds
+	 */
+	public void setMembershipPeriod(int period);
+
+	/**
 	 * Get the number of neighbors.
 	 * @return number of neighbors
 	 */
@@ -76,6 +114,12 @@ public interface ProtocolMBean {
 	 * @return connected peers
 	 */
     public InetSocketAddress[] getPeers();
+    
+	/**
+	 * Get list of currently connected peer ids.
+	 * @return connected peer ids
+	 */
+    public UUID[] getPeersIds();
 }
 
 // arch-tag: 2c588950-1f71-46ed-be61-f801fb5c90f8
