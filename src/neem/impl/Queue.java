@@ -44,8 +44,9 @@
 package neem.impl;
 
 
-import java.util.*;
-import java.math.*;
+import java.util.NoSuchElementException;
+import java.util.Random;
+import java.util.Vector;
 
 
 /**
@@ -59,7 +60,7 @@ import java.math.*;
  *
  * This class is backed by a java.util.Vector.
  * 
- * @author psantos@GSD
+ * @author Pedro Santos <psantos@gsd.di.uminho.pt>
  */
 public class Queue {
     
@@ -70,8 +71,8 @@ public class Queue {
         this.q = new Vector<Object>();
         this.min_threshold = size;
         this.max_threshold = size;
-        this.p = 1.0;
-        this.count = 0;
+        this.discard_probability = 1.0;
+        this.size = 0;
         this.dropped = 0;
         this.lastdrop = 0;
     }
@@ -85,8 +86,8 @@ public class Queue {
         this.q = new Vector<Object>();
         this.min_threshold = min;
         this.max_threshold = max;
-        this.p = p;
-        this.count = 0;
+        this.discard_probability = p;
+        this.size = 0;
         this.dropped = 0;
         this.lastdrop = 0;
     }
@@ -96,17 +97,16 @@ public class Queue {
      */
     public void push(Object o) {
         // this.q.add(o);/*
-        if (count < min_threshold) {
+        if (size <= min_threshold) {
             this.q.add(o);
-            this.count++;
-        } else if (count > min_threshold && count < max_threshold) {
+            this.size++;
+        } else if (size > min_threshold && size < max_threshold) {
             double d = rand.nextDouble();
-            
-            if (d < this.p) {
+            if (d < this.discard_probability) {
                 this.q.add(o); // appends to the end of the array
-                this.count++; // the queue now has a new element
+                this.size++; // the queue now has a new element
             } else {
-                int pos = rand.nextInt(this.count - 1);
+                int pos = rand.nextInt(this.size - 1);
 
                 q.remove(pos);
                 this.q.add(o);
@@ -116,7 +116,7 @@ public class Queue {
         } // */
         // otherwise, sure drop a random one
         else {
-            int pos = rand.nextInt(this.count - 1);
+            int pos = rand.nextInt(this.size - 1);
 
             q.remove(pos);
             this.q.add(o);
@@ -132,7 +132,7 @@ public class Queue {
         Object ret = null;
 
         ret = this.q.remove(0); // shifts the array left
-        this.count--;
+        this.size--;
         return ret;
     }
     
@@ -155,9 +155,9 @@ public class Queue {
         return this.q.isEmpty();
     }
     
-    private static double round(double a, int b) {
+    /*private static double round(double a, int b) {
         return new BigDecimal("" + a).setScale(b, BigDecimal.ROUND_HALF_UP).doubleValue();
-    }
+    }*/
     
     /** Get the number of dropped messages in this queue*/
     public int droppedMessages() {
@@ -178,11 +178,11 @@ public class Queue {
     /** Level of occupancy above which this queue drops all messages.*/
     public int max_threshold;
 
-    /** Probability of dropping a message.*/
-    public double p;
+    /** Probability of dropping a message when fill level is between thresholds.*/
+    public double discard_probability;
 
     /** The current number of objects held.*/
-    private int count;
+    private int size;
 
     /** The number of discarded messages since in the current state of the queue*/
     private int dropped;
@@ -192,6 +192,87 @@ public class Queue {
 
     /** Random number generator for random purging */
     private Random rand = new Random();
+
+	
+    /**
+     * Gets the maximum threshold value for this queue (see {@link neem.impl.Queue#max_threshold}).
+     * @return The current maximum threshold value.
+     */
+    public int getMax_threshold() {
+		return max_threshold;
+	}
+
+    /**
+     * Sets the maximum threshold value for this queue (see {@link neem.impl.Queue#max_threshold}).
+     * @param max_threshold New maximum threshold value.
+     */
+	public void setMax_threshold(int max_threshold) {
+		this.max_threshold = max_threshold;
+	}
+
+	/**
+     * Gets the minimum threshold value for this queue (see {@link neem.impl.Queue#min_threshold}).
+     * @return The current minimum threshold value.
+     */
+	public int getMin_threshold() {
+		return min_threshold;
+	}
+
+	/**
+     * Sets the minimum threshold value for this queue (see {@link neem.impl.Queue#max_threshold}).
+     * @param min_threshold New minimum threshold value.
+     */
+	public void setMin_threshold(int min_threshold) {
+		this.min_threshold = min_threshold;
+	}
+
+	/**
+     * Gets the message discard probability value (0<p<1) for this queue (see {@link neem.impl.Queue#discard_probability}).
+     * @return The current discard probability value.
+     */
+	public double getDiscard_probability() {
+		return discard_probability;
+	}
+
+	/**
+     * Sets the message discard probability value (0<p<1) for this queue (see {@link neem.impl.Queue#max_threshold}).
+     * @param p New minimum threshold value.
+     */
+	public void setDiscard_probability(double p) {
+		this.discard_probability = p;
+	}
+
+	/**
+	 * Gets the current size/maximum threshold of this queue.
+	 * @return This queue's current size/maximum threshold
+	 */
+	public int getSize() {
+		return size;
+	}
+
+	/**
+	 * Sets the new size/maximum threshold of this queue.
+	 * @param size This queue's current size/maximum threshold
+	 */
+	public void setSize(int size) {
+		this.size = size;
+	}
+
+	/**
+	 * Gets the number of discarded messages since queue entered it's current state. 
+	 * @return The current number of dropped messages
+	 */
+	public int getDropped() {
+		return dropped;
+	}
+
+	/**
+	 * Gets the system's time of the last message drop.
+	 * @return The time, in milis, when there was a message drop. 
+	 */
+	public long getLastdrop() {
+		return lastdrop;
+	}
 }
 
 

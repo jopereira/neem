@@ -129,7 +129,7 @@ public class MulticastChannel implements
      * 
      * @param msg a byte buffer to be filled with the received message
      * @return the number of bytes read
-     * @throws ClosedChannleException the channel was previously closed
+     * @throws ClosedChannelException the channel was previously closed
      * @throws ClosedByInterruptException the waiting thread has been interrupted
      * @throws AsynchronousCloseException the channel has been closed while waiting
      * @throws BufferTooSmallException the buffer was too small to read the next message
@@ -149,7 +149,7 @@ public class MulticastChannel implements
             throw new AsynchronousCloseException();
         ByteBuffer[] buf=queue.getFirst();
         if (msg.remaining()<Buffers.count(buf) && !truncate)
-        	throw new BufferOverflowException();
+        		throw new BufferOverflowException();
         buf=queue.removeFirst();
         return Buffers.copy(msg, buf);
     }
@@ -230,7 +230,11 @@ public class MulticastChannel implements
      * @return true if truncate mode is enabled
      */
     public synchronized boolean getTruncateMode() {
-    	return truncate;
+    		return truncate;
+    }
+    
+    public ProtocolMBean getProtocolMBean() {
+    		return new Protocol(this.trans,this.gimpls,this.mimpls);
     }
     
     /* Transport layer */

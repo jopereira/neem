@@ -38,12 +38,24 @@
 package neem.impl;
 
 
-import java.net.*;
-import java.util.*;
-import java.io.*;
-import java.nio.*;
-import java.nio.channels.*;
-import java.nio.channels.spi.*;
+import java.io.IOException;
+import java.net.BindException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.CancelledKeyException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.nio.channels.spi.SelectorProvider;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.UUID;
 
 
 /**
@@ -164,7 +176,7 @@ public class Transport implements Runnable {
                 SelectionKey key = sock.register(selector,
                         SelectionKey.OP_CONNECT);
 
-                info = new Connection(addr, key, null);
+                info = new Connection(addr, key, null, default_Q_size);
                 key.attach(info);
                 // connections.put(addr, info);
             }
@@ -470,7 +482,7 @@ public class Transport implements Runnable {
             SelectionKey nkey = sock.register(selector,
                     SelectionKey.OP_READ | SelectionKey.OP_WRITE);
             InetSocketAddress addr=(InetSocketAddress)sock.socket().getRemoteSocketAddress();
-            final Connection info = new Connection(addr, nkey, null);
+            final Connection info = new Connection(addr, nkey, null, default_Q_size);
 
             nkey.attach(info);
 
@@ -584,16 +596,25 @@ public class Transport implements Runnable {
     private Membership membership_handler;
 
     private boolean closed;
+    
+    private int default_Q_size = 10;
 
     /**
      * Socket manipulation utilities.
      */
     public static class Connection {
-        Connection(InetSocketAddress addr, SelectionKey key, ByteBuffer[] outgoing) {
-            this.msg_q = new Queue(10);
+        Connection(InetSocketAddress addr, SelectionKey key, ByteBuffer[] outgoing, int q_size) {
+            this.msg_q = new Queue(q_size);
+            this.q_size = q_size;
             this.addr = addr;
             this.key = key;
             this.outgoing = outgoing;
+            this.sock = (SocketChannel) key.channel();
+        }
+
+        Connection(SelectionKey key, int q_size) {
+            this.msg_q = new Queue(q_size);
+            this.key = key;
             this.sock = (SocketChannel) key.channel();
         }
 
@@ -609,7 +630,7 @@ public class Transport implements Runnable {
         public String toString() {
             return "Connection to " + addr;
         }
-
+        
         InetSocketAddress addr;
         SocketChannel sock;
         SelectionKey key;
@@ -624,6 +645,16 @@ public class Transport implements Runnable {
         /** Message queue
          */
         public Queue msg_q;
+        int q_size;
+
+		public int getQ_size() {
+			return q_size;
+		}
+
+		public void setQ_size(int q_size) {
+			this.q_size = q_size;
+		}
+
         /**
          * Used by membership management to assign an unique id to the
          * remote process. Currently, this is an address.
@@ -637,8 +668,22 @@ public class Transport implements Runnable {
 		public InetSocketAddress listen;
     }
 
+	public int getDefault_Q_size() {
+		return default_Q_size;
+	}
 
-    ;
+	public void setDefault_Q_size(int default_Q_size) {
+		this.default_Q_size = default_Q_size;
+	}
+
+	public Enumeration<Connection> getConnections() {
+		return connections.elements();
+	}
+	
+	public Enumeration<InetSocketAddress> getPeers() {
+		return connections.keys();
+	}
+	;
 }
 
 

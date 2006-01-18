@@ -179,9 +179,26 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     	return peers.values().toArray(new Transport.Connection[peers.size()]);
     }
         
+    public int getFanout() {
+		return fanout;
+	}
+
+	public void setFanout(int fanout) {
+		this.fanout = fanout;
+	}
+
+	public int getGrp_size() {
+		return grp_size;
+	}
+
+	public void setGrp_size(int grp_size) {
+		this.grp_size = grp_size;
+	}
+    
     private Map<UUID,Transport.Connection> peers;
     private short syncport, idport;
     private int fanout, grp_size;
+    protected HashSet<UUID> msgs;
     private boolean firsttime = true;
 	private UUID myId;
 }
