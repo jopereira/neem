@@ -42,10 +42,6 @@
  */
 package neem.impl;
 
-
-import java.net.*;
-
-
 /**
  *  This interface defines the methods to handle events related with changes in 
  * local group. Events about new connections, closing of open connections 
@@ -65,15 +61,15 @@ public interface Membership {
      * step will be executed.
      * @param info The connection to the new peer.
      */
-    public void open(Transport.Connection info, int i); // event
+    public void open(Transport.Connection info); // event
 
     /**
      *  This method is called from Transport whenever a member leaves the group.
      * When called, decreases the number of connected members by one, as the connection
      * to the now disconnected peer has already been removed at the transport layer.
-     * @param addr The address of the now closed connection.
+     * @param info The recently closed connection.
      */
-    public void close(InetSocketAddress addr); // event
+    public void close(Transport.Connection info); // event
 }
 
 

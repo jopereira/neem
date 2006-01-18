@@ -101,7 +101,7 @@ public class Queue {
             this.count++;
         } else if (count > min_threshold && count < max_threshold) {
             double d = rand.nextDouble();
-
+            
             if (d < this.p) {
                 this.q.add(o); // appends to the end of the array
                 this.count++; // the queue now has a new element

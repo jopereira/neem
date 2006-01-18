@@ -67,7 +67,8 @@ public abstract class AddressUtils {
         try {
             msg = ByteBuffer.allocate(6);
             msg.put(addr.getAddress().getAddress());
-            msg.putShort((short) addr.getPort());
+            int port=addr.getPort();
+            msg.putShort((short)port);
             msg.flip();
             // info.sock.write(msg);
         } catch (Exception e) {}
@@ -75,22 +76,22 @@ public abstract class AddressUtils {
     }
     
     /** Read a socket address from an array of ByteBuffers into an InetSocketAddress.
-     * @param buf The buffer from which to read the address from.
+     * @param msg The buffer from which to read the address from.
      * @return The address read.
      */
-    public static InetSocketAddress readAddressFromBuffer(ByteBuffer buf) {
+    public static InetSocketAddress readAddressFromBuffer(ByteBuffer[] msg) {
         InetSocketAddress addr = null;
-        short port = 0;
+        int port = 0;
         byte[] dst = null;
         InetAddress ia = null;
 	
+        ByteBuffer buf=Buffers.sliceCompact(msg, 6);
         try {
             dst = new byte[4];
             buf.get(dst, 0, dst.length);
-            port = buf.getShort();
+            port=((int)buf.getShort())&0xffff;
             ia = InetAddress.getByAddress(dst);
-            addr = new InetSocketAddress(InetAddress.getByAddress(dst),
-                    (int) port);
+            addr = new InetSocketAddress(ia, port);
         } catch (IOException e) {} catch (IllegalArgumentException iae) {
             System.out.println("Prob: " + ia.toString() + ":" + port);
         }
@@ -98,8 +99,5 @@ public abstract class AddressUtils {
         return addr;
     }
 }
-
-
-;
 
 // arch-tag: f387d158-3ec6-4001-af1b-5d4a8fb441eb

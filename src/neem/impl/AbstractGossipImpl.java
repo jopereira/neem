@@ -55,24 +55,30 @@ import java.util.*;
  * @author psantos@GSD
  */
 public abstract class AbstractGossipImpl {
-
     /**
      *  This method sends a copy of the original message to a fanout of peers of the local memberhip.
      * @param msg The original message
      * @param fanout Number of peers to send the copy of the message to.
      * @param syncport The synchronization port (Gossip or Memberhip) which the message is to be delivered to. 
+     * @param conns Available connections
      */
-    public void relay(ByteBuffer[] msg, int fanout, short syncport) {
+    public void relay(ByteBuffer[] msg, int fanout, short syncport, Transport.Connection[] conns) {
         // System.out.println("Relaying message");
         Transport.Connection info;
-        Transport.Connection[] conns = net.connections();
 
         if (conns.length < 1) {
             return;
         }
+        
+        if (fanout>conns.length)
+        	fanout=conns.length;
 
         for (int i = 0; i < fanout; i++) {
-            int index = rand.nextInt(conns.length);
+            int index;
+            if (fanout==conns.length)
+            	index = i;
+            else
+            	index = rand.nextInt(conns.length);
             
             if (conns[index].key.isValid()) {
                 info = conns[index];
@@ -80,9 +86,8 @@ public abstract class AbstractGossipImpl {
                 /* System.out.println(
                  "Message from " + net.id().toString() + " to : "
                  + info.addr.toString());*/
-                net.send(msg, info, syncport);
+                net.send(Buffers.clone(msg), info, syncport);
             }
-            
         }
     }
 

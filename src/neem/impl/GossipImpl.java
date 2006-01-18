@@ -51,13 +51,14 @@ import java.nio.*;
  */
 
 public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListener {
-    
+
     /**
      *  Creates a new instance of GossipImpl.
      */
-    public GossipImpl(Transport net, short port, int fanout) {
+    public GossipImpl(MembershipImpl memb, short port, int fanout) {
         this.fanout = fanout;
-        this.net = net;
+        this.net = memb.net();
+        this.memb = memb;
         this.syncport = port;
         this.maxIds = 100;
         this.msgs = new LinkedHashSet<UUID>();
@@ -70,13 +71,8 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
         
     public void multicast(ByteBuffer[] msg) {
         // Create uuid && add it to message (another header!!!)
-        UUID uuid;
-        ByteBuffer uuid_bytes = ByteBuffer.allocate(16);
-
-        uuid = UUID.randomUUID();
-        uuid_bytes.putLong(uuid.getMostSignificantBits());
-        uuid_bytes.putLong(uuid.getLeastSignificantBits());
-        uuid_bytes.flip();
+        UUID uuid = UUID.randomUUID();
+        ByteBuffer uuid_bytes = UUIDUtils.writeUUIDToBuffer(uuid);
 
         ByteBuffer[] out = new ByteBuffer[msg.length + 1];
 
@@ -86,28 +82,24 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
                 
         // send to a fanout of the groupview members
         
-        relay(out.clone(), fanout, this.syncport);
+        relay(out, fanout, this.syncport, memb.connections());
         msgs.add(uuid);
         purgeMsgs();
     }
     
-    public void receive(ByteBuffer[] msg, Transport.Connection info) {
+    public void receive(ByteBuffer[] msg, Transport.Connection info, short port) {
         // Check uuid
         try {
             // System.out.println("Receive@Gossip: " + msg.length);
-            ByteBuffer[] in = Buffers.clone(msg);
             ByteBuffer[] out = Buffers.clone(msg);
             
-            ByteBuffer tmp = Buffers.sliceCompact(in, 16); // gets N bytes from X positions in the ByteBuffer[] and puts them in one ByteBuffer 
-            long msb = tmp.getLong();
-            long lsb = tmp.getLong();
-            UUID uuid = new UUID(msb, lsb);
+            UUID uuid = UUIDUtils.readUUIDFromBuffer(msg);
 
             if (msgs.add(uuid)) {
             	purgeMsgs();
                 // only pass to application a clean message => NO HEADERS FROM LOWER LAYERS
-                this.handler.deliver(in, this);
-                relay(out, this.fanout, this.syncport);
+                this.handler.deliver(msg, this);
+                relay(out, this.fanout, this.syncport, memb.connections());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -122,6 +114,11 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
     	}
     }
     
+    /**
+     * Membership management module.
+     */
+    private MembershipImpl memb;
+
     /**
      *  Represents the class to which messages must be delivered.
      */
@@ -140,7 +137,7 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
     /**
      *  The Transport port used by the Gossip class instances to exchange messages. 
      */
-    private short syncport = 1;
+    private short syncport;
     
     /**
      * Maximum number of stored ids.

@@ -65,8 +65,8 @@ public class MulticastChannel implements
      */
     public MulticastChannel(InetSocketAddress local) throws IOException {
         trans = new Transport(local);
-        gimpls = new GossipImpl(trans, (short)0, 4);
-        mimpls = new MembershipImpl(trans, (short)1, 4, 10);
+        mimpls = new MembershipImpl(trans, (short)1, (short)2, 4, 10);
+        gimpls = new GossipImpl(mimpls, (short)0, 4);
         gimpls.handler(new App() {
             public void deliver(ByteBuffer[] buf, Gossip gimpl) {
                 enqueue(buf);
@@ -240,7 +240,7 @@ public class MulticastChannel implements
     private GossipImpl gimpls = null;
 
     /* Membership layer */
-    private Membership mimpls = null;
+    private MembershipImpl mimpls = null;
 
     private boolean isClosed;
 
