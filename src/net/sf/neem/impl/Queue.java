@@ -41,7 +41,7 @@
  * Created on April 27, 2005, 12:34 PM
  */
 
-package neem.impl;
+package net.sf.neem.impl;
 
 import java.util.NoSuchElementException;
 import java.util.Random;
@@ -212,7 +212,7 @@ public class Queue {
 
     /**
      * Gets the maximum threshold value for this queue (see
-     * {@link neem.impl.Queue#max_threshold}).
+     * {@link net.sf.neem.impl.Queue#max_threshold}).
      * 
      * @return The current maximum threshold value.
      */
@@ -222,7 +222,7 @@ public class Queue {
 
     /**
      * Sets the maximum threshold value for this queue (see
-     * {@link neem.impl.Queue#max_threshold}).
+     * {@link net.sf.neem.impl.Queue#max_threshold}).
      * 
      * @param max_threshold
      *            New maximum threshold value.
@@ -233,7 +233,7 @@ public class Queue {
 
     /**
      * Gets the minimum threshold value for this queue (see
-     * {@link neem.impl.Queue#min_threshold}).
+     * {@link net.sf.neem.impl.Queue#min_threshold}).
      * 
      * @return The current minimum threshold value.
      */
@@ -243,7 +243,7 @@ public class Queue {
 
     /**
      * Sets the minimum threshold value for this queue (see
-     * {@link neem.impl.Queue#max_threshold}).
+     * {@link net.sf.neem.impl.Queue#max_threshold}).
      * 
      * @param min_threshold
      *            New minimum threshold value.
@@ -254,7 +254,7 @@ public class Queue {
 
     /**
      * Gets the message discard probability value (0<p<1) for this queue (see
-     * {@link neem.impl.Queue#discard_probability}).
+     * {@link net.sf.neem.impl.Queue#discard_probability}).
      * 
      * @return The current discard probability value.
      */
@@ -264,7 +264,7 @@ public class Queue {
 
     /**
      * Sets the message discard probability value (0<p<1) for this queue (see
-     * {@link neem.impl.Queue#max_threshold}).
+     * {@link net.sf.neem.impl.Queue#max_threshold}).
      * 
      * @param p
      *            New minimum threshold value.

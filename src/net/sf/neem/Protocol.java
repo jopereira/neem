@@ -35,32 +35,48 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * App.java
- *
- * Created on March 15, 2005, 4:12 PM
- */
-package neem.impl;
+package net.sf.neem;
+
+import java.net.InetSocketAddress;
+
+import net.sf.neem.impl.GossipImpl;
+import net.sf.neem.impl.MembershipImpl;
+import net.sf.neem.impl.Transport;
 
 
-import java.nio.*;
-
-
-/**
- * Applications that intend to use the Gossip Multicast Protocol MUST implement this Interface.
- * @author psantos@GSD
- */
-public interface App {
-
-    /**
-     *  This method decodes the message received. It must be inverse to the one used for encoding.
-     * It's called by the gossip layer.
-     * @param msg The message being delivered.
-     */
-    public void deliver(ByteBuffer[] msg, Gossip gimpl);
+public class Protocol implements ProtocolMBean {
+	public Protocol(Transport net, GossipImpl gossip, MembershipImpl membership) {
+		this.net = net;
+		this.g_impl = gossip;
+		this.m_impl = membership;
+	}
+	
+	public int getFanout() {
+		return this.m_impl.getFanout();
+	}
+	
+	public void setFanout(int fanout) {
+		this.m_impl.setFanout(fanout);
+	}
+	
+	public int getGroupSize() {
+		return this.m_impl.getGrp_size();
+	}
+	
+	public void setGroupSize(int groupsize) {
+		this.m_impl.setGrp_size(groupsize);
+	}
+    
+    public InetSocketAddress[] getPeers() {
+        return this.net.getPeers();
+    }
+	
+	@SuppressWarnings("unused")
+	private Transport net;
+	@SuppressWarnings("unused")
+	private GossipImpl g_impl;
+	private MembershipImpl m_impl;
 }
-
-
 ;
 
-// arch-tag: 6b30f28e-5375-46ef-9963-8296bf64f9eb
+// arch-tag: 08505269-5fca-435f-a7ae-8a87af222676 

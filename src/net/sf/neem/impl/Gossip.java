@@ -35,30 +35,44 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package neem;
+package net.sf.neem.impl;
 
-import java.io.*;
 
-/**
- * Attempt to receive with a buffer too small.
- * This exception is thrown when an attempt is made to receive a message
- * with a buffer too small and the channel is not configured to truncate
- * messages. It should be used as an indication to use a larger buffer.
+import java.nio.*;
+
+
+/** Methods necessary for implementing this Gossip Multicast Protocol.
+ * Classes that intend to implement this Gossip Multicast Protocol MUST implement
+ * all methods defined here.
+ *
+ *@author psantos@GSD
  */
-public class BufferTooSmallException extends IOException {
-	BufferTooSmallException(int required) {this.required=required;}
+public interface Gossip extends DataListener {
 
-	/**
-	 * Obtains the number of bytes remaining required in the buffer to propertly
-	 * handle the next message in the queue.
-	 * 
-	 * @return number of bytes required
-	 */
-	public int getRequired() {return required;}
-	
-	private int required;
-	
-	private static final long serialVersionUID = 1L;
+    /**
+     *  Sets the application to wich every received 
+     * message must be delivered.
+     * @param app The application wich is interessed in the messages.
+     */
+    public void handler(App app);
+    
+    /**
+     *  This method is called by this class's instance handler whenever it wishes 
+     * to send a messages using the neem multicast protocol. This method sends a 
+     * copy of the message to each registred peer.
+     * @param msg Message to be multicasted.
+     */
+    public void multicast(ByteBuffer[] msg);
+
+    /**
+     * This method is used to get a reference to the transport layer of the protocol through
+     * the Gossip layer.
+     * @return A reference to this protocol's instance Transport layer.
+     */
+    public Transport net();
 }
 
-// arch-tag: 8b7ef5c3-8dbf-479c-8ce2-21ff867e56c6
+
+;
+
+// arch-tag: 87a87e28-12f1-44ae-a156-6f4f6d5266b6

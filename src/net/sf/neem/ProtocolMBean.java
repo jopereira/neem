@@ -35,42 +35,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Bucket.java
- *
- * Created on May 2, 2005, 7:04 PM
- */
+package net.sf.neem;
 
-package neem.impl;
+import java.net.InetSocketAddress;
 
+public interface ProtocolMBean {
 
-import java.nio.*;
-
-
-/**
- * Message and port wrapper for distribution enqueueing.
- * @author psantos
- */
-public class Bucket {
+	public int getFanout();
+	
+	public void setFanout(int fanout);
+	
+	public int getGroupSize();
+	
+	public void setGroupSize(int groupsize);
     
-    /** Creates a new instance of Bucket */
-    public Bucket(ByteBuffer[] msg, Integer port) {
-        this.msg = msg;
-        this.port = port;
-    }
-    
-    /** Returns the message in this Bucket */
-    public ByteBuffer[] getMsg() {
-        return(this.msg);
-    }
-    
-    /** Returns the port to wich the message is intended */
-    public Integer getPort() {
-        return (this.port);
-    }
-    
-    private ByteBuffer[] msg;
-    private Integer port;
+    public InetSocketAddress[] getPeers();
 }
 
-// arch-tag: b07a5de4-0eca-4ba3-9bf5-c1564cd9cece
+;
+
+// arch-tag: 2c588950-1f71-46ed-be61-f801fb5c90f8

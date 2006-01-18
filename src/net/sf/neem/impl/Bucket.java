@@ -36,36 +36,41 @@
  */
 
 /*
- * DataListener.java
+ * Bucket.java
  *
- * Created on April 7, 2005, 11:51 AM
+ * Created on May 2, 2005, 7:04 PM
  */
 
-package neem.impl;
+package net.sf.neem.impl;
 
 
 import java.nio.*;
 
 
 /**
- *  This inteface depicts the methods that a class, wishing to receive messages
- * using this implementation of the Gossip Multicast protocol, MUST provide.
- *
- * @author psantos@GSD
+ * Message and port wrapper for distribution enqueueing.
+ * @author psantos
  */
-public interface DataListener {
-
-    /**
-     *  This method allows classes that implement it, to receive messages through the Transport class, wich implements the NEEM Protocol.
-     * This method is called by the Transport class
-     * @param msg The incoming message.
-     * @param info The connection through wich the message is being received.
-     * @param port TODO
-     */
-    public void receive(ByteBuffer[] msg, Transport.Connection info, short port);
+public class Bucket {
+    
+    /** Creates a new instance of Bucket */
+    public Bucket(ByteBuffer[] msg, Integer port) {
+        this.msg = msg;
+        this.port = port;
+    }
+    
+    /** Returns the message in this Bucket */
+    public ByteBuffer[] getMsg() {
+        return(this.msg);
+    }
+    
+    /** Returns the port to wich the message is intended */
+    public Integer getPort() {
+        return (this.port);
+    }
+    
+    private ByteBuffer[] msg;
+    private Integer port;
 }
 
-
-;
-
-// arch-tag: b3b8ed98-df7f-419d-b0b4-14484e44419c
+// arch-tag: b07a5de4-0eca-4ba3-9bf5-c1564cd9cece

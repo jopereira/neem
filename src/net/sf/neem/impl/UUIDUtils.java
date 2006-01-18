@@ -1,4 +1,4 @@
-package neem.impl;
+package net.sf.neem.impl;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;

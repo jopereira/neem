@@ -35,10 +35,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package neem;
+package net.sf.neem;
 
-import neem.impl.*;
-import neem.BufferTooSmallException;
+import net.sf.neem.impl.*;
+
 import java.net.*;
 import java.io.*;
 import java.nio.*;
@@ -265,8 +265,6 @@ public class MulticastChannel implements InterruptibleChannel,
     private LinkedList<ByteBuffer[]> queue = new LinkedList<ByteBuffer[]>();
 
     private Thread t;
-
-    private Properties props;
 }
 
 // arch-tag: cd998499-184b-4c75-a0a0-34180eb3c92c

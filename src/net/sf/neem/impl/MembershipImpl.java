@@ -41,7 +41,7 @@
  * Created on March 30, 2005, 5:17 PM
  */
 
-package neem.impl;
+package net.sf.neem.impl;
 
 
 import java.net.InetSocketAddress;

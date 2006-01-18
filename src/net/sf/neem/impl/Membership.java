@@ -40,7 +40,7 @@
  *
  * Created on March 17, 2005, 4:07 PM
  */
-package neem.impl;
+package net.sf.neem.impl;
 
 /**
  *  This interface defines the methods to handle events related with changes in 

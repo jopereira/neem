@@ -35,23 +35,32 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package neem.impl;
+/*
+ * App.java
+ *
+ * Created on March 15, 2005, 4:12 PM
+ */
+package net.sf.neem.impl;
 
-import java.net.InetSocketAddress;
 
-public interface ProtocolMBean {
+import java.nio.*;
 
-	public int getFanout();
-	
-	public void setFanout(int fanout);
-	
-	public int getGroupSize();
-	
-	public void setGroupSize(int groupsize);
-    
-    public InetSocketAddress[] getPeers();
+
+/**
+ * Applications that intend to use the Gossip Multicast Protocol MUST implement this Interface.
+ * @author psantos@GSD
+ */
+public interface App {
+
+    /**
+     *  This method decodes the message received. It must be inverse to the one used for encoding.
+     * It's called by the gossip layer.
+     * @param msg The message being delivered.
+     */
+    public void deliver(ByteBuffer[] msg, Gossip gimpl);
 }
+
 
 ;
 
-// arch-tag: 2c588950-1f71-46ed-be61-f801fb5c90f8
+// arch-tag: 6b30f28e-5375-46ef-9963-8296bf64f9eb

@@ -41,7 +41,7 @@
  * Created on April 11, 2005, 4:21 PM
  */
 
-package neem.impl;
+package net.sf.neem.impl;
 
 
 import java.nio.*;
