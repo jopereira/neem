@@ -1,11 +1,14 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005, University of Minho
+ * Copyright (c) 2005-2006, University of Minho
  * All rights reserved.
  *
  * Contributors:
  *  - Pedro Santos <psantos@gmail.com>
  *  - Jose Orlando Pereira <jop@di.uminho.pt>
+ * 
+ * Partially funded by FCT, project P-SON (POSC/EIA/60941/2004).
+ * See http://pson.lsd.di.uminho.pt/ for more information.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -35,10 +38,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package neem;
+package net.sf.neem;
 
-import neem.impl.*;
-import neem.BufferTooSmallException;
+import net.sf.neem.impl.*;
+
 import java.net.*;
 import java.io.*;
 import java.nio.*;
@@ -244,6 +247,12 @@ public class MulticastChannel implements InterruptibleChannel,
         return truncate;
     }
 
+    /**
+     * Obtain a reference to a JMX compliant management bean. This can be used
+     * to fine tune several protocol parameters.
+     * 
+     * @return the management bean
+     */
     public ProtocolMBean getProtocolMBean() {
         return new Protocol(this.trans, (GossipImpl) this.gimpls,
                 (MembershipImpl) this.mimpls);
@@ -265,8 +274,6 @@ public class MulticastChannel implements InterruptibleChannel,
     private LinkedList<ByteBuffer[]> queue = new LinkedList<ByteBuffer[]>();
 
     private Thread t;
-
-    private Properties props;
 }
 
 // arch-tag: cd998499-184b-4c75-a0a0-34180eb3c92c

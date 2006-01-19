@@ -1,11 +1,14 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005, University of Minho
+ * Copyright (c) 2005-2006, University of Minho
  * All rights reserved.
  *
  * Contributors:
  *  - Pedro Santos <psantos@gmail.com>
  *  - Jose Orlando Pereira <jop@di.uminho.pt>
+ * 
+ * Partially funded by FCT, project P-SON (POSC/EIA/60941/2004).
+ * See http://pson.lsd.di.uminho.pt/ for more information.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -35,24 +38,58 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package neem.impl;
+package net.sf.neem;
 
 import java.net.InetSocketAddress;
+import java.util.UUID;
+
+import net.sf.neem.impl.GossipImpl;
+import net.sf.neem.impl.MembershipImpl;
+import net.sf.neem.impl.Transport;
 
 
+/**
+ * Implementation of the NeEM management bean.
+ * 
+ * @author jop
+ */
 public class Protocol implements ProtocolMBean {
-	public Protocol(Transport net, GossipImpl gossip, MembershipImpl membership) {
+	Protocol(Transport net, GossipImpl gossip, MembershipImpl membership) {
 		this.net = net;
 		this.g_impl = gossip;
 		this.m_impl = membership;
 	}
 	
+	public int getQueueSize() {
+		return net.getDefault_Q_size();
+	}
+
+	public void setQueueSize(int size) {
+		net.setDefault_Q_size(size);
+	}
+	
 	public int getFanout() {
-		return this.m_impl.getFanout();
+		return this.g_impl.getFanout();
 	}
 	
 	public void setFanout(int fanout) {
+		this.g_impl.setFanout(fanout);
+	}
+
+	public int getMembershipFanout() {
+		return this.m_impl.getFanout();
+	}
+	
+	public void setMembershipFanout(int fanout) {
 		this.m_impl.setFanout(fanout);
+	}
+	
+	public int getMaxIds() {
+		return g_impl.getMaxIds();
+	}
+
+	public void setMaxIds(int max) {
+		g_impl.setMaxIds(max);
 	}
 	
 	public int getGroupSize() {
@@ -63,16 +100,25 @@ public class Protocol implements ProtocolMBean {
 		this.m_impl.setGrp_size(groupsize);
 	}
     
+	public int getMembershipPeriod() {
+		return m_impl.getDistConnsPeriod();
+	}
+
+	public void setMembershipPeriod(int period) {
+		m_impl.setDistConnsPeriod(period);
+	}
+	
     public InetSocketAddress[] getPeers() {
         return this.net.getPeers();
     }
 	
-	@SuppressWarnings("unused")
+	public UUID[] getPeerIds() {
+		return this.m_impl.getPeers();
+	}
+
 	private Transport net;
-	@SuppressWarnings("unused")
 	private GossipImpl g_impl;
 	private MembershipImpl m_impl;
 }
-;
 
 // arch-tag: 08505269-5fca-435f-a7ae-8a87af222676 

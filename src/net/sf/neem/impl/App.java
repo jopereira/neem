@@ -1,11 +1,14 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005, University of Minho
+ * Copyright (c) 2005-2006, University of Minho
  * All rights reserved.
  *
  * Contributors:
  *  - Pedro Santos <psantos@gmail.com>
  *  - Jose Orlando Pereira <jop@di.uminho.pt>
+ * 
+ * Partially funded by FCT, project P-SON (POSC/EIA/60941/2004).
+ * See http://pson.lsd.di.uminho.pt/ for more information.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -35,30 +38,32 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package neem;
+/*
+ * App.java
+ *
+ * Created on March 15, 2005, 4:12 PM
+ */
+package net.sf.neem.impl;
 
-import java.io.*;
+
+import java.nio.*;
+
 
 /**
- * Attempt to receive with a buffer too small.
- * This exception is thrown when an attempt is made to receive a message
- * with a buffer too small and the channel is not configured to truncate
- * messages. It should be used as an indication to use a larger buffer.
+ * Applications that intend to use the Gossip Multicast Protocol MUST implement this Interface.
+ * @author psantos@GSD
  */
-public class BufferTooSmallException extends IOException {
-	BufferTooSmallException(int required) {this.required=required;}
+public interface App {
 
-	/**
-	 * Obtains the number of bytes remaining required in the buffer to propertly
-	 * handle the next message in the queue.
-	 * 
-	 * @return number of bytes required
-	 */
-	public int getRequired() {return required;}
-	
-	private int required;
-	
-	private static final long serialVersionUID = 1L;
+    /**
+     *  This method decodes the message received. It must be inverse to the one used for encoding.
+     * It's called by the gossip layer.
+     * @param msg The message being delivered.
+     */
+    public void deliver(ByteBuffer[] msg, Gossip gimpl);
 }
 
-// arch-tag: 8b7ef5c3-8dbf-479c-8ce2-21ff867e56c6
+
+;
+
+// arch-tag: 6b30f28e-5375-46ef-9963-8296bf64f9eb

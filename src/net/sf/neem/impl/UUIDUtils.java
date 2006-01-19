@@ -1,11 +1,14 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005, University of Minho
+ * Copyright (c) 2005-2006, University of Minho
  * All rights reserved.
  *
  * Contributors:
  *  - Pedro Santos <psantos@gmail.com>
  *  - Jose Orlando Pereira <jop@di.uminho.pt>
+ * 
+ * Partially funded by FCT, project P-SON (POSC/EIA/60941/2004).
+ * See http://pson.lsd.di.uminho.pt/ for more information.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -35,42 +38,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Bucket.java
- *
- * Created on May 2, 2005, 7:04 PM
- */
+package net.sf.neem.impl;
 
-package neem.impl;
+import java.nio.ByteBuffer;
+import java.util.UUID;
 
-
-import java.nio.*;
-
-
-/**
- * Message and port wrapper for distribution enqueueing.
- * @author psantos
- */
-public class Bucket {
-    
-    /** Creates a new instance of Bucket */
-    public Bucket(ByteBuffer[] msg, Integer port) {
-        this.msg = msg;
-        this.port = port;
+public class UUIDUtils {
+	/** Write an UUID to a ByteBuffer.
+     * @param uuid The uuid to be written.
+     * @return The Buffer with the uuid written into.
+     */
+    public static ByteBuffer writeUUIDToBuffer(UUID uuid) {
+        ByteBuffer uuid_bytes = ByteBuffer.allocate(16);
+        uuid_bytes.putLong(uuid.getMostSignificantBits());
+        uuid_bytes.putLong(uuid.getLeastSignificantBits());
+        uuid_bytes.flip();
+        return uuid_bytes;
     }
     
-    /** Returns the message in this Bucket */
-    public ByteBuffer[] getMsg() {
-        return(this.msg);
+    /** Read an UUID from an array of ByteBuffers into an UUID.
+     * @param msg The buffer from which to read the UUID from.
+     * @return The address read.
+     */
+    public static UUID readUUIDFromBuffer(ByteBuffer[] msg) {
+    	ByteBuffer tmp = Buffers.sliceCompact(msg, 16); 
+        long msb = tmp.getLong();
+        long lsb = tmp.getLong();
+        return new UUID(msb, lsb);
     }
-    
-    /** Returns the port to wich the message is intended */
-    public Integer getPort() {
-        return (this.port);
-    }
-    
-    private ByteBuffer[] msg;
-    private Integer port;
 }
 
-// arch-tag: b07a5de4-0eca-4ba3-9bf5-c1564cd9cece
+// arch-tag: fb3615b7-6e20-4f6a-9b1c-9f60d92dde29

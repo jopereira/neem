@@ -1,7 +1,7 @@
 /**
  * 
  */
-package neem.impl;
+package net.sf.neem.impl;
 
 import java.io.File;
 import java.io.FileInputStream;

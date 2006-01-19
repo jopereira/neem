@@ -1,11 +1,14 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005, University of Minho
+ * Copyright (c) 2005-2006, University of Minho
  * All rights reserved.
  *
  * Contributors:
  *  - Pedro Santos <psantos@gmail.com>
  *  - Jose Orlando Pereira <jop@di.uminho.pt>
+ * 
+ * Partially funded by FCT, project P-SON (POSC/EIA/60941/2004).
+ * See http://pson.lsd.di.uminho.pt/ for more information.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -36,31 +39,36 @@
  */
 
 /*
- * App.java
+ * DataListener.java
  *
- * Created on March 15, 2005, 4:12 PM
+ * Created on April 7, 2005, 11:51 AM
  */
-package neem.impl;
+
+package net.sf.neem.impl;
 
 
 import java.nio.*;
 
 
 /**
- * Applications that intend to use the Gossip Multicast Protocol MUST implement this Interface.
+ *  This inteface depicts the methods that a class, wishing to receive messages
+ * using this implementation of the Gossip Multicast protocol, MUST provide.
+ *
  * @author psantos@GSD
  */
-public interface App {
+public interface DataListener {
 
     /**
-     *  This method decodes the message received. It must be inverse to the one used for encoding.
-     * It's called by the gossip layer.
-     * @param msg The message being delivered.
+     *  This method allows classes that implement it, to receive messages through the Transport class, wich implements the NEEM Protocol.
+     * This method is called by the Transport class
+     * @param msg The incoming message.
+     * @param info The connection through wich the message is being received.
+     * @param port TODO
      */
-    public void deliver(ByteBuffer[] msg, Gossip gimpl);
+    public void receive(ByteBuffer[] msg, Transport.Connection info, short port);
 }
 
 
 ;
 
-// arch-tag: 6b30f28e-5375-46ef-9963-8296bf64f9eb
+// arch-tag: b3b8ed98-df7f-419d-b0b4-14484e44419c

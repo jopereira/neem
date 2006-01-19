@@ -1,5 +1,5 @@
 NeEM: Network-friendly Epidemic Multicast
-Copyright (c) 2005, University of Minho
+Copyright (c) 2005-2006, University of Minho
 All rights reserved.
 
 1. Overview
@@ -35,6 +35,9 @@ This implementation of the NeEM protocol was developed by:
 
  - Pedro Santos <psantos@gsd.di.uminho.pt, si24803@gmail.com>
  - Jose Orlando Pereira <jop@di.uminho.pt>
+
+Partially funded by FCT, project P-SON (POSC/EIA/60941/2004).
+See http://pson.lsd.di.uminho.pt/ for more information
 
 Research leading to the NeEM protocol was partially funded by FCT and
 Microsoft Research. People involved were J. Pereira, L. Rodrigues,

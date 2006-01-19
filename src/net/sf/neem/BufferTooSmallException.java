@@ -1,11 +1,14 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005, University of Minho
+ * Copyright (c) 2005-2006, University of Minho
  * All rights reserved.
  *
  * Contributors:
  *  - Pedro Santos <psantos@gmail.com>
  *  - Jose Orlando Pereira <jop@di.uminho.pt>
+ * 
+ * Partially funded by FCT, project P-SON (POSC/EIA/60941/2004).
+ * See http://pson.lsd.di.uminho.pt/ for more information.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -35,37 +38,30 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * DataListener.java
- *
- * Created on April 7, 2005, 11:51 AM
- */
+package net.sf.neem;
 
-package neem.impl;
-
-
-import java.nio.*;
-
+import java.io.*;
 
 /**
- *  This inteface depicts the methods that a class, wishing to receive messages
- * using this implementation of the Gossip Multicast protocol, MUST provide.
- *
- * @author psantos@GSD
+ * Attempt to receive with a buffer too small.
+ * This exception is thrown when an attempt is made to receive a message
+ * with a buffer too small and the channel is not configured to truncate
+ * messages. It should be used as an indication to use a larger buffer.
  */
-public interface DataListener {
+public class BufferTooSmallException extends IOException {
+	BufferTooSmallException(int required) {this.required=required;}
 
-    /**
-     *  This method allows classes that implement it, to receive messages through the Transport class, wich implements the NEEM Protocol.
-     * This method is called by the Transport class
-     * @param msg The incoming message.
-     * @param info The connection through wich the message is being received.
-     * @param port TODO
-     */
-    public void receive(ByteBuffer[] msg, Transport.Connection info, short port);
+	/**
+	 * Obtains the number of bytes remaining required in the buffer to propertly
+	 * handle the next message in the queue.
+	 * 
+	 * @return number of bytes required
+	 */
+	public int getRequired() {return required;}
+	
+	private int required;
+	
+	private static final long serialVersionUID = 1L;
 }
 
-
-;
-
-// arch-tag: b3b8ed98-df7f-419d-b0b4-14484e44419c
+// arch-tag: 8b7ef5c3-8dbf-479c-8ce2-21ff867e56c6

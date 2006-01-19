@@ -1,11 +1,14 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005, University of Minho
+ * Copyright (c) 2005-2006, University of Minho
  * All rights reserved.
  *
  * Contributors:
  *  - Pedro Santos <psantos@gmail.com>
  *  - Jose Orlando Pereira <jop@di.uminho.pt>
+ * 
+ * Partially funded by FCT, project P-SON (POSC/EIA/60941/2004).
+ * See http://pson.lsd.di.uminho.pt/ for more information.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -41,7 +44,7 @@
  * Created on March 30, 2005, 5:17 PM
  */
 
-package neem.impl;
+package net.sf.neem.impl;
 
 
 import java.net.InetSocketAddress;
@@ -94,7 +97,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
                 // System.out.println("Discovered that "+info.addr+" is "+id);
             	if (peers.containsKey(id))
             		net.remove(info.addr);
-            	else {
+            	else synchronized(this) {
             		peers.put(id, info);
             		info.id=id;
             		info.listen=addr;
@@ -107,7 +110,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     
     public void open(Transport.Connection info) {
         if (this.firsttime) {
-            net.schedule(this, this.syncWait * 1000);
+            net.schedule(this, this.distConnsPeriod);
             firsttime = false;
         }
         net.send(new ByteBuffer[]{
@@ -117,7 +120,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         probably_remove();
     }
     
-    public void close(Transport.Connection info) {
+    public synchronized void close(Transport.Connection info) {
         // System.out.println(
         // "CLOSE@" + myId + " : " + addr.toString());
     	if (info.id!=null)
@@ -152,7 +155,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         	this.firsttime=true;
         else {
             distributeConnections();
-        	net.schedule(this, this.distConnsPeriod * 1000);
+        	net.schedule(this, this.distConnsPeriod);
         }
     }
 
@@ -232,31 +235,25 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     }
 
     /**
-     * Gets the number of seconds to wait before being able to communicate
-     * with a new peer.
-     * @return The current number of seconds
+     * Get all connected peers.
      */
-    public int getSyncWait() {
-        return syncWait;
-    }
-
-    /**
-     * Sets the number of seconds to wait before being able to communicate
-     * with a new peer.
-     * @param syncWait the new value
-     */
-    public void setSyncWait(int syncWait) {
-        this.syncWait = syncWait;
+    public synchronized UUID[] getPeers() {
+    	return peers.keySet().toArray(new UUID[peers.size()]);
     }
     
+    /**
+     * The peers variable can be queried by an external thread for JMX
+     * management. Therefore, all sections of the code that modify it must
+     * be synchronized. Sections that read it from the protocol thread need
+     * not be synchronized.
+     */
     private Map<UUID,Transport.Connection> peers;
     private short syncport, idport;
     private int fanout, grp_size;
     protected HashSet<UUID> msgs;
     private boolean firsttime = true;
 	private UUID myId;
-    private int distConnsPeriod = 5;
-    private int syncWait = 5;
+    private int distConnsPeriod = 5000;
 }
 
  
