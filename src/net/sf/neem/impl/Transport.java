@@ -45,8 +45,10 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -63,16 +65,15 @@ import java.util.TreeMap;
  * Implementation of the NEEM network layer.
  */
 public class Transport implements Runnable {
-    public Transport(InetSocketAddress local) throws IOException, BindException {
+    private Connection idinfo;
+
+	public Transport(InetSocketAddress local) throws IOException, BindException {
         timers = new TreeMap<Long, Runnable>();
         handlers = new HashMap<Short, DataListener>();
-        ssock = ServerSocketChannel.open();
-        ssock.configureBlocking(false);
-        
-        ssock.socket().bind(local);
-                
         selector = SelectorProvider.provider().openSelector();
-        ssock.register(selector, SelectionKey.OP_ACCEPT);
+
+        idinfo=addTarget(local);
+
         connections = new HashMap<InetSocketAddress, Connection>();
         id = new InetSocketAddress(InetAddress.getLocalHost(), local.getPort());
                 
@@ -118,11 +119,7 @@ public class Transport implements Runnable {
         selector.wakeup();
         for(Connection info: connections.values())
             info.handleClose();
-        try {
-            ssock.close();
-        } catch(IOException e) {
-            // nada
-        }
+        idinfo.handleClose();
     }
 
     /**
@@ -147,6 +144,38 @@ public class Transport implements Runnable {
         }
     }
 
+    public Connection addTarget(InetSocketAddress local) throws IOException, ClosedChannelException {
+		ServerSocketChannel ssock = ServerSocketChannel.open();
+        ssock.configureBlocking(false);
+        
+        ssock.socket().bind(local);
+                
+        SelectionKey key = ssock.register(selector, SelectionKey.OP_ACCEPT);
+        
+        Connection info = new Connection(this, key, ssock);
+        key.attach(info);
+        return info;
+	}
+
+    /**
+     * Initiate connection to peer. This is effective only
+     * after the open callback.
+     */
+    public Connection readd(Connection info, InetSocketAddress addr) {
+        try {
+                SocketChannel sock = SocketChannel.open();
+
+                sock.configureBlocking(false);
+                sock.connect(addr);
+                SelectionKey key = sock.register(selector,
+                        SelectionKey.OP_CONNECT);
+
+                info.setConnection(addr, key, default_Q_size);
+                key.attach(info);
+                // connections.put(addr, info);
+        } catch (IOException e) {}
+        return info;
+    }
     /**
      * Initiate connection to peer. This is effective only
      * after the open callback.
@@ -163,7 +192,8 @@ public class Transport implements Runnable {
                 SelectionKey key = sock.register(selector,
                         SelectionKey.OP_CONNECT);
 
-                info = new Connection(this, addr, key, null, default_Q_size);
+                info = new Connection(this, null, null);
+                info.setConnection(addr, key, default_Q_size);
                 key.attach(info);
                 // connections.put(addr, info);
             }
@@ -240,7 +270,7 @@ public class Transport implements Runnable {
                         if (key.isReadable()) {
                             info.handleRead();
                         } else if (key.isAcceptable()) {
-                            handleAccept(key);
+                            info.handleAccept();
                         } else if (key.isConnectable()) {
                             info.handleConnect();
                         } else if (key.isWritable()) {
@@ -259,41 +289,28 @@ public class Transport implements Runnable {
         }
     }
 
-    /** Open connection event hadler.
-     * When the hanlder behaves as server.
-     */
-    private void handleAccept(SelectionKey key) throws IOException {
-                
-        SocketChannel sock = ssock.accept();
-       
-        if (sock == null) {
-            return;
-        }
-        
-        try {
-            sock.configureBlocking(false);
-            sock.socket().setSendBufferSize(1024);
-            sock.socket().setReceiveBufferSize(1024);
-            SelectionKey nkey = sock.register(selector,
-                    SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-            InetSocketAddress addr=(InetSocketAddress)sock.socket().getRemoteSocketAddress();
-            final Connection info = new Connection(this, addr, nkey, null, default_Q_size);
+	void deliverSocket(SocketChannel sock) throws IOException, SocketException, ClosedChannelException {
+		sock.configureBlocking(false);
+		sock.socket().setSendBufferSize(1024);
+		sock.socket().setReceiveBufferSize(1024);
+		SelectionKey nkey = sock.register(selector,
+		        SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+		InetSocketAddress addr=(InetSocketAddress)sock.socket().getRemoteSocketAddress();
+		final Connection info = new Connection(this, null, null);
+		info.setConnection(addr, nkey, default_Q_size);
 
-            nkey.attach(info);
+		nkey.attach(info);
 
-            synchronized(this) {
-            	this.connections.put(addr, info); // adiciona o addr recebido as connections
-            }
-            queue(new Runnable() {
-                public void run() {
-                	membership_handler.open(info);
-                }
-            });
-            this.accepted++;
-        } catch (IOException e) {// Just drop it.
-        }
-    
-    }
+		synchronized(this) {
+			this.connections.put(addr, info); // adiciona o addr recebido as connections
+		}
+		queue(new Runnable() {
+		    public void run() {
+		    	membership_handler.open(info);
+		    }
+		});
+		this.accepted++;
+	}
 
 	void notifyOpen(final Connection info) {
         Connection other;
@@ -355,11 +372,6 @@ public class Transport implements Runnable {
 	 */
     private InetSocketAddress id;
     
-    /**
-	 * Socket used to listen for connections
-	 */
-    private ServerSocketChannel ssock;
-
     /** DUH, it's a selector (whatever that is)
      */
     private Selector selector;

@@ -45,6 +45,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -53,23 +54,27 @@ import java.util.UUID;
  * Socket manipulation utilities.
  */
 public class Connection {
-	Connection(Transport trans, InetSocketAddress addr, SelectionKey key, ByteBuffer[] outgoing, int q_size) {
-    	this.transport = trans;
+	void setConnection(InetSocketAddress addr, SelectionKey key, int q_size) {
         this.msg_q = new Queue(q_size);
         this.q_size = q_size;
         this.addr = addr;
         this.key = key;
-        this.outgoing = outgoing;
         this.sock = (SocketChannel) key.channel();
     }
 
-    Connection(SelectionKey key, int q_size) {
+    /*Connection(SelectionKey key, int q_size) {
         this.msg_q = new Queue(q_size);
         this.key = key;
         this.sock = (SocketChannel) key.channel();
-    }
+    }*/
 
-    public int hashCode() {
+    Connection(Transport trans, SelectionKey skey, ServerSocketChannel ssock) {
+    	this.transport = trans;
+        this.skey = skey;
+        this.ssock = ssock;
+	}
+
+	public int hashCode() {
         return addr.hashCode();
     }
 
@@ -94,6 +99,12 @@ public class Connection {
     private int outremaining;
     private boolean dirty;
     private short port;
+
+    /**
+	 * Socket used to listen for connections
+	 */
+    private ServerSocketChannel ssock;
+    private SelectionKey skey;
 
     /** Message queue
      */
@@ -305,6 +316,24 @@ public class Connection {
         
     }
 
+    /** Open connection event hadler.
+     * When the hanlder behaves as server.
+     */
+    void handleAccept() throws IOException {
+                
+        SocketChannel sock = ssock.accept();
+       
+        if (sock == null) {
+            return;
+        }
+        
+        try {
+            transport.deliverSocket(sock);
+        } catch (IOException e) {// Just drop it.
+        }
+    
+    }
+
     /**
      * Open connection event hadler.
      * When the hanlder behaves as client.
@@ -329,18 +358,27 @@ public class Connection {
      * Either by membership or death of peer.
      */
     void handleClose() {
-    	if (key==null)
-    		return;
+    	if (key!=null) {
         try {
-            key.channel().close();
-            key.cancel();        
-            sock.close();
-        } catch (IOException e) {
-        	// Don't care, we're cleaning up anyway...
-        }
-    	key=null;
-    	sock=null;
-        transport.notifyClose(this);
+				key.channel().close();
+				key.cancel();
+				sock.close();
+			} catch (IOException e) {
+				// Don't care, we're cleaning up anyway...
+			}
+			key = null;
+			sock = null;
+			transport.notifyClose(this);
+    	}
+    	if (skey!=null) {
+            try {
+                skey.channel().close();
+                skey.cancel();        
+                ssock.close();
+            } catch (IOException e) {
+            	// Don't care, we're cleaning up anyway...
+            }
+    	}
     }
 }
 
