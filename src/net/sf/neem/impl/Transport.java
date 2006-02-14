@@ -52,8 +52,9 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -64,7 +65,7 @@ import java.util.TreeMap;
 public class Transport implements Runnable {
     public Transport(InetSocketAddress local) throws IOException, BindException {
         timers = new TreeMap<Long, Runnable>();
-        handlers = new Hashtable<Short, DataListener>();
+        handlers = new HashMap<Short, DataListener>();
         ssock = ServerSocketChannel.open();
         ssock.configureBlocking(false);
         
@@ -72,7 +73,7 @@ public class Transport implements Runnable {
                 
         selector = SelectorProvider.provider().openSelector();
         ssock.register(selector, SelectionKey.OP_ACCEPT);
-        connections = new Hashtable<InetSocketAddress, Connection>();
+        connections = new HashMap<InetSocketAddress, Connection>();
         id = new InetSocketAddress(InetAddress.getLocalHost(), local.getPort());
                 
     }
@@ -83,8 +84,6 @@ public class Transport implements Runnable {
     public InetSocketAddress id() {
         return id;
     }
-
-    
     
     /**
      * Get all connections.
@@ -172,14 +171,12 @@ public class Transport implements Runnable {
         return info;
     }
     
-    public void remove(InetSocketAddress addr) {
+    /**
+     * Get connection by remote address.
+     */
+    public Connection get(InetSocketAddress addr) {
         // System.out.println("Closing: " + addr.toString());
-        Connection info = info = connections.get(addr);
-        
-        if (info==null)
-        	return;
-        
-        info.handleClose();
+        return connections.get(addr);
     }
 
     /**
@@ -373,7 +370,7 @@ public class Transport implements Runnable {
      * be synchronized. Sections that read it from the protocol thread need
      * not be synchronized.
      */
-    Hashtable<InetSocketAddress, Connection> connections;
+    private Map<InetSocketAddress, Connection> connections;
 
     /** Queue for tasks
      */
@@ -385,7 +382,7 @@ public class Transport implements Runnable {
 
     /** Storage for DataListener protocol events handlers
      */
-    Hashtable<Short, DataListener> handlers;
+    private Map<Short, DataListener> handlers;
 
     /** Reference for Membership events handler
      */

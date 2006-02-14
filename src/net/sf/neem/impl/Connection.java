@@ -142,6 +142,10 @@ public class Connection {
         handleWrite();
     }
 
+    public void close() {
+    	handleClose();
+    }
+
     // ////// Event handlers
     
 	void handleGC() {
@@ -321,16 +325,21 @@ public class Connection {
     }
 
     /**
-     * Closed connection event hadler.
+     * Closed connection event handler.
      * Either by membership or death of peer.
      */
     void handleClose() {
+    	if (key==null)
+    		return;
         try {
             key.channel().close();
             key.cancel();        
             sock.close();
-        } catch (IOException e) {// Don't care, we're cleaning up anyway...
+        } catch (IOException e) {
+        	// Don't care, we're cleaning up anyway...
         }
+    	key=null;
+    	sock=null;
         transport.notifyClose(this);
     }
 }

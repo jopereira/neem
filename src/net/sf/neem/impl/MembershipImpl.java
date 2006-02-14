@@ -96,7 +96,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
             } else if (port==idport) {
                 // System.out.println("Discovered that "+info.addr+" is "+id);
             	if (peers.containsKey(id))
-            		net.remove(info.addr);
+            		info.close();
             	else synchronized(this) {
             		peers.put(id, info);
             		info.id=id;
@@ -145,7 +145,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         if (peers.size() >= grp_size) {
             Connection info = conns[rand.nextInt(nc)];
             info.id=null;
-            this.net.remove(info.addr);
+            info.close();
         }
     }
     
