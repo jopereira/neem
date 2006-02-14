@@ -113,10 +113,10 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
             net.schedule(this, this.distConnsPeriod);
             firsttime = false;
         }
-        net.send(new ByteBuffer[]{
+        info.send(new ByteBuffer[]{
         		UUIDUtils.writeUUIDToBuffer(myId),
         		AddressUtils.writeAddressToBuffer(net.id())
-        	}, info, idport);
+        	}, idport);
         probably_remove();
     }
     

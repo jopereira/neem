@@ -52,7 +52,6 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
-import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.SortedMap;
@@ -104,11 +103,7 @@ public class Transport implements Runnable {
         while (i.hasNext()) {
             Connection info = (Connection) i.next();
 
-            if (info.dirty && info.outgoing == null) {
-                info.handleClose();
-            } else {
-                info.dirty = false;
-            }
+            info.handleGC();
         }
     }
 
@@ -119,13 +114,11 @@ public class Transport implements Runnable {
         if (closed)
             return;
         closed=true;
+        timers.clear();
+        membership_handler=null;
         selector.wakeup();
         for(Connection info: connections.values())
-            try {
-                info.sock.close();
-            } catch(IOException e) {
-                // nada
-            }
+            info.handleClose();
         try {
             ssock.close();
         } catch(IOException e) {
@@ -187,30 +180,6 @@ public class Transport implements Runnable {
         	return;
         
         info.handleClose();
-    }
-
-    /**
-     * Send message to 1 (one) peer identified by @arg: info.
-     */
-    public synchronized void send(ByteBuffer[] msg, Connection info, short port) {
-        // Header order:
-        /* --------
-         *|msg size| <- from here
-         * --------
-         *|  uuid  | <- from DataListener
-         * --------
-         *|  msg   | <- from App
-         * --------
-         */
-        if (info == null) { 
-            return;
-        }
-
-        Integer prt = new Integer(port);
-        Bucket b = new Bucket(Buffers.clone(msg), prt);
-
-        info.msg_q.push((Object) b);
-        info.handleWrite();
     }
 
     /**
@@ -329,12 +298,69 @@ public class Transport implements Runnable {
     
     }
 
-    /** Local id for each instance
-     */
+	void notifyOpen(final Connection info) {
+        Connection other;
+        synchronized(this) {
+        	other = connections.put(info.addr, info);
+        }
+
+        if (other == null) {
+        	queue(new Runnable() {
+				public void run() {
+					if (membership_handler!=null)
+						membership_handler.open(info);
+				}
+			});
+        } else {
+        	other.handleClose();
+        }
+	}
+    
+	void notifyClose(final Connection info) {
+        if (info.addr == null || closed) {
+			return;
+		}
+		synchronized (this) {
+			final Connection other = connections.get(info.addr);
+
+			if (info != other)
+				return;
+			connections.remove(other.addr);
+		}
+		queue(new Runnable() {
+			public void run() {
+				if (membership_handler!=null)
+					membership_handler.close(info);
+			}
+		});
+	}
+
+	void deliver(final Connection source, final Short prt, final ByteBuffer[] msg) {
+		final DataListener handler = handlers.get(prt);
+
+		queue(new Runnable() {
+			public void run() {
+				try {
+					handler.receive(msg, source, prt);
+				} catch (NullPointerException npe) {
+					// npe.printStackTrace();
+					System.out.println("DataListener@port not found: "
+							+ prt.shortValue()); // there wasn't a gossip
+													// layer registered here at
+													// that port
+				}
+			}
+		});
+	}
+
+    /**
+	 * Local id for each instance
+	 */
     private InetSocketAddress id;
     
-    /** Socket used to listen for connections
-     */
+    /**
+	 * Socket used to listen for connections
+	 */
     private ServerSocketChannel ssock;
 
     /** DUH, it's a selector (whatever that is)
@@ -363,7 +389,7 @@ public class Transport implements Runnable {
 
     /** Reference for Membership events handler
      */
-    Membership membership_handler;
+    private Membership membership_handler;
 
     private boolean closed;
     
