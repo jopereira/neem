@@ -206,16 +206,14 @@ public class Connection {
      * There's something waiting to be written.
      */
     void handleWrite() {
-        final Connection info = this;
-        
-        if (info.msg_q.isEmpty() && info.outgoing == null) {
+        if (msg_q.isEmpty() && outgoing == null) {
             key.interestOps(SelectionKey.OP_READ);
             return;
         }
 
         try {
-            if (info.outgoing == null) {
-                Bucket b = (Bucket) info.msg_q.pop();
+            if (outgoing == null) {
+                Bucket b = (Bucket) msg_q.pop();
                 Integer portI = b.getPort();
                 
                 ByteBuffer[] msg = b.getMsg();
@@ -235,19 +233,19 @@ public class Connection {
                 header.putInt(size);
                 header.putShort(port);
                 header.flip();
-                info.outgoing = new ByteBuffer[msg.length + 1];
-                info.outgoing[0] = header;
-                System.arraycopy(msg, 0, info.outgoing, 1, msg.length);
-                info.outremaining = size + 6;
+                outgoing = new ByteBuffer[msg.length + 1];
+                outgoing[0] = header;
+                System.arraycopy(msg, 0, outgoing, 1, msg.length);
+                outremaining = size + 6;
             }
             
-            if (info.outgoing != null) {
-                long n = info.sock.write(info.outgoing, 0, info.outgoing.length);
+            if (outgoing != null) {
+                long n = sock.write(outgoing, 0, outgoing.length);
                 dirty=true;
 
-                info.outremaining -= n;
-                if (info.outremaining == 0) {
-                    info.outgoing = null;
+                outremaining -= n;
+                if (outremaining == 0) {
+                    outgoing = null;
                 }
                 key.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
             }            
@@ -255,7 +253,7 @@ public class Connection {
             handleClose();
             return;
         } catch (CancelledKeyException cke) {
-            transport.notifyClose(info);
+            transport.notifyClose(this);
         }
         
     }
@@ -394,7 +392,7 @@ public class Connection {
      */
     void handleClose() {
     	if (key!=null) {
-        try {
+    		try {
 				key.channel().close();
 				key.cancel();
 				sock.close();
