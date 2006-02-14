@@ -254,6 +254,10 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     private boolean firsttime = true;
 	private UUID myId;
     private int distConnsPeriod = 5000;
+    
+	public UUID getId() {
+		return myId;
+	}
 }
 
  
