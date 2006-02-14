@@ -90,7 +90,7 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
         purgeMsgs();
     }
     
-    public void receive(ByteBuffer[] msg, Transport.Connection info, short port) {
+    public void receive(ByteBuffer[] msg, Connection info, short port) {
         // Check uuid
         try {
             // System.out.println("Receive@Gossip: " + msg.length);

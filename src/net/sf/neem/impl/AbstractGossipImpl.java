@@ -65,9 +65,9 @@ public abstract class AbstractGossipImpl {
      * @param syncport The synchronization port (Gossip or Memberhip) which the message is to be delivered to. 
      * @param conns Available connections
      */
-    public void relay(ByteBuffer[] msg, int fanout, short syncport, Transport.Connection[] conns) {
+    public void relay(ByteBuffer[] msg, int fanout, short syncport, Connection[] conns) {
         // System.out.println("Relaying message");
-        Transport.Connection info;
+        Connection info;
 
         if (conns.length < 1) {
             return;

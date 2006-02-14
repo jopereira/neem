@@ -77,13 +77,13 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         this.syncport = port;
         this.idport = idport;
         this.myId=UUID.randomUUID();
-        this.peers = new HashMap<UUID,Transport.Connection>();
+        this.peers = new HashMap<UUID,Connection>();
         net.handler(this, this.syncport);
         net.handler(this, this.idport);
         net.membership_handler(this);
     }
     
-    public void receive(ByteBuffer[] msg, Transport.Connection info, short port) {
+    public void receive(ByteBuffer[] msg, Connection info, short port) {
         // System.out.println("Membership Receiving Message");
         try {
             UUID id = UUIDUtils.readUUIDFromBuffer(msg);
@@ -108,7 +108,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         }
     }
     
-    public void open(Transport.Connection info) {
+    public void open(Connection info) {
         if (this.firsttime) {
             net.schedule(this, this.distConnsPeriod);
             firsttime = false;
@@ -120,7 +120,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
         probably_remove();
     }
     
-    public synchronized void close(Transport.Connection info) {
+    public synchronized void close(Connection info) {
         // System.out.println(
         // "CLOSE@" + myId + " : " + addr.toString());
     	if (info.id!=null)
@@ -139,11 +139,11 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
      * increases by one the number of members.
      */
     private void probably_remove() {
-        Transport.Connection[] conns = connections();
+        Connection[] conns = connections();
         int nc = conns.length;
 
         if (peers.size() >= grp_size) {
-            Transport.Connection info = conns[rand.nextInt(nc)];
+            Connection info = conns[rand.nextInt(nc)];
             info.id=null;
             this.net.remove(info.addr);
         }
@@ -165,8 +165,8 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
      * peers.
      */ 
     private void distributeConnections() {
-        Transport.Connection[] conns = connections();
-       	Transport.Connection info = conns[rand.nextInt(conns.length)];
+        Connection[] conns = connections();
+       	Connection info = conns[rand.nextInt(conns.length)];
      
        	if (info.id==null)
        		return;
@@ -181,8 +181,8 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
     /**
      * Get all connections.
      */
-    public Transport.Connection[] connections() {
-    	return peers.values().toArray(new Transport.Connection[peers.size()]);
+    public Connection[] connections() {
+    	return peers.values().toArray(new Connection[peers.size()]);
     }
         
     /**
@@ -247,7 +247,7 @@ public class MembershipImpl extends AbstractGossipImpl implements Membership, Da
      * be synchronized. Sections that read it from the protocol thread need
      * not be synchronized.
      */
-    private Map<UUID,Transport.Connection> peers;
+    private Map<UUID,Connection> peers;
     private short syncport, idport;
     private int fanout, grp_size;
     protected HashSet<UUID> msgs;

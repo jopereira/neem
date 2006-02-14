@@ -57,7 +57,6 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.UUID;
 
 
 /**
@@ -106,7 +105,7 @@ public class Transport implements Runnable {
             Connection info = (Connection) i.next();
 
             if (info.dirty && info.outgoing == null) {
-                handleClose(info.key);
+                info.handleClose();
             } else {
                 info.dirty = false;
             }
@@ -172,7 +171,7 @@ public class Transport implements Runnable {
                 SelectionKey key = sock.register(selector,
                         SelectionKey.OP_CONNECT);
 
-                info = new Connection(addr, key, null, default_Q_size);
+                info = new Connection(this, addr, key, null, default_Q_size);
                 key.attach(info);
                 // connections.put(addr, info);
             }
@@ -187,9 +186,7 @@ public class Transport implements Runnable {
         if (info==null)
         	return;
         
-        SelectionKey key = info.key;
-
-        this.handleClose(key);
+        info.handleClose();
     }
 
     /**
@@ -213,7 +210,7 @@ public class Transport implements Runnable {
         Bucket b = new Bucket(Buffers.clone(msg), prt);
 
         info.msg_q.push((Object) b);
-        handleWrite(info.key);
+        info.handleWrite();
     }
 
     /**
@@ -268,19 +265,20 @@ public class Transport implements Runnable {
                             
                     for (Iterator j = selector.selectedKeys().iterator(); j.hasNext();) {
                         SelectionKey key = (SelectionKey) j.next();
+                        Connection info = (Connection) key.attachment();
 
                         if (!key.isValid()) {
-                            handleClose(key);
+                            info.handleClose();
                             continue;
                         }
                         if (key.isReadable()) {
-                            handleRead(key);
+                            info.handleRead();
                         } else if (key.isAcceptable()) {
                             handleAccept(key);
                         } else if (key.isConnectable()) {
-                            handleConnect(key);
+                            info.handleConnect();
                         } else if (key.isWritable()) {
-                            handleWrite(key);
+                            info.handleWrite();
                         } 
                     }
                 }
@@ -293,171 +291,6 @@ public class Transport implements Runnable {
                 System.out.println("The selected key was closed.");
             }
         }
-    }
-
-    // ////// Event handlers
-    
-    /** Write event handler.
-     * There's something waiting to be written.
-     */
-    private void handleWrite(SelectionKey key) {
-        final Connection info = (Connection) key.attachment();
-        
-        if (info.msg_q.isEmpty() && info.outgoing == null) {
-            key.interestOps(SelectionKey.OP_READ);
-            return;
-        }
-
-        try {
-            if (info.outgoing == null) {
-                Bucket b = (Bucket) info.msg_q.pop();
-                Integer portI = b.getPort();
-                
-                ByteBuffer[] msg = b.getMsg();
-
-                if (msg == null || portI == null) {
-                    return;
-                }
-                short port = portI.shortValue();
-                int size = 0;
-
-                for (int i = 0; i < msg.length; i++) {
-                    size += msg[i].remaining();
-                }
-
-                ByteBuffer header = ByteBuffer.allocate(6);
-
-                header.putInt(size);
-                header.putShort(port);
-                header.flip();
-                info.outgoing = new ByteBuffer[msg.length + 1];
-                info.outgoing[0] = header;
-                System.arraycopy(msg, 0, info.outgoing, 1, msg.length);
-                info.outremaining = size + 6;
-            }
-            
-            if (info.outgoing != null) {
-                long n = info.sock.write(info.outgoing, 0, info.outgoing.length);
-
-                info.outremaining -= n;
-                if (info.outremaining == 0) {
-                    info.writable = true;
-                    info.outgoing = null;
-                }
-                key.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
-            }            
-        } catch (IOException e) {
-            handleClose(key);
-            return;
-        } catch (CancelledKeyException cke) {
-            membership_handler.close(info);
-        }
-        
-    }
-
-    private void handleRead(SelectionKey key) {
-        final Connection info = (Connection) key.attachment();
-        // New buffer?
-        if (info.incoming == null || info.incoming.remaining() == 0) {
-            
-            info.incoming = ByteBuffer.allocate(1024);
-            info.copy = info.incoming.asReadOnlyBuffer();
-        }
-        // Read as much as we can with a single buffer.            
-        try {
-            long read = 0;
-
-            while ((read = info.sock.read(info.incoming)) > 0) {
-            	;
-            }
-            if (read < 0) {
-                handleClose(key);
-            }
-            info.copy.limit(info.incoming.position());
-        } catch (IOException e) {
-            handleClose(key);
-            return;
-        }
-        int number = 0;
-
-        while (info.copy.hasRemaining()) {
-            // Are we starting with a new message?
-            if (info.msgsize == 0) {
-                // Read header, if enough bytes are available.
-                // See below what happens when the current buffer
-                // is too full to contain a header.
-                if (info.copy.remaining() >= 6) {
-                    info.msgsize = info.copy.getInt();
-                    info.port = info.copy.getShort();
-                    // System.out.println("Port: " + info.port);
-                } else {
-                    break;
-                }
-            }
-            if (info.incomingmb == null && info.msgsize == 0) {
-                break;
-            }
-            // Now we can read a message
-            int slicesize = info.msgsize;
-
-            if (info.msgsize > info.copy.remaining()) {
-                slicesize = info.copy.remaining();
-            }
-            ByteBuffer slice = info.copy.slice();
-
-            try {
-                slice.limit(slicesize);
-                info.copy.position(info.copy.position() + slicesize);
-            } catch (Exception e) {
-                System.out.println("GOTCHA"); // if anything happens here we want to know about it, but drop & go
-            }
-
-            // Is it a new message?
-            if (info.incomingmb == null) {
-                info.incomingmb = new ArrayList<ByteBuffer>();
-            }
-
-            info.incomingmb.add(slice);
-            info.msgsize -= slicesize;
-            final Short prt = new Short(info.port);
-
-            // Is the message complete?
-            if (info.msgsize == 0) {
-                final ByteBuffer[] msg = (ByteBuffer[]) info.incomingmb.toArray(
-                        new ByteBuffer[info.incomingmb.size()]);
-                final DataListener handler = handlers.get(prt);
-
-                queue(
-                        new Runnable() {
-                    public void run() {
-                        try {
-                            handler.receive(msg, info, prt);    
-                        } catch (NullPointerException npe) {
-                            // npe.printStackTrace();
-                            System.out.println(
-                                    "DataListener@port not found: "
-                                            + prt.shortValue()); // there wasn't a gossip layer registered here at that port
-                        }
-                    }
-                });
-                info.incomingmb = null;
-            }
-            number++;
-        }
-
-        // Avoid a fragmented header. If/when more data is
-        // available select will call us back.
-        if (info.incoming.remaining() + info.copy.remaining() < 6) {
-            ByteBuffer compacted = ByteBuffer.allocate(1024);
-
-            while (info.copy.hasRemaining()) {
-                compacted.put(info.copy.get());
-            }
-            info.incoming = compacted;
-            info.copy = info.incoming.asReadOnlyBuffer();
-            info.copy.limit(info.incoming.position());
-        }
-        
     }
 
     /** Open connection event hadler.
@@ -478,7 +311,7 @@ public class Transport implements Runnable {
             SelectionKey nkey = sock.register(selector,
                     SelectionKey.OP_READ | SelectionKey.OP_WRITE);
             InetSocketAddress addr=(InetSocketAddress)sock.socket().getRemoteSocketAddress();
-            final Connection info = new Connection(addr, nkey, null, default_Q_size);
+            final Connection info = new Connection(this, addr, nkey, null, default_Q_size);
 
             nkey.attach(info);
 
@@ -494,78 +327,6 @@ public class Transport implements Runnable {
         } catch (IOException e) {// Just drop it.
         }
     
-    }
-
-    /** Open connection event hadler.
-     * When the hanlder behaves as client.
-     */
-    private void handleConnect(SelectionKey key) throws IOException {
-        
-        final Connection info = (Connection) key.attachment();
-        
-        try {
-            if (info.sock.finishConnect()) {
-                info.sock.socket().setReceiveBufferSize(1024);
-                info.sock.socket().setSendBufferSize(1024);
-
-                Connection other;
-                synchronized(this) {
-                	other = connections.put(info.addr, info);
-                }
-
-                if (other == null) {
-                    queue(new Runnable() {
-                        public void run() {
-                            membership_handler.open(info);
-                        }
-                    });
-                    key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-                } else {
-                    other.sock.close();
-                    other.key.channel().close();
-                    other.key.cancel();        
-                    
-                    // membership_handler.open(info, 2); not done here because we're just replacing the connection, it's not a new one
-                }
-                key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-                return;
-            }
-        } catch (Exception e) {// Fall through, see below:
-        } 
-        synchronized(this) {
-        	connections.remove(info.addr);
-        }
-        handleClose(key);
-    }
-
-    /** Closed connection event hadler.
-     * Either by membership or death of peer.
-     */
-    private void handleClose(SelectionKey key) {
-        Connection info = (Connection) key.attachment();
-        final InetSocketAddress addr = info.addr;
-
-        try {
-            key.channel().close();
-            key.cancel();        
-            info.sock.close();
-        } catch (IOException e) {// Don't care, we're cleaning up anyway...
-        }
-        if (addr == null) {
-            return;
-        }     
-        final Connection outra = connections.get(addr);
-
-        if (info == outra) {
-        	synchronized(this) {
-        		connections.remove(info.addr);
-        	}
-            queue(new Runnable() {
-                public void run() {
-                    membership_handler.close(outra);
-                }
-            });
-        }
     }
 
     /** Local id for each instance
@@ -586,7 +347,7 @@ public class Transport implements Runnable {
      * be synchronized. Sections that read it from the protocol thread need
      * not be synchronized.
      */
-    private Hashtable<InetSocketAddress, Connection> connections;
+    Hashtable<InetSocketAddress, Connection> connections;
 
     /** Queue for tasks
      */
@@ -598,86 +359,17 @@ public class Transport implements Runnable {
 
     /** Storage for DataListener protocol events handlers
      */
-    private Hashtable<Short, DataListener> handlers;
+    Hashtable<Short, DataListener> handlers;
 
     /** Reference for Membership events handler
      */
-    private Membership membership_handler;
+    Membership membership_handler;
 
     private boolean closed;
     
     private int default_Q_size = 10;
 
-    /**
-     * Socket manipulation utilities.
-     */
-    public static class Connection {
-        Connection(InetSocketAddress addr, SelectionKey key, ByteBuffer[] outgoing, int q_size) {
-            this.msg_q = new Queue(q_size);
-            this.q_size = q_size;
-            this.addr = addr;
-            this.key = key;
-            this.outgoing = outgoing;
-            this.sock = (SocketChannel) key.channel();
-        }
-
-        Connection(SelectionKey key, int q_size) {
-            this.msg_q = new Queue(q_size);
-            this.key = key;
-            this.sock = (SocketChannel) key.channel();
-        }
-
-        public int hashCode() {
-            return addr.hashCode();
-        }
-
-        public boolean equals(Object other) {
-            return (other instanceof Connection)
-                    && addr.equals(((Connection) other).addr);
-        }
-
-        public String toString() {
-            return "Connection to " + addr;
-        }
-        
-        InetSocketAddress addr;
-        SocketChannel sock;
-        SelectionKey key;
-        ByteBuffer incoming, copy;
-        ArrayList<ByteBuffer> incomingmb;
-        int msgsize;
-        ByteBuffer[] outgoing;
-        int outremaining;
-        boolean writable, dirty;
-        short port;
-
-        /** Message queue
-         */
-        public Queue msg_q;
-        int q_size;
-
-		public int getQ_size() {
-			return q_size;
-		}
-
-		public void setQ_size(int q_size) {
-			this.q_size = q_size;
-		}
-
-        /**
-         * Used by membership management to assign an unique id to the
-         * remote process. Currently, this is an address.
-         */
-		public UUID id;
-		
-		/**
-		 * Used by membership management to keep the socket where
-		 * this peer can be contacted.
-		 */
-		public InetSocketAddress listen;
-    }
-
-	public int getDefault_Q_size() {
+    public int getDefault_Q_size() {
 		return default_Q_size;
 	}
 
