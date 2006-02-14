@@ -115,6 +115,10 @@ public class Protocol implements ProtocolMBean {
 	public UUID[] getPeerIds() {
 		return this.m_impl.getPeers();
 	}
+	
+	public UUID getId() {
+		return this.m_impl.getId();
+	}
 
 	private Transport net;
 	private GossipImpl g_impl;
