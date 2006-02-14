@@ -72,7 +72,7 @@ public class Transport implements Runnable {
         handlers = new HashMap<Short, DataListener>();
         selector = SelectorProvider.provider().openSelector();
 
-        idinfo=addTarget(local);
+        idinfo = new Connection(this, local, false);;
 
         connections = new HashMap<InetSocketAddress, Connection>();
         id = new InetSocketAddress(InetAddress.getLocalHost(), local.getPort());
@@ -144,38 +144,6 @@ public class Transport implements Runnable {
         }
     }
 
-    public Connection addTarget(InetSocketAddress local) throws IOException, ClosedChannelException {
-		ServerSocketChannel ssock = ServerSocketChannel.open();
-        ssock.configureBlocking(false);
-        
-        ssock.socket().bind(local);
-                
-        SelectionKey key = ssock.register(selector, SelectionKey.OP_ACCEPT);
-        
-        Connection info = new Connection(this, key, ssock);
-        key.attach(info);
-        return info;
-	}
-
-    /**
-     * Initiate connection to peer. This is effective only
-     * after the open callback.
-     */
-    public Connection readd(Connection info, InetSocketAddress addr) {
-        try {
-                SocketChannel sock = SocketChannel.open();
-
-                sock.configureBlocking(false);
-                sock.connect(addr);
-                SelectionKey key = sock.register(selector,
-                        SelectionKey.OP_CONNECT);
-
-                info.setConnection(addr, key, default_Q_size);
-                key.attach(info);
-                // connections.put(addr, info);
-        } catch (IOException e) {}
-        return info;
-    }
     /**
      * Initiate connection to peer. This is effective only
      * after the open callback.
@@ -185,17 +153,8 @@ public class Transport implements Runnable {
     
         try {
             if (info == null) {
-                SocketChannel sock = SocketChannel.open();
-
-                sock.configureBlocking(false);
-                sock.connect(addr);
-                SelectionKey key = sock.register(selector,
-                        SelectionKey.OP_CONNECT);
-
-                info = new Connection(this, null, null);
-                info.setConnection(addr, key, default_Q_size);
-                key.attach(info);
-                // connections.put(addr, info);
+                info = new Connection(this, null, true);
+                info.connect(addr);
             }
         } catch (IOException e) {}
         return info;
@@ -290,19 +249,10 @@ public class Transport implements Runnable {
     }
 
 	void deliverSocket(SocketChannel sock) throws IOException, SocketException, ClosedChannelException {
-		sock.configureBlocking(false);
-		sock.socket().setSendBufferSize(1024);
-		sock.socket().setReceiveBufferSize(1024);
-		SelectionKey nkey = sock.register(selector,
-		        SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-		InetSocketAddress addr=(InetSocketAddress)sock.socket().getRemoteSocketAddress();
-		final Connection info = new Connection(this, null, null);
-		info.setConnection(addr, nkey, default_Q_size);
-
-		nkey.attach(info);
+		final Connection info = new Connection(this, sock);
 
 		synchronized(this) {
-			this.connections.put(addr, info); // adiciona o addr recebido as connections
+			this.connections.put(info.addr, info); // adiciona o addr recebido as connections
 		}
 		queue(new Runnable() {
 		    public void run() {
@@ -374,7 +324,7 @@ public class Transport implements Runnable {
     
     /** DUH, it's a selector (whatever that is)
      */
-    private Selector selector;
+    Selector selector;
 
     /** Storage for open connections to other group members
      * This variable can be queried by an external thread for JMX

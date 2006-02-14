@@ -54,24 +54,68 @@ import java.util.UUID;
  * Socket manipulation utilities.
  */
 public class Connection {
-	void setConnection(InetSocketAddress addr, SelectionKey key, int q_size) {
-        this.msg_q = new Queue(q_size);
-        this.q_size = q_size;
-        this.addr = addr;
-        this.key = key;
-        this.sock = (SocketChannel) key.channel();
-    }
-
-    /*Connection(SelectionKey key, int q_size) {
-        this.msg_q = new Queue(q_size);
-        this.key = key;
-        this.sock = (SocketChannel) key.channel();
-    }*/
-
-    Connection(Transport trans, SelectionKey skey, ServerSocketChannel ssock) {
+	/**
+	 * Create a new connection. If a simultaneous outgoing connection
+	 * is allowed, a single incoming connection is accepted.
+	 * 
+	 * @param trans transport object
+	 * @param bind local address to bind to, if any
+	 * @param conn allow simultaneous outgoing connection
+	 * @throws IOException 
+	 */
+	Connection(Transport trans, InetSocketAddress bind, boolean conn) throws IOException {
     	this.transport = trans;
-        this.skey = skey;
-        this.ssock = ssock;
+		if (conn) {
+			sock = SocketChannel.open();
+			sock.configureBlocking(false);
+			if (bind != null) {
+				sock.socket().setReuseAddress(true);
+			}
+			sock.socket().bind(bind);
+		}
+		if (bind != null) {
+			ssock = ServerSocketChannel.open();
+			ssock.configureBlocking(false);
+			ssock.socket().bind(bind);
+
+			skey = ssock.register(transport.selector,
+					SelectionKey.OP_ACCEPT);
+			skey.attach(this);
+		}
+	}
+	
+	/**
+	 * Initiate connect to remote address.
+	 * 
+	 * @param remote address of target
+	 * @throws IOException
+	 */
+	void connect(InetSocketAddress remote) throws IOException {
+        sock.connect(remote);
+		key = sock.register(transport.selector,
+				SelectionKey.OP_CONNECT);
+		key.attach(this);
+		addr = remote;
+		msg_q = new Queue(transport);
+	}
+
+	/**
+	 * Create a new connection with a pre-existing socket.
+	 * @param trans
+	 * @param sock
+	 * @throws IOException
+	 */
+	Connection(Transport trans, SocketChannel sock) throws IOException {
+    	this.transport = trans;
+    	this.sock = sock;
+		sock.configureBlocking(false);
+		sock.socket().setSendBufferSize(1024);
+		sock.socket().setReceiveBufferSize(1024);
+		key = sock.register(transport.selector,
+				SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+		key.attach(this);
+		addr = (InetSocketAddress) sock.socket().getRemoteSocketAddress();
+		msg_q = new Queue(transport);
 	}
 
 	public int hashCode() {
@@ -109,15 +153,6 @@ public class Connection {
     /** Message queue
      */
     public Queue msg_q;
-    int q_size;
-
-	public int getQ_size() {
-		return q_size;
-	}
-
-	public void setQ_size(int q_size) {
-		this.q_size = q_size;
-	}
 
     /**
      * Used by membership management to assign an unique id to the
@@ -321,14 +356,14 @@ public class Connection {
      */
     void handleAccept() throws IOException {
                 
-        SocketChannel sock = ssock.accept();
+        SocketChannel nsock = ssock.accept();
        
-        if (sock == null) {
+        if (nsock == null) {
             return;
         }
         
         try {
-            transport.deliverSocket(sock);
+            transport.deliverSocket(nsock);
         } catch (IOException e) {// Just drop it.
         }
     
