@@ -64,7 +64,7 @@ public interface Membership {
      * step will be executed.
      * @param info The connection to the new peer.
      */
-    public void open(Transport.Connection info); // event
+    public void open(Connection info); // event
 
     /**
      *  This method is called from Transport whenever a member leaves the group.
@@ -72,7 +72,7 @@ public interface Membership {
      * to the now disconnected peer has already been removed at the transport layer.
      * @param info The recently closed connection.
      */
-    public void close(Transport.Connection info); // event
+    public void close(Connection info); // event
     
     /**
      * Gets the current fanout size. The fanout is the number of local group

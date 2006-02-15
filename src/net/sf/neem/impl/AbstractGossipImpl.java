@@ -65,10 +65,7 @@ public abstract class AbstractGossipImpl {
      * @param syncport The synchronization port (Gossip or Memberhip) which the message is to be delivered to. 
      * @param conns Available connections
      */
-    public void relay(ByteBuffer[] msg, int fanout, short syncport, Transport.Connection[] conns) {
-        // System.out.println("Relaying message");
-        Transport.Connection info;
-
+    public void relay(ByteBuffer[] msg, int fanout, short syncport, Connection[] conns) {
         if (conns.length < 1) {
             return;
         }
@@ -82,15 +79,12 @@ public abstract class AbstractGossipImpl {
             	index = i;
             else
             	index = rand.nextInt(conns.length);
-            
-            if (conns[index].key.isValid()) {
-                info = conns[index];
 
-                /* System.out.println(
-                 "Message from " + net.id().toString() + " to : "
-                 + info.addr.toString());*/
-                net.send(Buffers.clone(msg), info, syncport);
-            }
+            /*
+			 * System.out.println( "Message from " + net.id().toString() + " to : " +
+			 * info.addr.toString());
+			 */
+			conns[index].send(Buffers.clone(msg), syncport);
         }
     }
 

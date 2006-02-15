@@ -135,6 +135,12 @@ public interface ProtocolMBean {
 	 * @return connected peer ids
 	 */
     public UUID[] getPeerIds();
+
+    /**
+	 * Get globally unique local id.
+	 * @return local id
+	 */
+    public UUID getId();
 }
 
 // arch-tag: 2c588950-1f71-46ed-be61-f801fb5c90f8

@@ -65,7 +65,7 @@ public interface DataListener {
      * @param info The connection through wich the message is being received.
      * @param port TODO
      */
-    public void receive(ByteBuffer[] msg, Transport.Connection info, short port);
+    public void receive(ByteBuffer[] msg, Connection info, short port);
 }
 
 
