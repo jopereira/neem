@@ -169,7 +169,7 @@ public class Connection {
          *|  msg   | <- from App
          * --------
          */
-    	if (!key.isValid())
+    	if (key==null)
     		return;
     	
         Bucket b = new Bucket(Buffers.clone(msg), (int)port);
