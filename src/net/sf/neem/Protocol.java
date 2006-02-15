@@ -47,82 +47,85 @@ import net.sf.neem.impl.GossipImpl;
 import net.sf.neem.impl.MembershipImpl;
 import net.sf.neem.impl.Transport;
 
-
 /**
  * Implementation of the NeEM management bean.
- * 
- * @author jop
  */
 public class Protocol implements ProtocolMBean {
-	Protocol(Transport net, GossipImpl gossip, MembershipImpl membership) {
-		this.net = net;
-		this.g_impl = gossip;
-		this.m_impl = membership;
+	Protocol(MulticastChannel neem) {
+		this.neem = neem;
+        this.net = neem.trans;
+		this.g_impl = (GossipImpl) neem.gimpls;
+		this.m_impl = neem.mimpls;
 	}
 	
-	public int getQueueSize() {
-		return net.getDefault_Q_size();
-	}
+    public int getQueueSize() {
+        return net.getDefault_Q_size();
+    }
 
-	public void setQueueSize(int size) {
-		net.setDefault_Q_size(size);
-	}
-	
-	public int getFanout() {
-		return this.g_impl.getFanout();
-	}
-	
-	public void setFanout(int fanout) {
-		this.g_impl.setFanout(fanout);
-	}
+    public void setQueueSize(int size) {
+        net.setDefault_Q_size(size);
+    }
 
-	public int getMembershipFanout() {
-		return this.m_impl.getFanout();
-	}
-	
-	public void setMembershipFanout(int fanout) {
-		this.m_impl.setFanout(fanout);
-	}
-	
-	public int getMaxIds() {
-		return g_impl.getMaxIds();
-	}
+    public int getFanout() {
+        return this.g_impl.getFanout();
+    }
 
-	public void setMaxIds(int max) {
-		g_impl.setMaxIds(max);
-	}
-	
-	public int getGroupSize() {
-		return this.m_impl.getGrp_size();
-	}
-	
-	public void setGroupSize(int groupsize) {
-		this.m_impl.setGrp_size(groupsize);
-	}
+    public void setFanout(int fanout) {
+        this.g_impl.setFanout(fanout);
+    }
+
+    public int getMembershipFanout() {
+        return this.m_impl.getFanout();
+    }
+
+    public void setMembershipFanout(int fanout) {
+        this.m_impl.setFanout(fanout);
+    }
+
+    public int getMaxIds() {
+        return g_impl.getMaxIds();
+    }
+
+    public void setMaxIds(int max) {
+        g_impl.setMaxIds(max);
+    }
+
+    public int getGroupSize() {
+        return this.m_impl.getGrp_size();
+    }
+
+    public void setGroupSize(int groupsize) {
+        this.m_impl.setGrp_size(groupsize);
+    }
     
-	public int getMembershipPeriod() {
-		return m_impl.getDistConnsPeriod();
-	}
+    public int getMembershipPeriod() {
+        return m_impl.getDistConnsPeriod();
+    }
 
-	public void setMembershipPeriod(int period) {
-		m_impl.setDistConnsPeriod(period);
-	}
-	
+    public void setMembershipPeriod(int period) {
+        m_impl.setDistConnsPeriod(period);
+    }
+
     public InetSocketAddress[] getPeers() {
         return this.net.getPeers();
-    }
-	
-	public UUID[] getPeerIds() {
+    } 
+    
+    public UUID[] getPeersUUIDs() {
 		return this.m_impl.getPeers();
 	}
 	
-	public UUID getId() {
+	public UUID getID() {
 		return this.m_impl.getId();
 	}
 
+    public synchronized void addPeer(String addr, int port) {
+        this.neem.connect(new InetSocketAddress(addr,port));
+    }
+	
+    private MulticastChannel neem;
 	private Transport net;
 	private GossipImpl g_impl;
 	private MembershipImpl m_impl;
-}
+};
 
 // arch-tag: 08505269-5fca-435f-a7ae-8a87af222676 

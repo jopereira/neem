@@ -113,6 +113,7 @@ public class Connection {
 				SelectionKey.OP_READ | SelectionKey.OP_WRITE);
 		key.attach(this);
 		msg_q = new Queue(transport);
+		connected=true;
 	}
 
     /*public String toString() {

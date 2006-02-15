@@ -254,18 +254,17 @@ public class MulticastChannel implements InterruptibleChannel,
      * @return the management bean
      */
     public ProtocolMBean getProtocolMBean() {
-        return new Protocol(this.trans, (GossipImpl) this.gimpls,
-                (MembershipImpl) this.mimpls);
+        return new Protocol(this);
     }
 
     /* Transport layer */
-    private Transport trans = null;
+    Transport trans = null;
 
     /* Gossip layer */
-    private Gossip gimpls = null;
+    Gossip gimpls = null;
 
     /* Membership layer */
-    private MembershipImpl mimpls = null;
+    MembershipImpl mimpls = null;
 
     private boolean isClosed;
 

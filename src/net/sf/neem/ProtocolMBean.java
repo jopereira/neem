@@ -130,17 +130,24 @@ public interface ProtocolMBean {
 	 */
     public InetSocketAddress[] getPeers();
     
+    /**
+     * Connect to a new peer.
+     * @param addr hostname or address of peer
+     * @param port listening port number
+     */
+    public void addPeer(String addr, int port);
+    
 	/**
 	 * Get list of currently connected peer ids.
 	 * @return connected peer ids
 	 */
-    public UUID[] getPeerIds();
+    public UUID[] getPeersUUIDs();
 
     /**
 	 * Get globally unique local id.
 	 * @return local id
 	 */
-    public UUID getId();
+    public UUID getID();
 }
 
 // arch-tag: 2c588950-1f71-46ed-be61-f801fb5c90f8
