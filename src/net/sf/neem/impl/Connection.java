@@ -1,4 +1,4 @@
-/*
+/*	
  * NeEM - Network-friendly Epidemic Multicast
  * Copyright (c) 2005-2006, University of Minho
  * All rights reserved.
@@ -94,7 +94,6 @@ public class Connection {
 		key = sock.register(transport.selector,
 				SelectionKey.OP_CONNECT);
 		key.attach(this);
-		addr = remote;
 		msg_q = new Queue(transport);
 	}
 
@@ -113,25 +112,13 @@ public class Connection {
 		key = sock.register(transport.selector,
 				SelectionKey.OP_READ | SelectionKey.OP_WRITE);
 		key.attach(this);
-		addr = (InetSocketAddress) sock.socket().getRemoteSocketAddress();
 		msg_q = new Queue(transport);
 	}
 
-	public int hashCode() {
-        return addr.hashCode();
-    }
-
-    public boolean equals(Object other) {
-        return (other instanceof Connection)
-                && addr.equals(((Connection) other).addr);
-    }
-
-    public String toString() {
+    /*public String toString() {
         return "Connection to " + addr;
-    }
+    }*/
     
-    InetSocketAddress addr;
-
     private Transport transport;
     private SocketChannel sock;
     private SelectionKey key;
@@ -144,7 +131,7 @@ public class Connection {
     private int outremaining;
     private short port;
  
-    private boolean dirty;
+    private boolean dirty, connected;
 
     /**
 	 * Socket used to listen for connections
@@ -376,6 +363,7 @@ public class Connection {
     void handleConnect() throws IOException {
         try {
             if (sock.finishConnect()) {
+            	connected=true;
                 sock.socket().setReceiveBufferSize(1024);
                 sock.socket().setSendBufferSize(1024);
 
@@ -395,6 +383,7 @@ public class Connection {
     void handleClose() {
     	if (key!=null) {
     		try {
+    			connected=false;
 				key.channel().close();
 				key.cancel();
 				sock.close();
@@ -415,6 +404,18 @@ public class Connection {
             }
     	}
     }
+
+	public InetSocketAddress getPeer() {
+		if (connected)
+			return (InetSocketAddress) sock.socket().getRemoteSocketAddress();
+		return null;
+	}
+
+	public InetSocketAddress getLocal() {
+		if (ssock!=null)
+			return (InetSocketAddress) ssock.socket().getLocalSocketAddress();
+		return null;
+	}
 }
 
 // arch-tag: 31ba16d7-de61-4cce-98e4-26c590632002

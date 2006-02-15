@@ -53,9 +53,13 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -71,11 +75,11 @@ public class Transport implements Runnable {
         handlers = new HashMap<Short, DataListener>();
         selector = SelectorProvider.provider().openSelector();
 
+        connections = new HashSet<Connection>();
         idinfo = new Connection(this, local, false);;
+        connections.add(idinfo); 
 
-        connections = new HashMap<InetSocketAddress, Connection>();
         id = new InetSocketAddress(InetAddress.getLocalHost(), local.getPort());
-                
     }
     
     /**
@@ -89,7 +93,7 @@ public class Transport implements Runnable {
      * Get all connections.
      */
     public Connection[] connections() {
-        return (Connection[]) connections.values().toArray(
+        return (Connection[]) connections.toArray(
                 new Connection[connections.size()]);
     }
 
@@ -97,7 +101,7 @@ public class Transport implements Runnable {
      * Call periodically to garbage collect idle connections.
      */
     public void gc() {
-        Iterator i = connections.values().iterator();
+        Iterator i = connections.iterator();
 
         while (i.hasNext()) {
             Connection info = (Connection) i.next();
@@ -116,7 +120,7 @@ public class Transport implements Runnable {
         timers.clear();
         membership_handler=null;
         selector.wakeup();
-        for(Connection info: connections.values())
+        for(Connection info: connections)
             info.handleClose();
         idinfo.handleClose();
     }
@@ -147,24 +151,13 @@ public class Transport implements Runnable {
      * Initiate connection to peer. This is effective only
      * after the open callback.
      */
-    public Connection add(InetSocketAddress addr) {
-        Connection info = (Connection) connections.get(addr);
-    
+    public void add(InetSocketAddress addr) {
         try {
-            if (info == null) {
-                info = new Connection(this, null, true);
-                info.connect(addr);
-            }
-        } catch (IOException e) {}
-        return info;
-    }
-    
-    /**
-     * Get connection by remote address.
-     */
-    public Connection get(InetSocketAddress addr) {
-        // System.out.println("Closing: " + addr.toString());
-        return connections.get(addr);
+           Connection info = new Connection(this, null, true);
+           info.connect(addr);
+        } catch (IOException e) {
+        	// We don't care
+        }
     }
 
     /**
@@ -251,7 +244,7 @@ public class Transport implements Runnable {
 		final Connection info = new Connection(this, sock);
 
 		synchronized(this) {
-			this.connections.put(info.addr, info); // adiciona o addr recebido as connections
+			this.connections.add(info); // adiciona o addr recebido as connections
 		}
 		queue(new Runnable() {
 		    public void run() {
@@ -262,33 +255,23 @@ public class Transport implements Runnable {
 	}
 
 	void notifyOpen(final Connection info) {
-        Connection other;
         synchronized(this) {
-        	other = connections.put(info.addr, info);
+        	connections.add(info);
         }
-
-        if (other == null) {
-        	queue(new Runnable() {
-				public void run() {
-					if (membership_handler!=null)
-						membership_handler.open(info);
-				}
-			});
-        } else {
-        	other.handleClose();
-        }
+        queue(new Runnable() {
+			public void run() {
+				if (membership_handler != null)
+					membership_handler.open(info);
+			}
+		});
 	}
     
 	void notifyClose(final Connection info) {
-        if (info.addr == null || closed) {
+        if (closed) {
 			return;
 		}
 		synchronized (this) {
-			final Connection other = connections.get(info.addr);
-
-			if (info != other)
-				return;
-			connections.remove(other.addr);
+			connections.remove(info);
 		}
 		queue(new Runnable() {
 			public void run() {
@@ -331,7 +314,7 @@ public class Transport implements Runnable {
      * be synchronized. Sections that read it from the protocol thread need
      * not be synchronized.
      */
-    private Map<InetSocketAddress, Connection> connections;
+    private Set<Connection> connections;
 
     /** Queue for tasks
      */
@@ -362,11 +345,29 @@ public class Transport implements Runnable {
 	}
 
 	/**
-     * Get ids of all direct peers.
+     * Get addresses of all connected peers.
      */
     public InetSocketAddress[] getPeers() {
-        return (InetSocketAddress[]) connections.keySet().toArray(
-                new InetSocketAddress[connections.size()]);
+    	List<InetSocketAddress> addrs=new ArrayList<InetSocketAddress>();
+    	for(Connection info: connections) {
+    		InetSocketAddress addr=info.getPeer();
+    		if (addr!=null)
+    			addrs.add(addr);
+    	}
+    	return addrs.toArray(new InetSocketAddress[addrs.size()]);
+    }
+
+	/**
+     * Get all local addresses.
+     */
+    public InetSocketAddress[] getLocals() {
+    	List<InetSocketAddress> addrs=new ArrayList<InetSocketAddress>();
+    	for(Connection info: connections) {
+    		InetSocketAddress addr=info.getLocal();
+    		if (addr!=null)
+    			addrs.add(addr);
+    	}
+    	return addrs.toArray(new InetSocketAddress[addrs.size()]);
     }
 }
 
