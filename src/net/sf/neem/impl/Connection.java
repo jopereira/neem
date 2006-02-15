@@ -55,8 +55,7 @@ import java.util.UUID;
  */
 public class Connection {
 	/**
-	 * Create a new connection. If a simultaneous outgoing connection
-	 * is allowed, a single incoming connection is accepted.
+	 * Create a new connection.
 	 * 
 	 * @param trans transport object
 	 * @param bind local address to bind to, if any
@@ -136,13 +135,16 @@ public class Connection {
     private Transport transport;
     private SocketChannel sock;
     private SelectionKey key;
+
     private ByteBuffer incoming, copy;
     private ArrayList<ByteBuffer> incomingmb;
     private int msgsize;
+
     private ByteBuffer[] outgoing;
     private int outremaining;
-    private boolean dirty;
     private short port;
+ 
+    private boolean dirty;
 
     /**
 	 * Socket used to listen for connections
