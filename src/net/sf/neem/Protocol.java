@@ -75,13 +75,13 @@ public class Protocol implements ProtocolMBean {
         this.g_impl.setFanout(fanout);
     }
 
-    public int getMembershipFanout() {
+    /*public int getMembershipFanout() {
         return this.m_impl.getFanout();
     }
 
     public void setMembershipFanout(int fanout) {
         this.m_impl.setFanout(fanout);
-    }
+    }*/
 
     public int getMaxIds() {
         return g_impl.getMaxIds();

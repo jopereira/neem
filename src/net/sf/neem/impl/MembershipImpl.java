@@ -72,19 +72,15 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
      *            Synchronization port, i.e., the port to wich membership
      *            related messages must be sent. Specifies a logic, not socket,
      *            port.
-     * @param idport
-     *            Identification port, i.e., the port to which identification
-     *            messages must be sent.
      * @param fanout
      *            The number of peers to be warned of local membership changes
      *            or local group members addresses.
      * @param grp_size
      *            The maximum number of members on the local group.
      */
-    public MembershipImpl(Transport net, short syncport/* 1 */,
-            short idport/* 2 */, int fanout, int grp_size) {
+    public MembershipImpl(Transport net, short syncport,
+            short idport, int grp_size) {
         this.net = net;
-        this.fanout = fanout;
         this.grp_size = grp_size;
         this.syncport = syncport; // Connection setup port
         this.idport = idport; // ID passing port
@@ -179,7 +175,7 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
     private void probably_remove() {
         Connection[] conns = connections();
         int nc = conns.length;
-        int curr_size = peers.size();
+        //int curr_size = peers.size();
 
         // if (curr_size >= grp_size) {
         while( peers.size() - grp_size > 0) {
@@ -202,24 +198,25 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
     }
 
     /**
-     * Tell a fanout number of members of my local membership, that there is a
+     * Tell a member of my local membership, that there is a
      * connection do the peer identified by its address, wich is sent to the
      * peers.
      */
     private void distributeConnections() {
         Connection[] conns = connections();
-        Object[] notnated = this.notNated.toArray();
+        Connection[] notnated = (Connection[])this.notNated.toArray(new Connection[notNated.size()]);
         // Connection toSend = (Connection)
         // notnated[rand.nextInt(notnated.length)];
-        for (int i = 0; i < this.fanout; i++) {
-            Connection toSend = conns[rand.nextInt(conns.length)];
+        //for (int i = 0; i < this.fanout; i++) {
+            Connection toSend = notnated[rand.nextInt(notnated.length)];
             Connection toReceive = conns[rand.nextInt(conns.length)];
 
             if (toSend.id == null)
-                continue;
+                return;
+            	//continue;
             
             this.tradePeers(toReceive, toSend);
-        }
+        //}
     }
     
     public void tradePeers(Connection target, Connection arrow) {
@@ -245,9 +242,9 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
      * 
      * @return The current fanout.
      */
-    public int getFanout() {
+    /*public int getFanout() {
         return fanout;
-    }
+    }*/
 
     /**
      * Sets the new fanout value.
@@ -255,9 +252,9 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
      * @param fanout
      *            The new fanout value
      */
-    public void setFanout(int fanout) {
+    /*public void setFanout(int fanout) {
         this.fanout = fanout;
-    }
+    }*/
 
     /**
      * Gets the current maximum size for the local membership.
@@ -316,7 +313,7 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
 
     private short syncport, idport;
 
-    private int fanout, grp_size;
+    private int grp_size;
 
     protected HashSet<UUID> msgs;
 
@@ -324,7 +321,7 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
 
     private UUID myId;
 
-    private int distConnsPeriod = 5000;
+    private int distConnsPeriod = 1000;
 
     private Transport net = null;
 

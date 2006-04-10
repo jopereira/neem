@@ -79,25 +79,25 @@ public interface Membership {
      * members to send a message to.
      * @return The current fanout.
      */
-    public int getFanout();
+    //public int getFanout();
 
     /**
      * Sets the new fanout value.
      * @param fanout The new fanout value
      */
-	public void setFanout(int fanout);
+	//public void setFanout(int fanout);
 
 	/**
 	 * Gets the current maximum size for the local membership.
 	 * @return The current local membership's maximum size
 	 */
-	public int getGrp_size();
+	//public int getGrp_size();
 
 	/**
 	 * Sets a new value for the maximum size of the local membership.
 	 * @param grp_size The new maximum membership's size.
 	 */
-	public void setGrp_size(int grp_size);
+	//public void setGrp_size(int grp_size);
 }
 
 
