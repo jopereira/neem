@@ -57,7 +57,7 @@ import java.nio.*;
 public class Bucket {
     
     /** Creates a new instance of Bucket */
-    public Bucket(ByteBuffer[] msg, Integer port) {
+    public Bucket(ByteBuffer[] msg, Short port) {
         this.msg = msg;
         this.port = port;
     }
@@ -68,12 +68,12 @@ public class Bucket {
     }
     
     /** Returns the port to wich the message is intended */
-    public Integer getPort() {
+    public Short getPort() {
         return (this.port);
     }
     
     private ByteBuffer[] msg;
-    private Integer port;
+    private Short port;
 }
 
 // arch-tag: b07a5de4-0eca-4ba3-9bf5-c1564cd9cece

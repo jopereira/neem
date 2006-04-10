@@ -53,7 +53,7 @@ import java.nio.*;
  * @author psantos@GSD
  */
 
-public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListener {
+public class GossipImpl implements Gossip, DataListener {
 
     /**
      *  Creates a new instance of GossipImpl.
@@ -101,7 +101,7 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
             if (msgs.add(uuid)) {
             	purgeMsgs();
                 // only pass to application a clean message => NO HEADERS FROM LOWER LAYERS
-                this.handler.deliver(msg, this);
+                this.handler.deliver(msg);
                 relay(out, this.fanout, this.syncport, memb.connections());
             }
         } catch (Exception e) {
@@ -172,6 +172,57 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
     public void setMaxIds(int maxIds) {
         this.maxIds = maxIds;
     }
+    
+    /**
+     * This method sends a copy of the original message to a fanout of peers of
+     * the local memberhip.
+     * 
+     * @param msg
+     *            The original message
+     * @param fanout
+     *            Number of peers to send the copy of the message to.
+     * @param syncport
+     *            The synchronization port (Gossip or Memberhip) which the
+     *            message is to be delivered to.
+     * @param conns
+     *            Available connections
+     */
+    private void relay(ByteBuffer[] msg, int fanout, short syncport,
+            Connection[] conns) {
+        if (conns.length < 1) {
+            return;
+        }
+
+        if (fanout > conns.length)
+            fanout = conns.length;
+        
+        int index;
+        for (int i = 0; i < fanout; i++) {
+            /*
+             * System.out.println( "Message from " + net.id().toString() + " to : " +
+             * info.addr.toString());
+             */
+            index = rand.nextInt(fanout);
+            if (conns[index] != null)
+                conns[index].send(Buffers.clone(msg), syncport);
+        }
+    }
+
+    // TODO Remove me!
+    /*public Transport net() {
+        return this.net;
+    }*
+
+    /**
+     * Transport instance through wich the message will be sent. It's a
+     * reference to the invoking class' transport layer instance.
+     */
+    private Transport net;
+
+    /**
+     * Random number generator for selecting targets.
+     */
+    private Random rand = new Random();
 }
 
 

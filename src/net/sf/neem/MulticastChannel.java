@@ -73,7 +73,7 @@ public class MulticastChannel implements InterruptibleChannel,
         mimpls = new MembershipImpl(trans, (short)1, (short)2, 4, 10);
         gimpls = new GossipImpl(mimpls, (short)0, 4);
         gimpls.handler(new App() {
-            public void deliver(ByteBuffer[] buf, Gossip gimpl) {
+            public void deliver(ByteBuffer[] buf) {
                 enqueue(buf);
             }
         });

@@ -60,7 +60,7 @@ public interface App {
      * It's called by the gossip layer.
      * @param msg The message being delivered.
      */
-    public void deliver(ByteBuffer[] msg, Gossip gimpl);
+    public void deliver(ByteBuffer[] msg);
 }
 
 

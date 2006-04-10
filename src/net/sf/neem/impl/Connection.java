@@ -41,6 +41,8 @@
 package net.sf.neem.impl;
 
 import java.io.IOException;
+import java.io.Serializable;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
@@ -53,8 +55,13 @@ import java.util.UUID;
 /**
  * Socket manipulation utilities.
  */
-public class Connection {
+public class Connection implements Serializable {
 	/**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+
+    /**
 	 * Create a new connection.
 	 * 
 	 * @param trans transport object
@@ -82,9 +89,29 @@ public class Connection {
 			skey.attach(this);
 		}
 	}
+    
+    /**
+     * Create a new connection from an existing socket (used to associate a Connection to 
+     * an incoming connection request).
+     * @param trans Transport layer instance that received the connect request
+     * @param sock The accepting socket.
+     * @throws IOException If an I/O operation did not succeed.
+     */
+    Connection(Transport trans, SocketChannel sock) throws IOException {
+        this.transport = trans;
+        this.sock = sock;
+        sock.configureBlocking(false);
+        sock.socket().setSendBufferSize(1024);
+        sock.socket().setReceiveBufferSize(1024);
+        key = sock.register(transport.selector,
+                SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+        key.attach(this);
+        msg_q = new Queue(transport.getDefault_Q_size());
+        connected=true;
+    }
 	
 	/**
-	 * Initiate connect to remote address.
+	 * Initiate connection to remote address.
 	 * 
 	 * @param remote address of target
 	 * @throws IOException
@@ -94,70 +121,15 @@ public class Connection {
 		key = sock.register(transport.selector,
 				SelectionKey.OP_CONNECT);
 		key.attach(this);
-		msg_q = new Queue(transport);
+		msg_q = new Queue(transport.getDefault_Q_size());
 	}
-
-	/**
-	 * Create a new connection with a pre-existing socket.
-	 * @param trans
-	 * @param sock
-	 * @throws IOException
-	 */
-	Connection(Transport trans, SocketChannel sock) throws IOException {
-    	this.transport = trans;
-    	this.sock = sock;
-		sock.configureBlocking(false);
-		sock.socket().setSendBufferSize(1024);
-		sock.socket().setReceiveBufferSize(1024);
-		key = sock.register(transport.selector,
-				SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-		key.attach(this);
-		msg_q = new Queue(transport);
-		connected=true;
-	}
-
-    /*public String toString() {
-        return "Connection to " + addr;
-    }*/
     
-    private Transport transport;
-    private SocketChannel sock;
-    private SelectionKey key;
-
-    private ByteBuffer incoming, copy;
-    private ArrayList<ByteBuffer> incomingmb;
-    private int msgsize;
-
-    private ByteBuffer[] outgoing;
-    private int outremaining;
-    private short port;
- 
-    private boolean dirty, connected;
-
-    /**
-	 * Socket used to listen for connections
-	 */
-    private ServerSocketChannel ssock;
-    private SelectionKey skey;
-
-    /** Message queue
-     */
-    public Queue msg_q;
-
-    /**
-     * Used by membership management to assign an unique id to the
-     * remote process. Currently, this is an address.
-     */
-	public UUID id;
-	
-	/**
-	 * Used by membership management to keep the socket where
-	 * this peer can be contacted.
-	 */
-	public InetSocketAddress listen;
+    
 	
     /**
-     * Send message to 1 (one) peer identified by @arg: info.
+     * Send message to peers
+     * @param msg The message to be sent.
+     * @param port Port, at transport layer, where the message must be delivered.
      */
     public void send(ByteBuffer[] msg, short port) {
         // Header order:
@@ -169,11 +141,12 @@ public class Connection {
          *|  msg   | <- from App
          * --------
          */
-    	if (key==null)
-    		return;
+    	if (key==null) {
+            //System.out.println("key was null");
+            return;
+        }
     	
-        Bucket b = new Bucket(Buffers.clone(msg), (int)port);
-        
+        Bucket b = new Bucket(Buffers.clone(msg), new Short(port));
         msg_q.push((Object) b);
         handleWrite();
     }
@@ -204,8 +177,8 @@ public class Connection {
         try {
             if (outgoing == null) {
                 Bucket b = (Bucket) msg_q.pop();
-                Integer portI = b.getPort();
                 
+                Short portI = b.getPort();
                 ByteBuffer[] msg = b.getMsg();
 
                 if (msg == null || portI == null) {
@@ -241,7 +214,7 @@ public class Connection {
             }            
         } catch (IOException e) {
             handleClose();
-            return;
+            //return;
         } catch (CancelledKeyException cke) {
             transport.notifyClose(this);
         }
@@ -353,6 +326,7 @@ public class Connection {
         try {
             transport.deliverSocket(nsock);
         } catch (IOException e) {// Just drop it.
+            System.out.println(e.getMessage()); // Debugging
         }
     
     }
@@ -373,6 +347,7 @@ public class Connection {
                 return;
             }
         } catch (Exception e) {// Fall through, see below:
+            System.out.println("Could not connect");
         } 
         handleClose();
     }
@@ -417,6 +392,56 @@ public class Connection {
 			return (InetSocketAddress) ssock.socket().getLocalSocketAddress();
 		return null;
 	}
+
+    public boolean isNated() {
+        return isNated;
+    }
+
+    public void setNated(boolean isNated) {
+        this.isNated = isNated;
+    }
+    
+    public InetAddress getRemoteAddress() {
+        return ((InetSocketAddress) this.sock.socket().getRemoteSocketAddress()).getAddress();
+    }
+    
+    private Transport transport;
+    protected SocketChannel sock;
+    private SelectionKey key;
+
+    private ByteBuffer incoming, copy;
+    private ArrayList<ByteBuffer> incomingmb;
+    private int msgsize;
+
+    private ByteBuffer[] outgoing;
+    private int outremaining;
+    private short port;
+ 
+    private boolean dirty, connected;
+
+    /**
+     * Socket used to listen for connections
+     */
+    private ServerSocketChannel ssock;
+    private SelectionKey skey;
+
+    /** Message queue
+     */
+    public Queue msg_q;
+
+    /**
+     * Used by membership management to assign an unique id to the
+     * remote process.
+     */
+    public UUID id;
+    
+    /**
+     * Used by membership management to keep the socket where
+     * this peer can be contacted.
+     */
+    public InetSocketAddress listen;
+    
+    public boolean isNated;
 }
 
 // arch-tag: 31ba16d7-de61-4cce-98e4-26c590632002

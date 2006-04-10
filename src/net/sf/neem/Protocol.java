@@ -43,6 +43,7 @@ package net.sf.neem;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
+import net.sf.neem.impl.Connection;
 import net.sf.neem.impl.GossipImpl;
 import net.sf.neem.impl.MembershipImpl;
 import net.sf.neem.impl.Transport;
@@ -117,11 +118,11 @@ public class Protocol implements ProtocolMBean {
 	public UUID getID() {
 		return this.m_impl.getId();
 	}
-
+    
     public synchronized void addPeer(String addr, int port) {
         this.neem.connect(new InetSocketAddress(addr,port));
     }
-	
+    
     private MulticastChannel neem;
 	private Transport net;
 	private GossipImpl g_impl;
