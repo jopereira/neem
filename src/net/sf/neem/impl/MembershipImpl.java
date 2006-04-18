@@ -72,9 +72,6 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
      *            Synchronization port, i.e., the port to wich membership
      *            related messages must be sent. Specifies a logic, not socket,
      *            port.
-     * @param fanout
-     *            The number of peers to be warned of local membership changes
-     *            or local group members addresses.
      * @param grp_size
      *            The maximum number of members on the local group.
      */
