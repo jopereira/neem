@@ -43,6 +43,8 @@ package net.sf.neem;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
+//import net.sf.neem.impl.Connection;
+
 /**
  * Interface for a JMX management bean. This allows several protocol parameters
  * to be queried and set, in order to fine tune protocol behavior. Available
@@ -74,18 +76,6 @@ public interface ProtocolMBean {
 	 * @param fanout number of targets
 	 */
 	public void setFanout(int fanout);
-	
-	/**
-	 * Get the number of gossip target for each round.
-	 * @return number of targets
-	 */
-	public int getMembershipFanout();
-	
-	/**
-	 * Set the number of gossip target for each round.
-	 * @param fanout number of targets
-	 */
-	public void setMembershipFanout(int fanout);
 	
 	/**
 	 * Get the maximum number of cached message ids.

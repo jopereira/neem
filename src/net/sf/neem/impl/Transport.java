@@ -76,7 +76,7 @@ public class Transport implements Runnable {
         selector = SelectorProvider.provider().openSelector();
 
         connections = new HashSet<Connection>();
-        idinfo = new Connection(this, local, false);;
+        idinfo = new Connection(this, local, false);
         connections.add(idinfo); 
 
         id = new InetSocketAddress(InetAddress.getLocalHost(), local.getPort());
@@ -161,7 +161,7 @@ public class Transport implements Runnable {
     }
 
     /**
-     * Adds a reference to a gossip event handler.
+     * Add a reference to an event handler.
      */
     public void handler(DataListener handler, short port) {
         this.handlers.put(new Short(port), handler);
@@ -232,7 +232,7 @@ public class Transport implements Runnable {
                         
             } catch (IOException e) {
                 // This handles only exceptions thrown by the selector and the
-                // server socket. Invidual connections are dropped silently.
+                // server socket. Invdidual connections are dropped silently.
                 e.printStackTrace();
             } catch (CancelledKeyException cke) {
                 System.out.println("The selected key was closed.");
@@ -244,7 +244,7 @@ public class Transport implements Runnable {
 		final Connection info = new Connection(this, sock);
 
 		synchronized(this) {
-			this.connections.add(info); // adiciona o addr recebido as connections
+			this.connections.add(info); // adiciona nova connection as connections conhecidas
 		}
 		queue(new Runnable() {
 		    public void run() {
@@ -291,9 +291,9 @@ public class Transport implements Runnable {
 				} catch (NullPointerException npe) {
 					// npe.printStackTrace();
 					System.out.println("DataListener@port not found: "
-							+ prt.shortValue()); // there wasn't a gossip
-													// layer registered here at
-													// that port
+							+ prt.shortValue()); // there wasn't a gossip/membership
+												 // layer registered here at
+												 // that port (weird behaviour)
 				}
 			}
 		});
@@ -304,7 +304,8 @@ public class Transport implements Runnable {
 	 */
     private InetSocketAddress id;
     
-    /** DUH, it's a selector (whatever that is)
+    /**
+     * Selector for events
      */
     Selector selector;
 
@@ -316,24 +317,34 @@ public class Transport implements Runnable {
      */
     private Set<Connection> connections;
 
-    /** Queue for tasks
+    /** 
+     * Queue for tasks
      */
     private SortedMap<Long, Runnable> timers;
 
-    /** don't know rigth now
+    /** 
+     * Service indicator
      */
     public int accepted = 0;
 
-    /** Storage for DataListener protocol events handlers
+    /** 
+     * Storage for DataListener protocol events handlers
      */
     private Map<Short, DataListener> handlers;
 
-    /** Reference for Membership events handler
+    /** 
+     * Reference for Membership events handler
      */
     private Membership membership_handler;
 
+    /**
+     * If we're not responding any more
+     */
     private boolean closed;
     
+    /**
+     * Execution queue size
+     */
     private int default_Q_size = 10;
 
     public int getDefault_Q_size() {

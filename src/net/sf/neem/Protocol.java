@@ -74,14 +74,6 @@ public class Protocol implements ProtocolMBean {
         this.g_impl.setFanout(fanout);
     }
 
-    public int getMembershipFanout() {
-        return this.m_impl.getFanout();
-    }
-
-    public void setMembershipFanout(int fanout) {
-        this.m_impl.setFanout(fanout);
-    }
-
     public int getMaxIds() {
         return g_impl.getMaxIds();
     }
@@ -117,11 +109,11 @@ public class Protocol implements ProtocolMBean {
 	public UUID getID() {
 		return this.m_impl.getId();
 	}
-
+    
     public synchronized void addPeer(String addr, int port) {
         this.neem.connect(new InetSocketAddress(addr,port));
     }
-	
+    
     private MulticastChannel neem;
 	private Transport net;
 	private GossipImpl g_impl;

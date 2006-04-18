@@ -69,12 +69,12 @@ public class Queue {
      *  Creates a new queue with RED (Random Early Detection) purging that
      * can hold size number of objects
      * 
-     * @param transport The maximum number of elements this queue can hold.
+     * @param default_Q_size The maximum number of elements this queue can hold.
      */
-    public Queue(Transport transport) {
+    public Queue(int default_Q_size) {
         this.q = new Vector<Object>();
-        this.min_threshold = transport.getDefault_Q_size();
-        this.max_threshold = transport.getDefault_Q_size();
+        this.min_threshold = default_Q_size;
+        this.max_threshold = default_Q_size;
         this.discard_probability = 1.0;
         this.size = 0;
         this.dropped = 0;

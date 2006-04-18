@@ -73,32 +73,6 @@ public interface Membership {
      * @param info The recently closed connection.
      */
     public void close(Connection info); // event
-    
-    /**
-     * Gets the current fanout size. The fanout is the number of local group
-     * members to send a message to.
-     * @return The current fanout.
-     */
-    public int getFanout();
-
-    /**
-     * Sets the new fanout value.
-     * @param fanout The new fanout value
-     */
-	public void setFanout(int fanout);
-
-	/**
-	 * Gets the current maximum size for the local membership.
-	 * @return The current local membership's maximum size
-	 */
-	public int getGrp_size();
-
-	/**
-	 * Sets a new value for the maximum size of the local membership.
-	 * @param grp_size The new maximum membership's size.
-	 */
-	public void setGrp_size(int grp_size);
 }
 
-
-; // arch-tag: ffede092-c2f3-43d3-a370-e70051be1ede
+// arch-tag: ffede092-c2f3-43d3-a370-e70051be1ede

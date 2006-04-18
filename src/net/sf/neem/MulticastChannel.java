@@ -70,10 +70,10 @@ public class MulticastChannel implements InterruptibleChannel,
     public MulticastChannel(InetSocketAddress local) throws IOException {
         // this.props = this.props.loadFromXML(new );
         trans = new Transport(local);
-        mimpls = new MembershipImpl(trans, (short)1, (short)2, 4, 10);
+        mimpls = new MembershipImpl(trans, (short)1, (short)2, 10);
         gimpls = new GossipImpl(mimpls, (short)0, 4);
         gimpls.handler(new App() {
-            public void deliver(ByteBuffer[] buf, Gossip gimpl) {
+            public void deliver(ByteBuffer[] buf) {
                 enqueue(buf);
             }
         });

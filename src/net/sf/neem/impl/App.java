@@ -45,9 +45,7 @@
  */
 package net.sf.neem.impl;
 
-
 import java.nio.*;
-
 
 /**
  * Applications that intend to use the Gossip Multicast Protocol MUST implement this Interface.
@@ -60,10 +58,7 @@ public interface App {
      * It's called by the gossip layer.
      * @param msg The message being delivered.
      */
-    public void deliver(ByteBuffer[] msg, Gossip gimpl);
+    public void deliver(ByteBuffer[] msg);
 }
-
-
-;
 
 // arch-tag: 6b30f28e-5375-46ef-9963-8296bf64f9eb

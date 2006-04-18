@@ -39,41 +39,40 @@
  */
 
 /*
- * Bucket.java
+ * Queued.java
  *
  * Created on May 2, 2005, 7:04 PM
  */
 
 package net.sf.neem.impl;
 
-
 import java.nio.*;
-
 
 /**
  * Message and port wrapper for distribution enqueueing.
+ * 
  * @author psantos
  */
-public class Bucket {
-    
-    /** Creates a new instance of Bucket */
-    public Bucket(ByteBuffer[] msg, Integer port) {
-        this.msg = msg;
-        this.port = port;
-    }
-    
-    /** Returns the message in this Bucket */
-    public ByteBuffer[] getMsg() {
-        return(this.msg);
-    }
-    
-    /** Returns the port to wich the message is intended */
-    public Integer getPort() {
-        return (this.port);
-    }
-    
-    private ByteBuffer[] msg;
-    private Integer port;
+public class Queued {
+
+	/** Creates a new instance of Queued */
+	public Queued(ByteBuffer[] msg, short port) {
+		this.msg = msg;
+		this.port = port;
+	}
+
+	/** Returns the message in this Queued */
+	public ByteBuffer[] getMsg() {
+		return (this.msg);
+	}
+
+	/** Returns the port to wich the message is intended */
+	public short getPort() {
+		return (this.port);
+	}
+
+	private ByteBuffer[] msg;
+	private short port;
 }
 
 // arch-tag: b07a5de4-0eca-4ba3-9bf5-c1564cd9cece
