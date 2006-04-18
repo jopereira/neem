@@ -51,7 +51,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
+//import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -86,7 +86,7 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         this.idport = idport; // ID passing port
         this.myId = UUID.randomUUID();
         this.peers = new HashMap<UUID, Connection>();
-        this.notNated = new HashSet<Connection>();
+        //this.notNated = new HashSet<Connection>();
         net.handler(this, this.syncport);
         net.handler(this, this.idport);
         net.membership_handler(this);
@@ -153,8 +153,8 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         // "CLOSE@" + myId + " : " + addr.toString());
         if (info.id != null) {
             peers.remove(info.id);
-            if (this.notNated.contains(info))
-                this.notNated.remove(info);
+            /*if (this.notNated.contains(info))
+                this.notNated.remove(info);*/
 //            FileOps.write("Removing: " + info.id.toString()
 //                    + "| still exists? " + peers.containsKey(info.id) + "\n",
 //                    "data/log/log" + this.myId.toString());
@@ -204,11 +204,11 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
      */
     private void distributeConnections() {
         Connection[] conns = connections();
-        Connection[] notnated = (Connection[])this.notNated.toArray(new Connection[notNated.size()]);
+        //Connection[] notnated = (Connection[])this.notNated.toArray(new Connection[notNated.size()]);
         // Connection toSend = (Connection)
         // notnated[rand.nextInt(notnated.length)];
         //for (int i = 0; i < this.fanout; i++) {
-            Connection toSend = notnated[rand.nextInt(notnated.length)];
+            Connection toSend = conns[rand.nextInt(conns.length)];
             Connection toReceive = conns[rand.nextInt(conns.length)];
 
             if (toSend.id == null)
@@ -312,8 +312,8 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
     private HashMap<UUID, Connection> peers;
 
     private short syncport, idport;
-
     private int grp_size;
+    
 
     protected HashSet<UUID> msgs;
 
@@ -327,7 +327,7 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
 
     Random rand = new Random();
 
-    private Set<Connection> notNated;
+    //private Set<Connection> notNated;
 
     public UUID getId() {
         return myId;

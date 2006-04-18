@@ -43,7 +43,7 @@ package net.sf.neem;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
-import net.sf.neem.impl.Connection;
+//import net.sf.neem.impl.Connection;
 
 /**
  * Interface for a JMX management bean. This allows several protocol parameters

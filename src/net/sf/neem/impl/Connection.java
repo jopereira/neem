@@ -393,13 +393,13 @@ public class Connection implements Serializable {
 		return null;
 	}
 
-    public boolean isNated() {
+    /*public boolean isNated() {
         return isNated;
     }
 
     public void setNated(boolean isNated) {
         this.isNated = isNated;
-    }
+    }*/
     
     public InetAddress getRemoteAddress() {
         return ((InetSocketAddress) this.sock.socket().getRemoteSocketAddress()).getAddress();
@@ -441,7 +441,7 @@ public class Connection implements Serializable {
      */
     public InetSocketAddress listen;
     
-    public boolean isNated;
+    //public boolean isNated;
 }
 
 // arch-tag: 31ba16d7-de61-4cce-98e4-26c590632002
