@@ -43,7 +43,6 @@ package net.sf.neem;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
-//import net.sf.neem.impl.Connection;
 import net.sf.neem.impl.GossipImpl;
 import net.sf.neem.impl.MembershipImpl;
 import net.sf.neem.impl.Transport;
@@ -74,14 +73,6 @@ public class Protocol implements ProtocolMBean {
     public void setFanout(int fanout) {
         this.g_impl.setFanout(fanout);
     }
-
-    /*public int getMembershipFanout() {
-        return this.m_impl.getFanout();
-    }
-
-    public void setMembershipFanout(int fanout) {
-        this.m_impl.setFanout(fanout);
-    }*/
 
     public int getMaxIds() {
         return g_impl.getMaxIds();

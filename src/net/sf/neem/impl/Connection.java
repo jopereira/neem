@@ -41,7 +41,6 @@
 package net.sf.neem.impl;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -55,11 +54,7 @@ import java.util.UUID;
 /**
  * Socket manipulation utilities.
  */
-public class Connection implements Serializable {
-	/**
-     * 
-     */
-    private static final long serialVersionUID = 1L;
+public class Connection {
 
     /**
 	 * Create a new connection.
@@ -123,9 +118,7 @@ public class Connection implements Serializable {
 		key.attach(this);
 		msg_q = new Queue(transport.getDefault_Q_size());
 	}
-    
-    
-	
+    	
     /**
      * Send message to peers
      * @param msg The message to be sent.
@@ -146,7 +139,7 @@ public class Connection implements Serializable {
             return;
         }
     	
-        Bucket b = new Bucket(Buffers.clone(msg), new Short(port));
+        Queued b = new Queued(Buffers.clone(msg), new Short(port));
         msg_q.push((Object) b);
         handleWrite();
     }
@@ -176,15 +169,14 @@ public class Connection implements Serializable {
 
         try {
             if (outgoing == null) {
-                Bucket b = (Bucket) msg_q.pop();
+                Queued b = (Queued) msg_q.pop();
                 
-                Short portI = b.getPort();
                 ByteBuffer[] msg = b.getMsg();
 
-                if (msg == null || portI == null) {
+                if (msg == null) {
                     return;
                 }
-                short port = portI.shortValue();
+                short port = b.getPort();
                 int size = 0;
 
                 for (int i = 0; i < msg.length; i++) {
@@ -392,14 +384,6 @@ public class Connection implements Serializable {
 			return (InetSocketAddress) ssock.socket().getLocalSocketAddress();
 		return null;
 	}
-
-    /*public boolean isNated() {
-        return isNated;
-    }
-
-    public void setNated(boolean isNated) {
-        this.isNated = isNated;
-    }*/
     
     public InetAddress getRemoteAddress() {
         return ((InetSocketAddress) this.sock.socket().getRemoteSocketAddress()).getAddress();
@@ -440,8 +424,6 @@ public class Connection implements Serializable {
      * this peer can be contacted.
      */
     public InetSocketAddress listen;
-    
-    //public boolean isNated;
 }
 
 // arch-tag: 31ba16d7-de61-4cce-98e4-26c590632002

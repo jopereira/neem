@@ -63,7 +63,6 @@ public class GossipImpl implements Gossip, DataListener {
         this.net = memb.net();
         this.memb = memb;
         this.syncport = port;
-        //this.maxIds = 100;
         this.msgs = new LinkedHashSet<UUID>();
         net.handler(this, this.syncport);
     }
@@ -207,11 +206,6 @@ public class GossipImpl implements Gossip, DataListener {
                 conns[index].send(Buffers.clone(msg), syncport);
         }
     }
-
-    // TODO Remove me!
-    /*public Transport net() {
-        return this.net;
-    }*
 
     /**
      * Transport instance through wich the message will be sent. It's a

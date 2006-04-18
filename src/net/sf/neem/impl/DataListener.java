@@ -46,9 +46,7 @@
 
 package net.sf.neem.impl;
 
-
 import java.nio.*;
-
 
 /**
  *  This inteface depicts the methods that a class, wishing to receive messages
@@ -59,16 +57,13 @@ import java.nio.*;
 public interface DataListener {
 
     /**
-     *  This method allows classes that implement it, to receive messages through the Transport class, wich implements the NEEM Protocol.
+     * This method allows classes that implement it, to receive messages through the Transport class, wich implements the NEEM Protocol.
      * This method is called by the Transport class
      * @param msg The incoming message.
      * @param info The connection through wich the message is being received.
-     * @param port TODO
+     * @param port Destination port.
      */
     public void receive(ByteBuffer[] msg, Connection info, short port);
 }
-
-
-;
 
 // arch-tag: b3b8ed98-df7f-419d-b0b4-14484e44419c

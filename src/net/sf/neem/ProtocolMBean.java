@@ -78,18 +78,6 @@ public interface ProtocolMBean {
 	public void setFanout(int fanout);
 	
 	/**
-	 * Get the number of gossip target for each round.
-	 * @return number of targets
-	 */
-	//public int getMembershipFanout();
-	
-	/**
-	 * Set the number of gossip target for each round.
-	 * @param fanout number of targets
-	 */
-	//public void setMembershipFanout(int fanout);
-	
-	/**
 	 * Get the maximum number of cached message ids.
 	 * @return number of ids
 	 */

@@ -85,8 +85,7 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         this.syncport = syncport; // Connection setup port
         this.idport = idport; // ID passing port
         this.myId = UUID.randomUUID();
-        this.peers = new HashMap<UUID, Connection>();
-        //this.notNated = new HashSet<Connection>();
+        this.peers = new HashMap<UUID, Connection>();;
         net.handler(this, this.syncport);
         net.handler(this, this.idport);
         net.membership_handler(this);
@@ -120,15 +119,7 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
                         info.id = id;
                         info.listen = addr;
                         peers.put(id, info);
-//                        FileOps.write("Adding: " + info.id.toString()
-//                                + "| exists? " + peers.containsKey(info.id)
-//                                + "\n", "data/log/log" + this.myId.toString());
                     }
-                // if (info.listen.getAddress().equals(info.getRemoteAddress()))
-                // {
-                // System.out.println("Not nated");
-                // this.notNated.add(info);
-                // }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -141,9 +132,6 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
             firsttime = false;
         }
 
-//        FileOps.write("Sending ID to: "
-//                + info.sock.socket().getInetAddress().toString() + "\n",
-//                "data/log/log" + this.myId.toString());
         info.send(new ByteBuffer[] { UUIDUtils.writeUUIDToBuffer(this.myId),
                 AddressUtils.writeAddressToBuffer(net.id()) }, this.idport);
         probably_remove();
@@ -153,11 +141,6 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         // "CLOSE@" + myId + " : " + addr.toString());
         if (info.id != null) {
             peers.remove(info.id);
-            /*if (this.notNated.contains(info))
-                this.notNated.remove(info);*/
-//            FileOps.write("Removing: " + info.id.toString()
-//                    + "| still exists? " + peers.containsKey(info.id) + "\n",
-//                    "data/log/log" + this.myId.toString());
         }
     }
 
@@ -204,19 +187,13 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
      */
     private void distributeConnections() {
         Connection[] conns = connections();
-        //Connection[] notnated = (Connection[])this.notNated.toArray(new Connection[notNated.size()]);
-        // Connection toSend = (Connection)
-        // notnated[rand.nextInt(notnated.length)];
-        //for (int i = 0; i < this.fanout; i++) {
-            Connection toSend = conns[rand.nextInt(conns.length)];
-            Connection toReceive = conns[rand.nextInt(conns.length)];
+		Connection toSend = conns[rand.nextInt(conns.length)];
+		Connection toReceive = conns[rand.nextInt(conns.length)];
 
-            if (toSend.id == null)
-                return;
-            	//continue;
-            
-            this.tradePeers(toReceive, toSend);
-        //}
+		if (toSend.id == null)
+			return;
+
+		this.tradePeers(toReceive, toSend);
     }
     
     public void tradePeers(Connection target, Connection arrow) {
@@ -225,9 +202,6 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
                 AddressUtils.writeAddressToBuffer(arrow.listen) },
                 this.syncport);
     }
-    // Problem: can't really use the 1 source/ several drains because, they get kicked at the begining
-    // Solution: The source has to have a bigger local membership, in order to acomodate new
-    //      peers, or if membership full, provide at the accept time, a valid alternate peer 
 
     /**
      * Get all connections.
@@ -236,25 +210,6 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         return peers.values().toArray(new Connection[peers.size()]);
     }
 
-    /**
-     * Gets the current fanout size. The fanout is the number of local group
-     * members to send a message to.
-     * 
-     * @return The current fanout.
-     */
-    /*public int getFanout() {
-        return fanout;
-    }*/
-
-    /**
-     * Sets the new fanout value.
-     * 
-     * @param fanout
-     *            The new fanout value
-     */
-    /*public void setFanout(int fanout) {
-        this.fanout = fanout;
-    }*/
 
     /**
      * Gets the current maximum size for the local membership.
@@ -303,6 +258,14 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         return peers;
     }
 
+    public UUID getId() {
+        return myId;
+    }
+
+    public Transport net() {
+        return this.net;
+    }
+
     /**
      * The peers variable can be queried by an external thread for JMX
      * management. Therefore, all sections of the code that modify it must be
@@ -327,14 +290,5 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
 
     Random rand = new Random();
 
-    //private Set<Connection> notNated;
-
-    public UUID getId() {
-        return myId;
-    }
-
-    public Transport net() {
-        return this.net;
-    }
 };
 // arch-tag: e99e8d36-d4ba-42ad-908a-916aa6c182d9

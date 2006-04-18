@@ -73,7 +73,6 @@ public abstract class AddressUtils {
             int port=addr.getPort();
             msg.putShort((short)port);
             msg.flip();
-            // info.sock.write(msg);
         } catch (Exception e) {}
         return msg;
     }
@@ -98,7 +97,6 @@ public abstract class AddressUtils {
         } catch (IOException e) {} catch (IllegalArgumentException iae) {
             System.out.println("Prob: " + ia.toString() + ":" + port);
         }
-        // catch (UnknownHostException uhe) {}
         return addr;
     }
 }
