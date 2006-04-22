@@ -283,18 +283,13 @@ public class Transport implements Runnable {
 
 	void deliver(final Connection source, final Short prt, final ByteBuffer[] msg) {
 		final DataListener handler = handlers.get(prt);
-
+		if (handler==null) {
+			// unknown handler
+			return;
+		}
 		queue(new Runnable() {
 			public void run() {
-				try {
-					handler.receive(msg, source, prt);
-				} catch (NullPointerException npe) {
-					// npe.printStackTrace();
-					System.out.println("DataListener@port not found: "
-							+ prt.shortValue()); // there wasn't a gossip/membership
-												 // layer registered here at
-												 // that port (weird behaviour)
-				}
+				handler.receive(msg, source, prt);
 			}
 		});
 	}

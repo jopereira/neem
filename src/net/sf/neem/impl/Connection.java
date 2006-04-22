@@ -216,7 +216,6 @@ public class Connection {
     void handleRead() {
         // New buffer?
         if (incoming == null || incoming.remaining() == 0) {
-            
             incoming = ByteBuffer.allocate(1024);
             copy = incoming.asReadOnlyBuffer();
         }
@@ -229,6 +228,7 @@ public class Connection {
             }
             if (read < 0) {
                 handleClose();
+                return;
             }
             dirty=true;
             copy.limit(incoming.position());
@@ -263,12 +263,8 @@ public class Connection {
             }
             ByteBuffer slice = copy.slice();
 
-            try {
-                slice.limit(slicesize);
-                copy.position(copy.position() + slicesize);
-            } catch (Exception e) {
-                System.out.println("GOTCHA"); // if anything happens here we want to know about it, but drop & go
-            }
+            slice.limit(slicesize);
+            copy.position(copy.position() + slicesize);
 
             // Is it a new message?
             if (incomingmb == null) {
@@ -299,7 +295,7 @@ public class Connection {
             }
             incoming = compacted;
             copy = incoming.asReadOnlyBuffer();
-            copy.limit(incoming.position());
+            copy.flip();
         }
         
     }
