@@ -65,6 +65,7 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
         this.syncport = port;
         //this.maxIds = 100;
         this.msgs = new LinkedHashSet<UUID>();
+        this.cache = new LinkedHashMap<Short,ByteBuffer[]>();
         net.handler(this, this.syncport);
     }
     
@@ -114,7 +115,13 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
 
                 System.arraycopy(copy, 0, out, 2, copy.length);                
 
+                // --- TODO: cache usage
+                cache.put((short)(uuid.getLeastSignificantBits()&0xffff), Buffers.clone(out));
+                purgeCache();
+                // ---
+                
                 relay(out, this.fanout, this.syncport, memb.connections());
+                
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -124,6 +131,14 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
     private void purgeMsgs() {
     	Iterator<UUID> i=msgs.iterator();
     	while(i.hasNext() && msgs.size()>maxIds) {
+    		i.next();
+    		i.remove();
+    	}
+    }
+
+    private void purgeCache() {
+    	Iterator<Short> i=cache.keySet().iterator();
+    	while(i.hasNext() && cache.size()>maxIds) {
     		i.next();
     		i.remove();
     	}
@@ -158,6 +173,10 @@ public class GossipImpl extends AbstractGossipImpl implements Gossip, DataListen
      * Maximum number of stored ids.
      */
     private int maxIds = 100;
+    /**
+     *  Set of received messages identifiers.
+     */
+    private LinkedHashMap<Short,ByteBuffer[]> cache;
 
 //Getters and Setters ---------------------------------------------------
     
