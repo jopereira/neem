@@ -67,7 +67,11 @@ public class GossipImpl implements Gossip, DataListener {
         this.msgs = new LinkedHashSet<UUID>();
         this.cache = new LinkedHashMap<UUID,ByteBuffer[]>();
         this.queued = new LinkedHashSet<UUID>();
+        this.maxHops = 6;
+        this.minHops = 2;
+        this.minSize = 64;
         net.handler(this, this.syncport);
+        net.handler(this, this.ctrlport);
     }
     
     public void handler(App handler) {
