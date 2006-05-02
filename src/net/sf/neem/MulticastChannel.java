@@ -61,7 +61,7 @@ import java.util.*;
 public class MulticastChannel implements InterruptibleChannel,
         ReadableByteChannel, WritableByteChannel {
 
-    /**
+	/**
      * Creates a new instance of a multicast channel.
      * 
      * @param local
@@ -71,6 +71,7 @@ public class MulticastChannel implements InterruptibleChannel,
         // this.props = this.props.loadFromXML(new );
         trans = new Transport(local);
         mimpls = new MembershipImpl(trans, (short)1, (short)2, 10);
+        jimpls = new JoinImpl(trans, mimpls, (short)4);
         gimpls = new GossipImpl(mimpls, (short)0, 4);
         gimpls.handler(new App() {
             public void deliver(ByteBuffer[] buf) {
@@ -265,6 +266,9 @@ public class MulticastChannel implements InterruptibleChannel,
 
     /* Membership layer */
     MembershipImpl mimpls = null;
+
+    /* Join protocol */
+    private JoinImpl jimpls;
 
     private boolean isClosed;
 

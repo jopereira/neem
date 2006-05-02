@@ -85,7 +85,8 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         this.peers = new HashMap<UUID, Connection>();;
         net.handler(this, this.syncport);
         net.handler(this, this.idport);
-        net.membership_handler(this);
+        // join will do this!
+        //net.membership_handler(this);
     }
 
     public void receive(ByteBuffer[] msg, Connection info, short port) {
@@ -207,6 +208,9 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         return peers.values().toArray(new Connection[peers.size()]);
     }
 
+    public Connection getPeer(UUID peerId) {
+    	return peers.get(peerId);
+    }
 
     /**
      * Gets the current maximum size for the local membership.
