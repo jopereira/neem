@@ -64,6 +64,7 @@ public class GossipImpl implements Gossip, DataListener {
         this.memb = memb;
         this.syncport = port;
         this.msgs = new LinkedHashSet<UUID>();
+        this.cache = new LinkedHashMap<UUID,ByteBuffer[]>();
         net.handler(this, this.syncport);
     }
     
@@ -76,11 +77,12 @@ public class GossipImpl implements Gossip, DataListener {
         UUID uuid = UUID.randomUUID();
         ByteBuffer uuid_bytes = UUIDUtils.writeUUIDToBuffer(uuid);
 
-        ByteBuffer[] out = new ByteBuffer[msg.length + 1];
+        ByteBuffer[] out = new ByteBuffer[msg.length + 2];
 
         out[0] = uuid_bytes;
+        out[1] = ByteBuffer.wrap(new byte[]{0});
 
-        System.arraycopy(msg, 0, out, 1, msg.length);
+        System.arraycopy(msg, 0, out, 2, msg.length);
                 
         // send to a fanout of the groupview members
         
@@ -93,15 +95,29 @@ public class GossipImpl implements Gossip, DataListener {
         // Check uuid
         try {
             // System.out.println("Receive@Gossip: " + msg.length);
-            ByteBuffer[] out = Buffers.clone(msg);
-            
             UUID uuid = UUIDUtils.readUUIDFromBuffer(msg);
+            byte hops = Buffers.sliceCompact(msg, 1).get();
 
-            if (msgs.add(uuid)) {
-            	purgeMsgs();
-                // only pass to application a clean message => NO HEADERS FROM LOWER LAYERS
+            if (msgs.add(uuid) && hops<5) {
+                ByteBuffer[] copy = Buffers.clone(msg);
+
+            	// only pass to application a clean message => NO HEADERS FROM LOWER LAYERS
                 this.handler.deliver(msg);
-                relay(out, this.fanout, this.syncport, memb.connections());
+            	purgeMsgs();
+            	
+                ByteBuffer uuid_bytes = UUIDUtils.writeUUIDToBuffer(uuid);
+
+                ByteBuffer[] out = new ByteBuffer[msg.length + 2];
+
+                out[0] = uuid_bytes;
+                out[1] = ByteBuffer.wrap(new byte[]{++hops});
+
+                System.arraycopy(copy, 0, out, 2, copy.length);                
+
+                cache.put(uuid, Buffers.clone(out));
+                purgeCache();
+                
+                relay(out, this.fanout, this.syncport, memb.connections());               
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -111,6 +127,14 @@ public class GossipImpl implements Gossip, DataListener {
     private void purgeMsgs() {
     	Iterator<UUID> i=msgs.iterator();
     	while(i.hasNext() && msgs.size()>maxIds) {
+    		i.next();
+    		i.remove();
+    	}
+    }
+
+    private void purgeCache() {
+    	Iterator<UUID> i=cache.keySet().iterator();
+    	while(i.hasNext() && cache.size()>maxIds) {
     		i.next();
     		i.remove();
     	}
@@ -145,6 +169,10 @@ public class GossipImpl implements Gossip, DataListener {
      * Maximum number of stored ids.
      */
     private int maxIds = 100;
+    /**
+     *  Set of received messages identifiers.
+     */
+    private LinkedHashMap<UUID,ByteBuffer[]> cache;
 
 //Getters and Setters ---------------------------------------------------
     
