@@ -66,6 +66,7 @@ public class GossipImpl implements Gossip, DataListener {
         this.ctrlport = ctrlport;
         this.msgs = new LinkedHashSet<UUID>();
         this.cache = new LinkedHashMap<UUID,ByteBuffer[]>();
+        this.queued = new LinkedHashSet<UUID>();
         net.handler(this, this.syncport);
     }
     
@@ -91,6 +92,8 @@ public class GossipImpl implements Gossip, DataListener {
     public void handleData(ByteBuffer[] msg, UUID uuid, byte hops) {    
 		if (!msgs.add(uuid))
 			return;
+		
+		queued.remove(uuid);
 		
 		ByteBuffer[] copy = Buffers.clone(msg);
 
@@ -130,7 +133,7 @@ public class GossipImpl implements Gossip, DataListener {
 			copy = Buffers.clone(copy);
 
 			info.send(copy, this.syncport);
-		} else if (hops > 0 && !msgs.contains(uuid)) {
+		} else if (hops > 0 && !msgs.contains(uuid) && queued.add(uuid)) {
 			// It is an advertisement and we don't have it.
 			ByteBuffer uuid_bytes = UUIDUtils.writeUUIDToBuffer(uuid);
 			ByteBuffer[] out = new ByteBuffer[2];
@@ -138,6 +141,8 @@ public class GossipImpl implements Gossip, DataListener {
 			out[0] = uuid_bytes;
 			out[1] = ByteBuffer.wrap(new byte[] { 0 });
 			info.send(out, this.ctrlport);
+			
+			purgeQueued();
 		}
     }
     
@@ -156,7 +161,15 @@ public class GossipImpl implements Gossip, DataListener {
     		i.remove();
     	}
     }
-    
+
+    private void purgeQueued() {
+    	Iterator<UUID> i=queued.iterator();
+    	while(i.hasNext() && queued.size()>maxIds) {
+    		i.next();
+    		i.remove();
+    	}
+    }
+
     /**
      * Membership management module.
      */
@@ -188,11 +201,16 @@ public class GossipImpl implements Gossip, DataListener {
      */
     private int maxIds = 100;
     /**
-     *  Set of received messages identifiers.
+     *  Map of advertised messages.
      */
     private LinkedHashMap<UUID,ByteBuffer[]> cache;
 
-//Getters and Setters ---------------------------------------------------
+    /**
+     * Pending retransmissions.
+     */
+    private LinkedHashSet<UUID> queued;
+
+    //Getters and Setters ---------------------------------------------------
     
     public int getFanout() {
         return fanout;
