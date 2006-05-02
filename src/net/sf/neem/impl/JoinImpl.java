@@ -76,6 +76,7 @@ public class JoinImpl implements DataListener, Membership {
             UUID id = UUIDUtils.readUUIDFromBuffer(msg);
             InetSocketAddress addr = AddressUtils.readAddressFromBuffer(msg);
             byte c = Buffers.sliceCompact(msg, 1).get();
+        	//System.err.println("Recebi tretas "+net.id()+" "+addr+" "+c);
             
             ByteBuffer[] beacon = new ByteBuffer[] {
 					UUIDUtils.writeUUIDToBuffer(id),
@@ -90,14 +91,17 @@ public class JoinImpl implements DataListener, Membership {
             		return;
             	
             	// Flip a coin...
-            	if (rand.nextFloat()>0.5)
+            	if (rand.nextFloat()>0.5 || peers.length==0) {
+            		//System.err.println("Open locally!");
             		net.add(addr);
-            	else {
+            	} else {
+            		//System.err.println("Forward remotely!");
             		int idx=rand.nextInt(peers.length);
         			peers[idx].send(Buffers.clone(beacon), this.syncport);
             	}
             } else {
             	// Joining! Forward as many as desired.
+            	//System.err.println("Forwarding to "+(peers.length+c)+" "+net.id());
             	for(int i=0;i<peers.length;i++)
             		peers[i].send(Buffers.clone(beacon), this.syncport);
             	for(int i=0;i<c && peers.length>0;i++) {
@@ -117,7 +121,7 @@ public class JoinImpl implements DataListener, Membership {
     private Random rand = new Random();
 
 	public void open(Connection info) {
-		System.out.println("Cheguei aqui!");
+		//System.err.println("Cheguei aqui! "+net.id());
         ByteBuffer[] beacon=new ByteBuffer[] {
             	UUIDUtils.writeUUIDToBuffer(memb.getId()),
             	AddressUtils.writeAddressToBuffer(net.id()),

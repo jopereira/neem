@@ -91,11 +91,11 @@ public class Protocol implements ProtocolMBean {
     }
     
     public int getMembershipPeriod() {
-        return m_impl.getDistConnsPeriod();
+        return 0;//m_impl.getDistConnsPeriod();
     }
 
     public void setMembershipPeriod(int period) {
-        m_impl.setDistConnsPeriod(period);
+        //m_impl.setDistConnsPeriod(period);
     }
 
     public InetSocketAddress[] getPeers() {

@@ -70,8 +70,9 @@ public class MulticastChannel implements InterruptibleChannel,
     public MulticastChannel(InetSocketAddress local) throws IOException {
         // this.props = this.props.loadFromXML(new );
         trans = new Transport(local);
-        mimpls = new MembershipImpl(trans, (short)1, (short)2, 10);
-        jimpls = new JoinImpl(trans, mimpls, (short)4);
+        mimpls = new MembershipImpl(trans, (short)2, 10);
+        jimpls = new JoinImpl(trans, mimpls, (short)3);
+        ximpls = new ShuffleImpl(trans, mimpls, (short)4, 10);
         gimpls = new GossipImpl(mimpls, (short)0, 4);
         gimpls.handler(new App() {
             public void deliver(ByteBuffer[] buf) {
@@ -270,7 +271,10 @@ public class MulticastChannel implements InterruptibleChannel,
     /* Join protocol */
     private JoinImpl jimpls;
 
-    private boolean isClosed;
+    /* Shuffle protocol */
+	private ShuffleImpl ximpls;
+
+	private boolean isClosed;
 
     private boolean loopback, truncate;
 
