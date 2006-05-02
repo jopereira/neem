@@ -71,7 +71,6 @@ public class MulticastChannel implements InterruptibleChannel,
         // this.props = this.props.loadFromXML(new );
         trans = new Transport(local);
         mimpls = new MembershipImpl(trans, (short)2, 10);
-        jimpls = new JoinImpl(trans, mimpls, (short)3);
         ximpls = new ShuffleImpl(trans, mimpls, (short)4, 10);
         gimpls = new GossipImpl(mimpls, (short)0, 4);
         gimpls.handler(new App() {
@@ -267,9 +266,6 @@ public class MulticastChannel implements InterruptibleChannel,
 
     /* Membership layer */
     MembershipImpl mimpls = null;
-
-    /* Join protocol */
-    private JoinImpl jimpls;
 
     /* Shuffle protocol */
 	private ShuffleImpl ximpls;
