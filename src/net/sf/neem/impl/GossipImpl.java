@@ -55,14 +55,15 @@ import java.nio.*;
 
 public class GossipImpl implements Gossip, DataListener {
 
-    /**
+	/**
      *  Creates a new instance of GossipImpl.
      */
-    public GossipImpl(MembershipImpl memb, short port, int fanout) {
+    public GossipImpl(MembershipImpl memb, short port, short ctrlport, int fanout) {
         this.fanout = fanout;
         this.net = memb.net();
         this.memb = memb;
         this.syncport = port;
+        this.ctrlport = ctrlport;
         this.msgs = new LinkedHashSet<UUID>();
         this.cache = new LinkedHashMap<UUID,ByteBuffer[]>();
         net.handler(this, this.syncport);
@@ -73,55 +74,71 @@ public class GossipImpl implements Gossip, DataListener {
     }
         
     public void multicast(ByteBuffer[] msg) {
-        // Create uuid && add it to message (another header!!!)
-        UUID uuid = UUID.randomUUID();
-        ByteBuffer uuid_bytes = UUIDUtils.writeUUIDToBuffer(uuid);
-
-        ByteBuffer[] out = new ByteBuffer[msg.length + 2];
-
-        out[0] = uuid_bytes;
-        out[1] = ByteBuffer.wrap(new byte[]{0});
-
-        System.arraycopy(msg, 0, out, 2, msg.length);
-                
-        // send to a fanout of the groupview members
-        
-        relay(out, fanout, this.syncport, memb.connections());
-        msgs.add(uuid);
-        purgeMsgs();
+    	handleData(msg, UUID.randomUUID(), (byte)0);
     }
     
-    public void receive(ByteBuffer[] msg, Connection info, short port) {
-        // Check uuid
-        try {
-            // System.out.println("Receive@Gossip: " + msg.length);
-            UUID uuid = UUIDUtils.readUUIDFromBuffer(msg);
-            byte hops = Buffers.sliceCompact(msg, 1).get();
+    public void receive(ByteBuffer[] msg, Connection info, short port) { 
+    	// System.out.println("Receive@Gossip: " + msg.length);
+    	UUID uuid = UUIDUtils.readUUIDFromBuffer(msg);
+    	byte hops = Buffers.sliceCompact(msg, 1).get();
 
-            if (msgs.add(uuid) && hops<5) {
-                ByteBuffer[] copy = Buffers.clone(msg);
+    	if (port == this.syncport)
+			handleData(msg, uuid, hops);
+		else if (port == this.ctrlport)
+			handleControl(uuid, hops, info);
+	}
+    
+    public void handleData(ByteBuffer[] msg, UUID uuid, byte hops) {    
+		if (!msgs.add(uuid))
+			return;
+		
+		ByteBuffer[] copy = Buffers.clone(msg);
 
-            	// only pass to application a clean message => NO HEADERS FROM LOWER LAYERS
-                this.handler.deliver(msg);
-            	purgeMsgs();
-            	
-                ByteBuffer uuid_bytes = UUIDUtils.writeUUIDToBuffer(uuid);
+		// only pass to application a clean message
+		this.handler.deliver(msg);
+		purgeMsgs();
 
-                ByteBuffer[] out = new ByteBuffer[msg.length + 2];
+		hops++;
+		
+		if (hops>maxHops)
+			return;
+		
+		ByteBuffer[] out = new ByteBuffer[msg.length + 2];
+		out[0] = UUIDUtils.writeUUIDToBuffer(uuid);
+		out[1] = ByteBuffer.wrap(new byte[] { hops });
+		System.arraycopy(copy, 0, out, 2, copy.length);
 
-                out[0] = uuid_bytes;
-                out[1] = ByteBuffer.wrap(new byte[]{++hops});
+		if (hops<=minHops || Buffers.count(msg)<minSize)
+			relay(out, this.fanout, this.syncport, memb.connections());               			
+		else {
+			// Cache message
+			cache.put(uuid, out);
+			purgeCache();
+			
+			// Send out advertisements
+			out = new ByteBuffer[2];
+			out[0] = UUIDUtils.writeUUIDToBuffer(uuid);;
+			out[1] = ByteBuffer.wrap(new byte[] { hops });
+			relay(out, this.fanout, this.ctrlport, memb.connections());               
+		}
+    }
 
-                System.arraycopy(copy, 0, out, 2, copy.length);                
+    public void handleControl(UUID uuid, byte hops, Connection info) {
+        if (hops == 0 && msgs.contains(uuid)) {
+			// It is a nack and we (still) have it.
+			ByteBuffer[] copy = cache.get(uuid);
+			copy = Buffers.clone(copy);
 
-                cache.put(uuid, Buffers.clone(out));
-                purgeCache();
-                
-                relay(out, this.fanout, this.syncport, memb.connections());               
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+			info.send(copy, this.syncport);
+		} else if (hops > 0 && !msgs.contains(uuid)) {
+			// It is an advertisement and we don't have it.
+			ByteBuffer uuid_bytes = UUIDUtils.writeUUIDToBuffer(uuid);
+			ByteBuffer[] out = new ByteBuffer[2];
+
+			out[0] = uuid_bytes;
+			out[1] = ByteBuffer.wrap(new byte[] { 0 });
+			info.send(out, this.ctrlport);
+		}
     }
     
     private void purgeMsgs() {
@@ -160,10 +177,11 @@ public class GossipImpl implements Gossip, DataListener {
      */
     private int fanout;
 
+    private int maxHops, minHops, minSize;
     /**
      *  The Transport port used by the Gossip class instances to exchange messages. 
      */
-    private short syncport;
+    private short syncport, ctrlport;
     
     /**
      * Maximum number of stored ids.
@@ -246,8 +264,5 @@ public class GossipImpl implements Gossip, DataListener {
      */
     private Random rand = new Random();
 }
-
-
-;
 
 // arch-tag: 4a3a77be-0f72-4416-88ee-c6639fe68e90
