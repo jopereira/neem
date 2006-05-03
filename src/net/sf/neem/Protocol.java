@@ -99,7 +99,7 @@ public class Protocol implements ProtocolMBean {
     }
 
     public InetSocketAddress[] getPeers() {
-        return this.net.getPeers();
+        return this.m_impl.getPeerAddresses();
     } 
     
     public UUID[] getPeersUUIDs() {
@@ -109,7 +109,11 @@ public class Protocol implements ProtocolMBean {
 	public UUID getID() {
 		return this.m_impl.getId();
 	}
-    
+	
+	public InetSocketAddress getLocalSocketAddress() {
+		return net.id();
+	}
+	
     public synchronized void addPeer(String addr, int port) {
         this.neem.connect(new InetSocketAddress(addr,port));
     }

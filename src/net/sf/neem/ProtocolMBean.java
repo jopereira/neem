@@ -113,6 +113,11 @@ public interface ProtocolMBean {
 	 * @param groupsize number of neighbors
 	 */
 	public void setGroupSize(int groupsize);
+
+	/**
+     * Local listening socket.
+	 */
+    public InetSocketAddress getLocalSocketAddress();
     
 	/**
 	 * Get list of currently connected peers.

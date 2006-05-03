@@ -234,6 +234,17 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         return peers;
     }
 
+    /**
+     * Get all peer addresses.
+     */
+    public synchronized InetSocketAddress[] getPeerAddresses() {
+        InetSocketAddress[] addrs = new InetSocketAddress[this.peers.size()];
+        int i=0;
+        for(Connection peer: peers.values())
+        	addrs[i++]=peer.listen;
+        return addrs;
+    }
+    
     public UUID getId() {
         return myId;
     }
