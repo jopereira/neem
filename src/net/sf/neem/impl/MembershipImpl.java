@@ -59,7 +59,7 @@ import java.util.UUID;
  * 
  * @author psantos@GSD
  */
-public class MembershipImpl implements Membership, DataListener {
+public class MembershipImpl implements Membership, DataListener, Runnable {
     /**
      * Creates a new instance of MembershipImpl
      * 
@@ -69,19 +69,27 @@ public class MembershipImpl implements Membership, DataListener {
      * @param grp_size
      *            The maximum number of members on the local group.
      */
-    public MembershipImpl(Transport net, short idport, int grp_size) {
+    public MembershipImpl(Transport net, short idport, short syncport, int grp_size) {
         this.net = net;
         this.idport = idport; // ID passing port
-        this.myId = UUID.randomUUID();
+        this.syncport = syncport; // Connection setup port
         this.grp_size = grp_size;
+        this.myId = UUID.randomUUID();
         this.peers = new HashMap<UUID, Connection>();;
+        net.handler(this, this.syncport);
         net.handler(this, this.idport);
-        // join will do this!
-        //net.membership_handler(this);
+        net.membership_handler(this);
     }
 
     public void receive(ByteBuffer[] msg, Connection info, short port) {
-        try {
+    	if (port==this.idport)
+    		handleId(msg, info);
+    	else
+    		handleShuffle(msg);
+    }
+    
+    private void handleId(ByteBuffer[] msg, Connection info) {
+    	try {
             UUID id = UUIDUtils.readUUIDFromBuffer(msg);
             InetSocketAddress addr = AddressUtils.readAddressFromBuffer(msg);
 
@@ -99,8 +107,45 @@ public class MembershipImpl implements Membership, DataListener {
         }
     }
 
+    public void handleShuffle(ByteBuffer[] msg) {
+        try {
+        	ByteBuffer[] beacon=Buffers.clone(msg);
+        	
+            UUID id = UUIDUtils.readUUIDFromBuffer(msg);
+            InetSocketAddress addr = AddressUtils.readAddressFromBuffer(msg);
+
+            if (peers.containsKey(id))
+                return;
+
+            Connection[] peers=connections();
+            
+            // Flip a coin...
+            if (peers.length==0 || rand.nextFloat()>0.5) {
+                //System.err.println("Open locally!");
+            	net.add(addr);
+            } else {
+                //System.err.println("Forward remotely!");
+                int idx=rand.nextInt(peers.length);
+                peers[idx].send(Buffers.clone(beacon), this.syncport);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public void open(Connection info) {
-    	//System.err.println("Opened at "+net.id());
+		//System.err.println("Opened at "+net.id());
+    	if (firsttime) {
+    		System.err.println("Aqui "+net.id());
+			for (int i = 0; i < grp_size / 2; i++) {
+				info.send(new ByteBuffer[] {
+						UUIDUtils.writeUUIDToBuffer(myId),
+						AddressUtils.writeAddressToBuffer(net.id()) },
+						this.syncport);
+			}
+			firsttime=false;
+			net.schedule(this, this.distConnsPeriod);
+		}
     	
     	info.send(new ByteBuffer[] { UUIDUtils.writeUUIDToBuffer(this.myId),
                 AddressUtils.writeAddressToBuffer(net.id()) }, this.idport);
@@ -112,6 +157,40 @@ public class MembershipImpl implements Membership, DataListener {
         if (info.id != null) {
             peers.remove(info.id);
         }
+    }
+
+    public void run() {
+        if (peers.isEmpty()) {
+        	firsttime=true;
+        	return;
+        }
+    	distributeConnections();
+        net.schedule(this, this.distConnsPeriod);
+    }
+
+    /**
+     * Tell a member of my local membership, that there is a
+     * connection do the peer identified by its address, wich is sent to the
+     * peers.
+     */
+    private void distributeConnections() {
+        Connection[] conns = connections();
+        if (conns.length<2)
+        	return;
+		Connection toSend = conns[rand.nextInt(conns.length)];
+		Connection toReceive = conns[rand.nextInt(conns.length)];
+
+		if (toSend.id == null)
+			return;
+
+		this.tradePeers(toReceive, toSend);
+    }
+    
+    public void tradePeers(Connection target, Connection arrow) {
+        target.send(new ByteBuffer[] {
+                UUIDUtils.writeUUIDToBuffer(arrow.id),
+                AddressUtils.writeAddressToBuffer(arrow.listen) },
+                this.syncport);
     }
 
     /**
@@ -170,7 +249,6 @@ public class MembershipImpl implements Membership, DataListener {
         this.grp_size = grp_size;
     }
 
-
     /**
      * Get all connected peers.
      */
@@ -195,6 +273,30 @@ public class MembershipImpl implements Membership, DataListener {
      * synchronized.
      */
     private HashMap<UUID, Connection> peers;
+    /**
+     * Gets the current period of the call to distributeConnections
+     * 
+     * @return The current period
+     */
+    public int getDistConnsPeriod() {
+        return distConnsPeriod;
+    }
+
+    /**
+     * Sets a new period of the call to distributeConnections
+     * 
+     * @param distConnsPeriod
+     *            the new period
+     */
+    public void setDistConnsPeriod(int distConnsPeriod) {
+        this.distConnsPeriod = distConnsPeriod;
+    }
+
+    private boolean firsttime=true;
+    
+    private short syncport;
+    
+    private int distConnsPeriod = 1000;
 
     private short idport;
     private int grp_size;
