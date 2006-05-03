@@ -68,10 +68,9 @@ public class MulticastChannel implements InterruptibleChannel,
      *            the local address to bind to
      */
     public MulticastChannel(InetSocketAddress local) throws IOException {
-        // this.props = this.props.loadFromXML(new );
         trans = new Transport(local);
-        mimpls = new MembershipImpl(trans, (short)2, (short)3, 6);
-        gimpls = new GossipImpl(mimpls, (short)0, 4);
+        mimpls = new MembershipImpl(trans, (short)2, (short)3, 10);
+        gimpls = new GossipImpl(mimpls, (short)0, (short)1, 4);
         gimpls.handler(new App() {
             public void deliver(ByteBuffer[] buf) {
                 enqueue(buf);
