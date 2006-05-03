@@ -117,16 +117,16 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
             if (peers.containsKey(id))
                 return;
 
-            Connection[] peers=connections();
             
             // Flip a coin...
-            if (peers.length==0 || rand.nextFloat()>0.5) {
+            if (peers.size()==0 || rand.nextFloat()>0.5) {
                 //System.err.println("Open locally!");
             	net.add(addr);
             } else {
                 //System.err.println("Forward remotely!");
-                int idx=rand.nextInt(peers.length);
-                peers[idx].send(Buffers.clone(beacon), this.syncport);
+                Connection[] conns=connections();
+                int idx=rand.nextInt(conns.length);
+                conns[idx].send(Buffers.clone(beacon), this.syncport);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -136,7 +136,6 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
     public void open(Connection info) {
 		//System.err.println("Opened at "+net.id());
     	if (firsttime) {
-    		System.err.println("Aqui "+net.id());
 			for (int i = 0; i < grp_size / 2; i++) {
 				info.send(new ByteBuffer[] {
 						UUIDUtils.writeUUIDToBuffer(myId),
@@ -226,8 +225,21 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         return peers.values().toArray(new Connection[peers.size()]);
     }
 
-    public Connection getPeer(UUID peerId) {
-    	return peers.get(peerId);
+    /**
+     * Get all connected peers.
+     */
+    public synchronized UUID[] getPeers() {
+        UUID[] peers = new UUID[this.peers.size()];
+        peers = this.peers.keySet().toArray(peers);
+        return peers;
+    }
+
+    public UUID getId() {
+        return myId;
+    }
+
+    public Transport net() {
+        return this.net;
     }
 
     /**
@@ -250,30 +262,6 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
     }
 
     /**
-     * Get all connected peers.
-     */
-    public synchronized UUID[] getPeers() {
-        UUID[] peers = new UUID[this.peers.size()];
-        peers = this.peers.keySet().toArray(peers);
-        return peers;
-    }
-
-    public UUID getId() {
-        return myId;
-    }
-
-    public Transport net() {
-        return this.net;
-    }
-
-    /**
-     * The peers variable can be queried by an external thread for JMX
-     * management. Therefore, all sections of the code that modify it must be
-     * synchronized. Sections that read it from the protocol thread need not be
-     * synchronized.
-     */
-    private HashMap<UUID, Connection> peers;
-    /**
      * Gets the current period of the call to distributeConnections
      * 
      * @return The current period
@@ -292,19 +280,23 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         this.distConnsPeriod = distConnsPeriod;
     }
 
-    private boolean firsttime=true;
-    
     private short syncport;
+    private short idport;
     
     private int distConnsPeriod = 1000;
-
-    private short idport;
     private int grp_size;
     
+    /**
+     * The peers variable can be queried by an external thread for JMX
+     * management. Therefore, all sections of the code that modify it must be
+     * synchronized. Sections that read it from the protocol thread need not be
+     * synchronized.
+     */
+    private HashMap<UUID, Connection> peers;
     private UUID myId;
 
+    private boolean firsttime=true;
     private Transport net = null;
-
     private Random rand = new Random();
 };
 
