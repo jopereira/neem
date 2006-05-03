@@ -54,7 +54,7 @@ import java.util.UUID;
 /**
  * This class implements a simple membership shuffling protocol.
  */
-public class ShuffleImpl implements DataListener, Runnable {
+public class ShuffleImpl implements DataListener, Membership, Runnable {
     private MembershipImpl memb;
 
 	public ShuffleImpl(Transport net, MembershipImpl memb, short syncport, int grp_size) {
@@ -63,27 +63,30 @@ public class ShuffleImpl implements DataListener, Runnable {
         this.grp_size = grp_size;
         this.syncport = syncport; // Connection setup port
         net.handler(this, this.syncport);
-        net.schedule(this, this.distConnsPeriod);
+        net.membership_handler(this);
     }
 
     public void receive(ByteBuffer[] msg, Connection info, short port) {
         try {
+        	ByteBuffer[] beacon=Buffers.clone(msg);
+        	
             UUID id = UUIDUtils.readUUIDFromBuffer(msg);
             InetSocketAddress addr = AddressUtils.readAddressFromBuffer(msg);
 
-            // If the (UUID,address) pair comes from a peer (through
-            // syncport),
-            // and we don't have it locally, we attempt to connect. When the
-            // connection is open, we send our ID and receive the peer's ID
-            // through the ID port. Once the peer's UUID is received through
-            // the
-            // ID port, we can add it to our connected peers. If, on top of
-            // that,
-            // the peer's endpoint is not nated, we added to the not nated
-            // set.
-            	
-            if (memb.getPeer(id)==null && !id.equals(memb.getId()))
-                this.net.add(addr);
+            if (memb.getPeer(id)!=null)
+                return;
+
+            Connection[] peers=memb.connections();
+            
+            // Flip a coin...
+            if (peers.length==0 || rand.nextFloat()>0.5) {
+                //System.err.println("Open locally!");
+            	net.add(addr);
+            } else {
+                //System.err.println("Forward remotely!");
+                int idx=rand.nextInt(peers.length);
+                peers[idx].send(Buffers.clone(beacon), this.syncport);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -165,6 +168,22 @@ public class ShuffleImpl implements DataListener, Runnable {
     private Transport net = null;
 
     private Random rand = new Random();
+
+	public void open(Connection info) {
+		for(int i=0;i<grp_size/2;i++) {
+			info.send(new ByteBuffer[] {
+                UUIDUtils.writeUUIDToBuffer(memb.getId()),
+                AddressUtils.writeAddressToBuffer(net.id()) },
+                this.syncport);
+		}
+        net.schedule(this, this.distConnsPeriod);
+        net.membership_handler(memb);
+        memb.open(info);
+	}
+
+	public void close(Connection info) {
+		// should never happen...
+	}
 };
 
 // arch-tag: bacc9982-5ada-4d8f-a1d0-18b4b2b12f7d

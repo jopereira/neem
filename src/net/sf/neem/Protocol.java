@@ -45,6 +45,7 @@ import java.util.UUID;
 
 import net.sf.neem.impl.GossipImpl;
 import net.sf.neem.impl.MembershipImpl;
+import net.sf.neem.impl.ShuffleImpl;
 import net.sf.neem.impl.Transport;
 
 /**
@@ -56,6 +57,7 @@ public class Protocol implements ProtocolMBean {
         this.net = neem.trans;
 		this.g_impl = (GossipImpl) neem.gimpls;
 		this.m_impl = neem.mimpls;
+		this.x_impl = neem.ximpls;
 	}
 	
     public int getQueueSize() {
@@ -88,14 +90,15 @@ public class Protocol implements ProtocolMBean {
 
     public void setGroupSize(int groupsize) {
         this.m_impl.setGrp_size(groupsize);
+        this.x_impl.setGrp_size(groupsize);
     }
     
     public int getMembershipPeriod() {
-        return 0;//m_impl.getDistConnsPeriod();
+        return x_impl.getDistConnsPeriod();
     }
 
     public void setMembershipPeriod(int period) {
-        //m_impl.setDistConnsPeriod(period);
+        x_impl.setDistConnsPeriod(period);
     }
 
     public InetSocketAddress[] getPeers() {
@@ -118,6 +121,7 @@ public class Protocol implements ProtocolMBean {
 	private Transport net;
 	private GossipImpl g_impl;
 	private MembershipImpl m_impl;
+	private ShuffleImpl x_impl;
 };
 
 // arch-tag: 08505269-5fca-435f-a7ae-8a87af222676 
