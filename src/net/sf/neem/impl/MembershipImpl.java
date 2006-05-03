@@ -49,9 +49,7 @@ package net.sf.neem.impl;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Random;
-//import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -68,19 +66,14 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
      * @param net
      *            Instance of Transport that will be used to pass messages
      *            between peers
-     * @param syncport
-     *            Synchronization port, i.e., the port to wich membership
-     *            related messages must be sent. Specifies a logic, not socket,
-     *            port.
      * @param grp_size
      *            The maximum number of members on the local group.
      */
-    public MembershipImpl(Transport net, short syncport,
-            short idport, int grp_size) {
+    public MembershipImpl(Transport net, short idport, short syncport, int grp_size) {
         this.net = net;
-        this.grp_size = grp_size;
-        this.syncport = syncport; // Connection setup port
         this.idport = idport; // ID passing port
+        this.syncport = syncport; // Connection setup port
+        this.grp_size = grp_size;
         this.myId = UUID.randomUUID();
         this.peers = new HashMap<UUID, Connection>();;
         net.handler(this, this.syncport);
@@ -89,34 +82,51 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
     }
 
     public void receive(ByteBuffer[] msg, Connection info, short port) {
-        try {
+    	if (port==this.idport)
+    		handleId(msg, info);
+    	else
+    		handleShuffle(msg);
+    }
+    
+    private void handleId(ByteBuffer[] msg, Connection info) {
+    	try {
             UUID id = UUIDUtils.readUUIDFromBuffer(msg);
             InetSocketAddress addr = AddressUtils.readAddressFromBuffer(msg);
 
-            if (port == syncport) {
-                // If the (UUID,address) pair comes from a peer (through
-                // syncport),
-                // and we don't have it locally, we attempt to connect. When the
-                // connection is open, we send our ID and receive the peer's ID
-                // through the ID port. Once the peer's UUID is received through
-                // the
-                // ID port, we can add it to our connected peers. If, on top of
-                // that,
-                // the peer's endpoint is not nated, we added to the not nated
-                // set.
-                if (!peers.containsKey(id) && !id.equals(myId))
-                    this.net.add(addr);
-            } else if (port == idport) {
-                // System.out.println("Discovered that "+info.addr+" is "+id);
-                if (peers.containsKey(id))
-                    info.close();// only one connection to peer is
-                // allowed/needed
-                else
-                    synchronized (this) {
-                        info.id = id;
-                        info.listen = addr;
-                        peers.put(id, info);
-                    }
+            //System.err.println("--IDed "+addr+" at "+net.id());
+            if (peers.containsKey(id))
+				info.close();// only one connection to peer is allowed
+			else
+				synchronized (this) {
+					info.id = id;
+					info.listen = addr;
+					peers.put(id, info);
+				}
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void handleShuffle(ByteBuffer[] msg) {
+        try {
+        	ByteBuffer[] beacon=Buffers.clone(msg);
+        	
+            UUID id = UUIDUtils.readUUIDFromBuffer(msg);
+            InetSocketAddress addr = AddressUtils.readAddressFromBuffer(msg);
+
+            if (peers.containsKey(id))
+                return;
+
+            
+            // Flip a coin...
+            if (peers.size()==0 || rand.nextFloat()>0.5) {
+                //System.err.println("Open locally!");
+            	net.add(addr);
+            } else {
+                //System.err.println("Forward remotely!");
+                Connection[] conns=connections();
+                int idx=rand.nextInt(conns.length);
+                conns[idx].send(Buffers.clone(beacon), this.syncport);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -124,12 +134,19 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
     }
 
     public void open(Connection info) {
-        if (this.firsttime) {
-            net.schedule(this, this.distConnsPeriod);
-            firsttime = false;
-        }
-
-        info.send(new ByteBuffer[] { UUIDUtils.writeUUIDToBuffer(this.myId),
+		//System.err.println("Opened at "+net.id());
+    	if (firsttime) {
+			for (int i = 0; i < grp_size / 2; i++) {
+				info.send(new ByteBuffer[] {
+						UUIDUtils.writeUUIDToBuffer(myId),
+						AddressUtils.writeAddressToBuffer(net.id()) },
+						this.syncport);
+			}
+			firsttime=false;
+			net.schedule(this, this.distConnsPeriod);
+		}
+    	
+    	info.send(new ByteBuffer[] { UUIDUtils.writeUUIDToBuffer(this.myId),
                 AddressUtils.writeAddressToBuffer(net.id()) }, this.idport);
         probably_remove();
     }
@@ -139,6 +156,40 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         if (info.id != null) {
             peers.remove(info.id);
         }
+    }
+
+    public void run() {
+        if (peers.isEmpty()) {
+        	firsttime=true;
+        	return;
+        }
+    	distributeConnections();
+        net.schedule(this, this.distConnsPeriod);
+    }
+
+    /**
+     * Tell a member of my local membership, that there is a
+     * connection do the peer identified by its address, wich is sent to the
+     * peers.
+     */
+    private void distributeConnections() {
+        Connection[] conns = connections();
+        if (conns.length<2)
+        	return;
+		Connection toSend = conns[rand.nextInt(conns.length)];
+		Connection toReceive = conns[rand.nextInt(conns.length)];
+
+		if (toSend.id == null)
+			return;
+
+		this.tradePeers(toReceive, toSend);
+    }
+    
+    public void tradePeers(Connection target, Connection arrow) {
+        target.send(new ByteBuffer[] {
+                UUIDUtils.writeUUIDToBuffer(arrow.id),
+                AddressUtils.writeAddressToBuffer(arrow.listen) },
+                this.syncport);
     }
 
     /**
@@ -167,39 +218,6 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         // }
     }
 
-    public void run() {
-        // System.out.println("--- current peers: "+peers);
-        if (peers.size() == 0)
-            this.firsttime = true;
-        else {
-            distributeConnections();
-            net.schedule(this, this.distConnsPeriod);
-        }
-    }
-
-    /**
-     * Tell a member of my local membership, that there is a
-     * connection do the peer identified by its address, wich is sent to the
-     * peers.
-     */
-    private void distributeConnections() {
-        Connection[] conns = connections();
-		Connection toSend = conns[rand.nextInt(conns.length)];
-		Connection toReceive = conns[rand.nextInt(conns.length)];
-
-		if (toSend.id == null)
-			return;
-
-		this.tradePeers(toReceive, toSend);
-    }
-    
-    public void tradePeers(Connection target, Connection arrow) {
-        target.send(new ByteBuffer[] {
-                UUIDUtils.writeUUIDToBuffer(arrow.id),
-                AddressUtils.writeAddressToBuffer(arrow.listen) },
-                this.syncport);
-    }
-
     /**
      * Get all connections.
      */
@@ -207,6 +225,22 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         return peers.values().toArray(new Connection[peers.size()]);
     }
 
+    /**
+     * Get all connected peers.
+     */
+    public synchronized UUID[] getPeers() {
+        UUID[] peers = new UUID[this.peers.size()];
+        peers = this.peers.keySet().toArray(peers);
+        return peers;
+    }
+
+    public UUID getId() {
+        return myId;
+    }
+
+    public Transport net() {
+        return this.net;
+    }
 
     /**
      * Gets the current maximum size for the local membership.
@@ -246,23 +280,12 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         this.distConnsPeriod = distConnsPeriod;
     }
 
-    /**
-     * Get all connected peers.
-     */
-    public synchronized UUID[] getPeers() {
-        UUID[] peers = new UUID[this.peers.size()];
-        peers = this.peers.keySet().toArray(peers);
-        return peers;
-    }
-
-    public UUID getId() {
-        return myId;
-    }
-
-    public Transport net() {
-        return this.net;
-    }
-
+    private short syncport;
+    private short idport;
+    
+    private int distConnsPeriod = 1000;
+    private int grp_size;
+    
     /**
      * The peers variable can be queried by an external thread for JMX
      * management. Therefore, all sections of the code that modify it must be
@@ -270,22 +293,11 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
      * synchronized.
      */
     private HashMap<UUID, Connection> peers;
-
-    private short syncport, idport;
-    private int grp_size;
-    
-
-    protected HashSet<UUID> msgs;
-
-    private boolean firsttime = true;
-
     private UUID myId;
 
-    private int distConnsPeriod = 1000;
-
+    private boolean firsttime=true;
     private Transport net = null;
-
-    Random rand = new Random();
-
+    private Random rand = new Random();
 };
+
 // arch-tag: e99e8d36-d4ba-42ad-908a-916aa6c182d9
