@@ -92,13 +92,13 @@ public interface ProtocolMBean {
     public UUID[] getPeerIds();
 
 	/**
-	 * Get the delay between periodic membership gossip rounds.
+	 * Get the delay between periodic shuffle.
 	 * @return period in milliseconds
 	 */
 	public int getShufflePeriod();
 	
 	/**
-	 * Set the delay between periodic membership gossip rounds.
+	 * Set the delay between periodic shuffle.
 	 * @param period in milliseconds
 	 */
 	public void setShufflePeriod(int period);

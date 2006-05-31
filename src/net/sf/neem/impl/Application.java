@@ -38,25 +38,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Application.java
- *
- * Created on March 15, 2005, 4:12 PM
- */
 package net.sf.neem.impl;
 
 import java.nio.*;
 
 /**
- * Applications that intend to use the Gossip Multicast Protocol MUST implement this Interface.
- * @author psantos@GSD
+ * High level handler for messages. API layers or applications
+ * making direct use of Gossip must implement this.
  */
 public interface Application {
 
     /**
-     *  This method decodes the message received. It must be inverse to the one used for encoding.
-     * It's called by the gossip layer.
-     * @param msg The message being delivered.
+     * Deliver a message to the application.
+     * 
+     * @param msg The message.
      */
     public void deliver(ByteBuffer[] msg);
 }

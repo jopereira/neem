@@ -38,12 +38,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Overlay.java
- *
- * Created on March 30, 2005, 5:17 PM
- */
-
 package net.sf.neem.impl;
 
 import java.net.InetSocketAddress;
@@ -53,11 +47,9 @@ import java.util.Random;
 import java.util.UUID;
 
 /**
- * This class implements the ConnectionListener interface. Its methods handle
- * events related with changes in local group membership as well as
- * exchanging local group information with its peers.
- * 
- * @author psantos@GSD
+ * Implementation of overlay management. This class combines a
+ * number of random walks upon initial join (liek SCAMP) with
+ * periodic shuffling.
  */
 public class Overlay implements ConnectionListener, DataListener, Runnable {
     /**
@@ -74,9 +66,9 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
         this.myId = UUID.randomUUID();
         this.peers = new HashMap<UUID, Connection>();;
 
-        net.handler(this, this.shuffleport);
-        net.handler(this, this.idport);
-        net.membership_handler(this);
+        net.setDataListener(this, this.shuffleport);
+        net.setDataListener(this, this.idport);
+        net.setConnectionListener(this);
     }
 
     public void receive(ByteBuffer[] msg, Connection info, short port) {
@@ -87,52 +79,43 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
     }
     
     private void handleId(ByteBuffer[] msg, Connection info) {
-    	try {
-            UUID id = UUIDs.readUUIDFromBuffer(msg);
-            InetSocketAddress addr = Addresses.readAddressFromBuffer(msg);
+        UUID id = UUIDs.readUUIDFromBuffer(msg);
+		InetSocketAddress addr = Addresses.readAddressFromBuffer(msg);
 
-            //System.err.println("--IDed "+addr+" at "+net.id());
-            if (peers.containsKey(id))
-				info.close();// only one connection to peer is allowed
-			else
-				synchronized (this) {
-					info.id = id;
-					info.listen = addr;
-					peers.put(id, info);
-				}
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+		// System.err.println("--IDed "+addr+" at "+net.id());
+		if (peers.containsKey(id))
+			info.close();
+		else
+			synchronized (this) {
+				info.id = id;
+				info.listen = addr;
+				peers.put(id, info);
+			}
     }
 
     private void handleShuffle(ByteBuffer[] msg) {
-        try {
-        	ByteBuffer[] beacon=Buffers.clone(msg);
-        	
-            UUID id = UUIDs.readUUIDFromBuffer(msg);
-            InetSocketAddress addr = Addresses.readAddressFromBuffer(msg);
+    	ByteBuffer[] beacon = Buffers.clone(msg);
 
-            if (peers.containsKey(id))
-                return;
+		UUID id = UUIDs.readUUIDFromBuffer(msg);
+		InetSocketAddress addr = Addresses.readAddressFromBuffer(msg);
 
-            
-            // Flip a coin...
-            if (peers.size()==0 || rand.nextFloat()>0.5) {
-                //System.err.println("Open locally!");
-            	net.add(addr);
-            } else {
-                //System.err.println("Forward remotely!");
-                Connection[] conns=connections();
-                int idx=rand.nextInt(conns.length);
-                conns[idx].send(Buffers.clone(beacon), this.shuffleport);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+		if (peers.containsKey(id))
+			return;
+
+		// Flip a coin...
+		if (peers.size() == 0 || rand.nextFloat() > 0.5) {
+			// System.err.println("Open locally!");
+			net.add(addr);
+		} else {
+			// System.err.println("Forward remotely!");
+			Connection[] conns = connections();
+			int idx = rand.nextInt(conns.length);
+			conns[idx].send(Buffers.clone(beacon), this.shuffleport);
+		}
     }
 
     public void open(Connection info) {
-		//System.err.println("Opened at "+net.id());
+		// System.err.println("Opened at "+net.id());
     	if (firsttime) {
 			for (int i = 0; i < maxPeers / 2; i++) {
 				info.send(new ByteBuffer[] {
@@ -146,7 +129,7 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
     	
     	info.send(new ByteBuffer[] { UUIDs.writeUUIDToBuffer(this.myId),
                 Addresses.writeAddressToBuffer(net.id()) }, this.idport);
-        probably_remove();
+        purgeConnections();
     }
 
     public synchronized void close(Connection info) {
@@ -156,19 +139,7 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
         }
     }
 
-
-    /**
-     * If the number of connected peers equals maximum group size, must evict an
-     * older member, as the new one has already been added to the local
-     * membership by the transport layer. First we must create space for the new
-     * member by randomly selectig one of the local members (wich can be the
-     * newbie, because it has already been added) then read from socket the
-     * address where it's accepting connections. Then increase the number of
-     * local members. If the nb_members (current number of members in local
-     * membership) is less than maxPeers (maximum number of members in local
-     * membership), this method only increases by one the number of members.
-     */
-    private void probably_remove() {
+    private void purgeConnections() {
         Connection[] conns = connections();
         int nc = conns.length;
         //int curr_size = peers.size();
@@ -193,8 +164,8 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
     }
 
     /**
-     * Tell a member of my local membership, that there is a
-     * connection do the peer identified by its address, wich is sent to the
+     * Tell a neighbor, that there is a connection do the peer
+     * identified by its address, wich is sent to the
      * peers.
      */
     private void distributeConnections() {
@@ -293,6 +264,6 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
     public void setShufflePeriod(int shufflePeriod) {
         this.shufflePeriod = shufflePeriod;
     }
-};
+}
 
 // arch-tag: e99e8d36-d4ba-42ad-908a-916aa6c182d9

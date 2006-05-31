@@ -52,10 +52,10 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 /**
- * Socket manipulation utilities.
+ * Connection with a peer. This class provides event handlers
+ * for a connection. It also implements multiplexing and queueing.
  */
 public class Connection {
-
     /**
 	 * Create a new connection.
 	 * 
@@ -139,7 +139,7 @@ public class Connection {
     	handleClose();
     }
 
-    // ////// Event handlers
+    // --- Event handlers
     
 	void handleGC() {
 		if (!dirty && outgoing == null) {
@@ -333,7 +333,7 @@ public class Connection {
 
     /**
      * Closed connection event handler.
-     * Either by membership or death of peer.
+     * Either by overlay management or death of peer.
      */
     void handleClose() {
     	if (key!=null) {
@@ -401,13 +401,13 @@ public class Connection {
     public Queue queue;
 
     /**
-     * Used by membership management to assign an unique id to the
+     * Used by overlay management to assign an unique id to the
      * remote process.
      */
     public UUID id;
     
     /**
-     * Used by membership management to keep the socket where
+     * Used by overlay management to keep the socket where
      * this peer can be contacted.
      */
     public InetSocketAddress listen;

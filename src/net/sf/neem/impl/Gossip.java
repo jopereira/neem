@@ -40,21 +40,15 @@
 
 package net.sf.neem.impl;
 
-
 import java.util.*;
 import java.nio.*;
 
-
 /**
- * This class implements the Gossip interface. Its methods provide message 
- * exchanging between group members. Provides methods for applications to send
- * messages to the group as well as delivery of incoming messages to them.
- * 
- * @author psantos@GSD
+ * Implementation of gossip. Like bimodal, combines a forward
+ * retransmission phase with a repair phase. UUIDs are used
+ * to identify and discard duplicates.  
  */
-
 public class Gossip implements DataListener {
-
 	/**
      *  Creates a new instance of Gossip.
      */
@@ -72,8 +66,8 @@ public class Gossip implements DataListener {
         this.cache = new LinkedHashMap<UUID,ByteBuffer[]>();
         this.queued = new LinkedHashSet<UUID>();
 
-        net.handler(this, this.dataport);
-        net.handler(this, this.ctrlport);
+        net.setDataListener(this, this.dataport);
+        net.setDataListener(this, this.ctrlport);
     }
     
     public void handler(Application handler) {

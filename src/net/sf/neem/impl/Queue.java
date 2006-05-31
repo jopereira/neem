@@ -45,9 +45,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Implementation of a FIFO queue random purging.
- * 
- * @author Pedro Santos <psantos@gsd.di.uminho.pt>
+ * Implementation of a FIFO queue with random purging.
  */
 public class Queue {
     /**
@@ -96,6 +94,6 @@ public class Queue {
     public int max_threshold;
     
     private Random rand = new Random();
-};
+}
 
 // arch-tag: 9f8ed933-eadd-4217-bde0-990e8fd56f8e

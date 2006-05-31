@@ -38,31 +38,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Addresses.java
- *
- * Created on April 15, 2005, 5:02 PM
- */
-
 package net.sf.neem.impl;
-
 
 import java.io.*;
 import java.net.*;
 import java.nio.*;
 
-
 /**
- *  This abstract class provides methods to read/write InetSocketAddress 
- * addresses from/to a ByteBuffer Object or a Transport.Connection.
- *
- * @author psantos@GSD
+ * Address manipulation utilities. Provides methods to read/write
+ * InetSocketAddress addresses from/to a ByteBuffers.
  */
 public abstract class Addresses {
-
-    /** Write a socket address to a ByteBuffer.
+	private Addresses() {}
+	
+    /**
+     * Write a socket address to a ByteBuffer.
+     * 
      * @param addr The address to be written.
-     * @return The Buffer with the address written into.
      */
     public static ByteBuffer writeAddressToBuffer(InetSocketAddress addr) {
         ByteBuffer msg = null;
@@ -77,7 +69,9 @@ public abstract class Addresses {
         return msg;
     }
     
-    /** Read a socket address from an array of ByteBuffers into an InetSocketAddress.
+    /**
+     * Read a socket address from an array of ByteBuffers into an InetSocketAddress.
+     * 
      * @param msg The buffer from which to read the address from.
      * @return The address read.
      */

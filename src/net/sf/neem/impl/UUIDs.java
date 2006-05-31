@@ -43,8 +43,14 @@ package net.sf.neem.impl;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
-public class UUIDs {
-	/** Write an UUID to a ByteBuffer.
+/**
+ * UUID manipulation utilities.
+ */
+public abstract class UUIDs {
+	private UUIDs() {}
+	
+	/**
+	 * Write an UUID to a ByteBuffer.
      * @param uuid The uuid to be written.
      * @return The Buffer with the uuid written into.
      */

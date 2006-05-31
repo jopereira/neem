@@ -40,12 +40,12 @@
 
 package net.sf.neem.impl;
 
-
 import java.io.IOException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
@@ -62,7 +62,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
 
 /**
  * Implementation of the NEEM network layer.
@@ -144,7 +143,7 @@ public class Transport implements Runnable {
             return;
         closed=true;
         timers.clear();
-        membership_handler=null;
+        chandler=null;
         selector.wakeup();
         for(Connection info: connections)
             info.handleClose();
@@ -187,16 +186,17 @@ public class Transport implements Runnable {
     }
 
     /**
-     * Add a reference to an event handler.
+     * Add a reference to a message handler.
      */
-    public void handler(DataListener handler, short port) {
+    public void setDataListener(DataListener handler, short port) {
         this.handlers.put(new Short(port), handler);
     }
         
-    /** Sets the reference to the membership event handler.
+    /**
+     * Sets the reference to the connection handler.
      */
-    public void membership_handler(ConnectionListener handler) {
-        this.membership_handler = handler;
+    public void setConnectionListener(ConnectionListener handler) {
+        this.chandler = handler;
     }
 
     /**
@@ -274,7 +274,7 @@ public class Transport implements Runnable {
 		}
 		queue(new Runnable() {
 		    public void run() {
-		    	membership_handler.open(info);
+		    	chandler.open(info);
 		    }
 		});
 		this.accepted++;
@@ -286,8 +286,8 @@ public class Transport implements Runnable {
         }
         queue(new Runnable() {
 			public void run() {
-				if (membership_handler != null)
-					membership_handler.open(info);
+				if (chandler != null)
+					chandler.open(info);
 			}
 		});
 	}
@@ -301,8 +301,8 @@ public class Transport implements Runnable {
 		}
 		queue(new Runnable() {
 			public void run() {
-				if (membership_handler!=null)
-					membership_handler.close(info);
+				if (chandler!=null)
+					chandler.close(info);
 			}
 		});
 	}
@@ -315,7 +315,11 @@ public class Transport implements Runnable {
 		}
 		queue(new Runnable() {
 			public void run() {
-				handler.receive(msg, source, prt);
+				try {
+					handler.receive(msg, source, prt);
+				} catch(BufferUnderflowException e) {
+					source.close();
+				}
 			}
 		});
 	}
@@ -356,7 +360,7 @@ public class Transport implements Runnable {
     /** 
      * Reference for ConnectionListener events handler
      */
-    private ConnectionListener membership_handler;
+    private ConnectionListener chandler;
 
     /**
      * If we're not responding any more

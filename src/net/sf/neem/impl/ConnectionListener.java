@@ -38,41 +38,26 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * ConnectionListener.java
- *
- * Created on March 17, 2005, 4:07 PM
- */
 package net.sf.neem.impl;
 
 /**
- *  This interface defines the methods to handle events related with changes in 
- * local group. Events about new connections, closing of open connections 
- * and selection of peers for fanout from the members of the group must be
- * handled by these methods.
- *
- * @author psantos@GSD
+ * Low level connection handler. This is implemented by overlay
+ * management modules to be informed of connections being
+ * opened and closed by the transport layer.
  */
 public interface ConnectionListener {
-    
     /**
-     *  This method is called from Transport whenever a member joins the group.
-     * When called, if it's the first time it's called starts 
-     * periodically telling our peers of our open 
-     * connections. Then it'll randomly select a peer to be evicted from our local 
-     * membership. If it's not the first time this method is called, only the 2nd 
-     * step will be executed.
+     * Notification of a new connection.
+     * 
      * @param info The connection to the new peer.
      */
-    public void open(Connection info); // event
+    public void open(Connection info);
 
     /**
-     *  This method is called from Transport whenever a member leaves the group.
-     * When called, decreases the number of connected members by one, as the connection
-     * to the now disconnected peer has already been removed at the transport layer.
+     * Notification of a connection being closed.
      * @param info The recently closed connection.
      */
-    public void close(Connection info); // event
+    public void close(Connection info);
 }
 
 // arch-tag: ffede092-c2f3-43d3-a370-e70051be1ede

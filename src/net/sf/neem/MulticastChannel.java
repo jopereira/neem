@@ -182,7 +182,7 @@ public class MulticastChannel implements InterruptibleChannel,
      * Add an address of a remote peer. This is used to add the address of peers
      * that act as rendezvous points when joining the group. Any peer can be
      * used, as the protocol is fully symmetrical. This can be called a number
-     * of times to more quickly build a local membership.
+     * of times to more quickly build a local neighborhood.
      * 
      * @param peer
      *            The address of the peer.
