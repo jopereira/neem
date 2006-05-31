@@ -43,8 +43,8 @@ package net.sf.neem;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
-import net.sf.neem.impl.GossipImpl;
-import net.sf.neem.impl.MembershipImpl;
+import net.sf.neem.impl.Gossip;
+import net.sf.neem.impl.Overlay;
 import net.sf.neem.impl.Transport;
 
 /**
@@ -54,18 +54,12 @@ public class Protocol implements ProtocolMBean {
 	Protocol(MulticastChannel neem) {
 		this.neem = neem;
         this.net = neem.trans;
-		this.g_impl = (GossipImpl) neem.gimpls;
+		this.g_impl = (Gossip) neem.gimpls;
 		this.m_impl = neem.mimpls;
 	}
+
+	// Gossip
 	
-    public int getQueueSize() {
-        return net.getDefault_Q_size();
-    }
-
-    public void setQueueSize(int size) {
-        net.setDefault_Q_size(size);
-    }
-
     public int getFanout() {
         return this.g_impl.getFanout();
     }
@@ -82,46 +76,58 @@ public class Protocol implements ProtocolMBean {
         g_impl.setMaxIds(max);
     }
 
-    public int getGroupSize() {
-        return this.m_impl.getGrp_size();
-    }
+    // --- Overlay
 
-    public void setGroupSize(int groupsize) {
-        this.m_impl.setGrp_size(groupsize);
-    }
+    public UUID getLocalId() {
+		return this.m_impl.getId();
+	}
     
-    public int getMembershipPeriod() {
-        return m_impl.getDistConnsPeriod();
-    }
-
-    public void setMembershipPeriod(int period) {
-        m_impl.setDistConnsPeriod(period);
-    }
-
-    public InetSocketAddress[] getPeers() {
-        return this.m_impl.getPeerAddresses();
-    } 
-    
-    public UUID[] getPeersUUIDs() {
+    public UUID[] getPeerIds() {
 		return this.m_impl.getPeers();
 	}
 	
-	public UUID getID() {
-		return this.m_impl.getId();
-	}
+    public int getMaxPeers() {
+        return this.m_impl.getMaxPeers();
+    }
+
+    public void setMaxPeers(int groupsize) {
+        this.m_impl.setMaxPeers(groupsize);
+    }
+    
+    public int getShufflePeriod() {
+        return m_impl.getShufflePeriod();
+    }
+
+    public void setShufflePeriod(int period) {
+        m_impl.setShufflePeriod(period);
+    }
+    
+	// -- Transport
 	
-	public InetSocketAddress getLocalSocketAddress() {
+	public InetSocketAddress getLocalAddress() {
 		return net.id();
 	}
 	
+    public InetSocketAddress[] getPeerAddresses() {
+        return this.m_impl.getPeerAddresses();
+    } 
+
     public synchronized void addPeer(String addr, int port) {
         this.neem.connect(new InetSocketAddress(addr,port));
+    }
+	
+    public int getQueueSize() {
+        return net.getQueueSize();
+    }
+
+    public void setQueueSize(int size) {
+        net.setQueueSize(size);
     }
     
     private MulticastChannel neem;
 	private Transport net;
-	private GossipImpl g_impl;
-	private MembershipImpl m_impl;
+	private Gossip g_impl;
+	private Overlay m_impl;
 };
 
 // arch-tag: 08505269-5fca-435f-a7ae-8a87af222676 

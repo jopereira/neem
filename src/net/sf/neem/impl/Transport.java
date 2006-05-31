@@ -40,12 +40,12 @@
 
 package net.sf.neem.impl;
 
-
 import java.io.IOException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
@@ -59,10 +59,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
 
 /**
  * Implementation of the NEEM network layer.
@@ -70,8 +70,10 @@ import java.util.TreeMap;
 public class Transport implements Runnable {
     private Connection idinfo;
 
-	public Transport(InetSocketAddress local) throws IOException, BindException {
-        timers = new TreeMap<Long, Runnable>();
+	public Transport(Random rand, InetSocketAddress local) throws IOException, BindException {
+		this.rand=rand;
+		
+		timers = new TreeMap<Long, Runnable>();
         handlers = new HashMap<Short, DataListener>();
         selector = SelectorProvider.provider().openSelector();
 
@@ -88,13 +90,39 @@ public class Transport implements Runnable {
     public InetSocketAddress id() {
         return id;
     }
-    
+  
+	/**
+     * Get all local addresses.
+     */
+    public InetSocketAddress[] getLocals() {
+    	List<InetSocketAddress> addrs=new ArrayList<InetSocketAddress>();
+    	for(Connection info: connections) {
+    		InetSocketAddress addr=info.getLocal();
+    		if (addr!=null)
+    			addrs.add(addr);
+    	}
+    	return addrs.toArray(new InetSocketAddress[addrs.size()]);
+    }
+  
     /**
      * Get all connections.
      */
     public Connection[] connections() {
         return (Connection[]) connections.toArray(
                 new Connection[connections.size()]);
+    }
+
+	/**
+     * Get addresses of all connected peers.
+     */
+    public InetSocketAddress[] getPeers() {
+    	List<InetSocketAddress> addrs=new ArrayList<InetSocketAddress>();
+    	for(Connection info: connections) {
+    		InetSocketAddress addr=info.getPeer();
+    		if (addr!=null)
+    			addrs.add(addr);
+    	}
+    	return addrs.toArray(new InetSocketAddress[addrs.size()]);
     }
 
     /**
@@ -118,7 +146,7 @@ public class Transport implements Runnable {
             return;
         closed=true;
         timers.clear();
-        membership_handler=null;
+        chandler=null;
         selector.wakeup();
         for(Connection info: connections)
             info.handleClose();
@@ -161,16 +189,17 @@ public class Transport implements Runnable {
     }
 
     /**
-     * Add a reference to an event handler.
+     * Add a reference to a message handler.
      */
-    public void handler(DataListener handler, short port) {
+    public void setDataListener(DataListener handler, short port) {
         this.handlers.put(new Short(port), handler);
     }
         
-    /** Sets the reference to the membership event handler.
+    /**
+     * Sets the reference to the connection handler.
      */
-    public void membership_handler(Membership handler) {
-        this.membership_handler = handler;
+    public void setConnectionListener(ConnectionListener handler) {
+        this.chandler = handler;
     }
 
     /**
@@ -248,7 +277,7 @@ public class Transport implements Runnable {
 		}
 		queue(new Runnable() {
 		    public void run() {
-		    	membership_handler.open(info);
+		    	chandler.open(info);
 		    }
 		});
 		this.accepted++;
@@ -260,8 +289,8 @@ public class Transport implements Runnable {
         }
         queue(new Runnable() {
 			public void run() {
-				if (membership_handler != null)
-					membership_handler.open(info);
+				if (chandler != null)
+					chandler.open(info);
 			}
 		});
 	}
@@ -275,8 +304,8 @@ public class Transport implements Runnable {
 		}
 		queue(new Runnable() {
 			public void run() {
-				if (membership_handler!=null)
-					membership_handler.close(info);
+				if (chandler!=null)
+					chandler.close(info);
 			}
 		});
 	}
@@ -289,7 +318,11 @@ public class Transport implements Runnable {
 		}
 		queue(new Runnable() {
 			public void run() {
-				handler.receive(msg, source, prt);
+				try {
+					handler.receive(msg, source, prt);
+				} catch(BufferUnderflowException e) {
+					source.close();
+				}
 			}
 		});
 	}
@@ -328,53 +361,31 @@ public class Transport implements Runnable {
     private Map<Short, DataListener> handlers;
 
     /** 
-     * Reference for Membership events handler
+     * Reference for ConnectionListener events handler
      */
-    private Membership membership_handler;
+    private ConnectionListener chandler;
 
     /**
      * If we're not responding any more
      */
     private boolean closed;
     
+    Random rand;
+    
+    // Configuration parameters
+    
     /**
      * Execution queue size
      */
-    private int default_Q_size = 10;
+    private int queueSize = 10;
 
-    public int getDefault_Q_size() {
-		return default_Q_size;
+    public int getQueueSize() {
+		return queueSize;
 	}
 
-	public void setDefault_Q_size(int default_Q_size) {
-		this.default_Q_size = default_Q_size;
+	public void setQueueSize(int queueSize) {
+		this.queueSize = queueSize;
 	}
-
-	/**
-     * Get addresses of all connected peers.
-     */
-    public InetSocketAddress[] getPeers() {
-    	List<InetSocketAddress> addrs=new ArrayList<InetSocketAddress>();
-    	for(Connection info: connections) {
-    		InetSocketAddress addr=info.getPeer();
-    		if (addr!=null)
-    			addrs.add(addr);
-    	}
-    	return addrs.toArray(new InetSocketAddress[addrs.size()]);
-    }
-
-	/**
-     * Get all local addresses.
-     */
-    public InetSocketAddress[] getLocals() {
-    	List<InetSocketAddress> addrs=new ArrayList<InetSocketAddress>();
-    	for(Connection info: connections) {
-    		InetSocketAddress addr=info.getLocal();
-    		if (addr!=null)
-    			addrs.add(addr);
-    	}
-    	return addrs.toArray(new InetSocketAddress[addrs.size()]);
-    }
 }
 
 // arch-tag: d500660f-d7f0-498f-8f49-eb548dbe39f5

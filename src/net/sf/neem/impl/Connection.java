@@ -52,16 +52,17 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 /**
- * Socket manipulation utilities.
+ * Connection with a peer. This class provides event handlers
+ * for a connection. It also implements multiplexing and queueing.
  */
 public class Connection {
-
     /**
 	 * Create a new connection.
 	 * 
 	 * @param trans transport object
 	 * @param bind local address to bind to, if any
 	 * @param conn allow simultaneous outgoing connection
+     * @param rand random generator
 	 * @throws IOException 
 	 */
 	Connection(Transport trans, InetSocketAddress bind, boolean conn) throws IOException {
@@ -101,7 +102,7 @@ public class Connection {
         key = sock.register(transport.selector,
                 SelectionKey.OP_READ | SelectionKey.OP_WRITE);
         key.attach(this);
-        msg_q = new Queue(transport.getDefault_Q_size());
+        queue = new Queue(transport.getQueueSize(), transport.rand);
         connected=true;
     }
 	
@@ -116,7 +117,7 @@ public class Connection {
 		key = sock.register(transport.selector,
 				SelectionKey.OP_CONNECT);
 		key.attach(this);
-		msg_q = new Queue(transport.getDefault_Q_size());
+		queue = new Queue(transport.getQueueSize(), transport.rand);
 	}
     	
     /**
@@ -125,22 +126,13 @@ public class Connection {
      * @param port Port, at transport layer, where the message must be delivered.
      */
     public void send(ByteBuffer[] msg, short port) {
-        // Header order:
-        /* --------
-         *|msg size| <- from here
-         * --------
-         *|  uuid  | <- from DataListener
-         * --------
-         *|  msg   | <- from App
-         * --------
-         */
     	if (key==null) {
             //System.out.println("key was null");
             return;
         }
     	
         Queued b = new Queued(Buffers.clone(msg), new Short(port));
-        msg_q.push((Object) b);
+        queue.push(b);
         handleWrite();
     }
 
@@ -148,7 +140,7 @@ public class Connection {
     	handleClose();
     }
 
-    // ////// Event handlers
+    // --- Event handlers
     
 	void handleGC() {
 		if (!dirty && outgoing == null) {
@@ -162,14 +154,14 @@ public class Connection {
      * There's something waiting to be written.
      */
     void handleWrite() {
-        if (msg_q.isEmpty() && outgoing == null) {
+        if (queue.isEmpty() && outgoing == null) {
             key.interestOps(SelectionKey.OP_READ);
             return;
         }
 
         try {
             if (outgoing == null) {
-                Queued b = (Queued) msg_q.pop();
+                Queued b = (Queued) queue.pop();
                 
                 ByteBuffer[] msg = b.getMsg();
 
@@ -342,7 +334,7 @@ public class Connection {
 
     /**
      * Closed connection event handler.
-     * Either by membership or death of peer.
+     * Either by overlay management or death of peer.
      */
     void handleClose() {
     	if (key!=null) {
@@ -407,16 +399,16 @@ public class Connection {
 
     /** Message queue
      */
-    public Queue msg_q;
+    public Queue queue;
 
     /**
-     * Used by membership management to assign an unique id to the
+     * Used by overlay management to assign an unique id to the
      * remote process.
      */
     public UUID id;
     
     /**
-     * Used by membership management to keep the socket where
+     * Used by overlay management to keep the socket where
      * this peer can be contacted.
      */
     public InetSocketAddress listen;

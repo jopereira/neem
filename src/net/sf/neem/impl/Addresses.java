@@ -1,6 +1,6 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005-2006, University of Minho
+ * Copyright (c) 2005-2006 University of Minho
  * All rights reserved.
  *
  * Contributors:
@@ -38,27 +38,61 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * App.java
- *
- * Created on March 15, 2005, 4:12 PM
- */
 package net.sf.neem.impl;
 
+import java.io.*;
+import java.net.*;
 import java.nio.*;
 
 /**
- * Applications that intend to use the Gossip Multicast Protocol MUST implement this Interface.
- * @author psantos@GSD
+ * Address manipulation utilities. Provides methods to read/write
+ * InetSocketAddress addresses from/to a ByteBuffers.
  */
-public interface App {
-
+public abstract class Addresses {
+	private Addresses() {}
+	
     /**
-     *  This method decodes the message received. It must be inverse to the one used for encoding.
-     * It's called by the gossip layer.
-     * @param msg The message being delivered.
+     * Write a socket address to a ByteBuffer.
+     * 
+     * @param addr The address to be written.
      */
-    public void deliver(ByteBuffer[] msg);
+    public static ByteBuffer writeAddressToBuffer(InetSocketAddress addr) {
+        ByteBuffer msg = null;
+
+        try {
+            msg = ByteBuffer.allocate(6);
+            msg.put(addr.getAddress().getAddress());
+            int port=addr.getPort();
+            msg.putShort((short)port);
+            msg.flip();
+        } catch (Exception e) {}
+        return msg;
+    }
+    
+    /**
+     * Read a socket address from an array of ByteBuffers into an InetSocketAddress.
+     * 
+     * @param msg The buffer from which to read the address from.
+     * @return The address read.
+     */
+    public static InetSocketAddress readAddressFromBuffer(ByteBuffer[] msg) {
+        InetSocketAddress addr = null;
+        int port = 0;
+        byte[] dst = null;
+        InetAddress ia = null;
+	
+        ByteBuffer buf=Buffers.sliceCompact(msg, 6);
+        try {
+            dst = new byte[4];
+            buf.get(dst, 0, dst.length);
+            port=((int)buf.getShort())&0xffff;
+            ia = InetAddress.getByAddress(dst);
+            addr = new InetSocketAddress(ia, port);
+        } catch (IOException e) {} catch (IllegalArgumentException iae) {
+            System.out.println("Prob: " + ia.toString() + ":" + port);
+        }
+        return addr;
+    }
 }
 
-// arch-tag: 6b30f28e-5375-46ef-9963-8296bf64f9eb
+// arch-tag: f387d158-3ec6-4001-af1b-5d4a8fb441eb
