@@ -59,6 +59,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -69,8 +70,10 @@ import java.util.TreeMap;
 public class Transport implements Runnable {
     private Connection idinfo;
 
-	public Transport(InetSocketAddress local) throws IOException, BindException {
-        timers = new TreeMap<Long, Runnable>();
+	public Transport(Random rand, InetSocketAddress local) throws IOException, BindException {
+		this.rand=rand;
+		
+		timers = new TreeMap<Long, Runnable>();
         handlers = new HashMap<Short, DataListener>();
         selector = SelectorProvider.provider().openSelector();
 
@@ -366,6 +369,8 @@ public class Transport implements Runnable {
      * If we're not responding any more
      */
     private boolean closed;
+    
+    Random rand;
     
     // Configuration parameters
     

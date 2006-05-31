@@ -68,9 +68,10 @@ public class MulticastChannel implements InterruptibleChannel,
      *            the local address to bind to
      */
     public MulticastChannel(InetSocketAddress local) throws IOException {
-        trans = new Transport(local);
-        mimpls = new Overlay(trans, (short)2, (short)3);
-        gimpls = new Gossip(trans, mimpls, (short)0, (short)1);
+    	Random rand = new Random();
+    	trans = new Transport(rand, local);
+        mimpls = new Overlay(rand, trans, (short)2, (short)3);
+        gimpls = new Gossip(rand, trans, mimpls, (short)0, (short)1);
         gimpls.handler(new Application() {
             public void deliver(ByteBuffer[] buf) {
                 enqueue(buf);

@@ -52,10 +52,12 @@ public class Queue {
      * Creates a new queue.
      * 
      * @param default_Q_size The maximum number of elements this queue can hold.
+     * @param random 
      */
-    public Queue(int default_Q_size) {
+    public Queue(int default_Q_size, Random random) {
         this.queue = new ArrayList<Queued>();
         this.max_threshold = default_Q_size;
+        this.rand=random;
     }
 
     /**
@@ -93,7 +95,7 @@ public class Queue {
     /* Level of occupancy above which this queue drops all messages. */
     public int max_threshold;
     
-    private Random rand = new Random();
+    private Random rand;
 }
 
 // arch-tag: 9f8ed933-eadd-4217-bde0-990e8fd56f8e

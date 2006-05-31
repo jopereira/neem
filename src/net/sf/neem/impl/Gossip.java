@@ -52,10 +52,11 @@ public class Gossip implements DataListener {
 	/**
      *  Creates a new instance of Gossip.
      */
-    public Gossip(Transport net, Overlay memb, short dataport, short ctrlport) {
+    public Gossip(Random rand, Transport net, Overlay memb, short dataport, short ctrlport) {
         this.memb = memb;
         this.dataport = dataport;
         this.ctrlport = ctrlport;
+        this.rand = rand;
 
         this.fanout = 4;
         this.maxHops = 10;
@@ -238,7 +239,7 @@ public class Gossip implements DataListener {
     /**
      * Random number generator for selecting targets.
      */
-    private Random rand = new Random();
+    private Random rand;
 
     // Configuration parameters
     

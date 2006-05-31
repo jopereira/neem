@@ -62,6 +62,7 @@ public class Connection {
 	 * @param trans transport object
 	 * @param bind local address to bind to, if any
 	 * @param conn allow simultaneous outgoing connection
+     * @param rand random generator
 	 * @throws IOException 
 	 */
 	Connection(Transport trans, InetSocketAddress bind, boolean conn) throws IOException {
@@ -101,7 +102,7 @@ public class Connection {
         key = sock.register(transport.selector,
                 SelectionKey.OP_READ | SelectionKey.OP_WRITE);
         key.attach(this);
-        queue = new Queue(transport.getQueueSize());
+        queue = new Queue(transport.getQueueSize(), transport.rand);
         connected=true;
     }
 	
@@ -116,7 +117,7 @@ public class Connection {
 		key = sock.register(transport.selector,
 				SelectionKey.OP_CONNECT);
 		key.attach(this);
-		queue = new Queue(transport.getQueueSize());
+		queue = new Queue(transport.getQueueSize(), transport.rand);
 	}
     	
     /**

@@ -55,8 +55,9 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
     /**
      * Creates a new instance of Overlay
      */
-    public Overlay(Transport net, short idport, short shuffleport) {
-        this.net = net;
+    public Overlay(Random rand, Transport net, short idport, short shuffleport) {
+    	this.rand = rand;
+    	this.net = net;
         this.idport = idport;
         this.shuffleport = shuffleport;
    
@@ -242,7 +243,7 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
 
     private UUID myId;
     private boolean firsttime=true;
-    private Random rand = new Random();
+    private Random rand;
 
     // Configuration parameters
     
