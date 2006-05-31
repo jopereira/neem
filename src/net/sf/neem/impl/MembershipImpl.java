@@ -53,29 +53,27 @@ import java.util.Random;
 import java.util.UUID;
 
 /**
- * This class implements the Membership interface. Its methods handle events
- * related with changes in local group membership as well as exchanging local
- * group information with its peers.
+ * This class implements the Membership interface. Its methods handle
+ * events related with changes in local group membership as well as
+ * exchanging local group information with its peers.
  * 
  * @author psantos@GSD
  */
 public class MembershipImpl implements Membership, DataListener, Runnable {
     /**
      * Creates a new instance of MembershipImpl
-     * 
-     * @param net
-     *            Instance of Transport that will be used to pass messages
-     *            between peers
-     * @param grp_size
-     *            The maximum number of members on the local group.
      */
-    public MembershipImpl(Transport net, short idport, short syncport, int grp_size) {
+    public MembershipImpl(Transport net, short idport, short syncport) {
         this.net = net;
         this.idport = idport; // ID passing port
         this.syncport = syncport; // Connection setup port
-        this.grp_size = grp_size;
+   
+        this.grp_size = 10;
+        this.distConnsPeriod = 1000;
+
         this.myId = UUID.randomUUID();
         this.peers = new HashMap<UUID, Connection>();;
+
         net.handler(this, this.syncport);
         net.handler(this, this.idport);
         net.membership_handler(this);
@@ -107,7 +105,7 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         }
     }
 
-    public void handleShuffle(ByteBuffer[] msg) {
+    private void handleShuffle(ByteBuffer[] msg) {
         try {
         	ByteBuffer[] beacon=Buffers.clone(msg);
         	
@@ -158,39 +156,6 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         }
     }
 
-    public void run() {
-        if (peers.isEmpty()) {
-        	firsttime=true;
-        	return;
-        }
-    	distributeConnections();
-        net.schedule(this, this.distConnsPeriod);
-    }
-
-    /**
-     * Tell a member of my local membership, that there is a
-     * connection do the peer identified by its address, wich is sent to the
-     * peers.
-     */
-    private void distributeConnections() {
-        Connection[] conns = connections();
-        if (conns.length<2)
-        	return;
-		Connection toSend = conns[rand.nextInt(conns.length)];
-		Connection toReceive = conns[rand.nextInt(conns.length)];
-
-		if (toSend.id == null)
-			return;
-
-		this.tradePeers(toReceive, toSend);
-    }
-    
-    public void tradePeers(Connection target, Connection arrow) {
-        target.send(new ByteBuffer[] {
-                UUIDUtils.writeUUIDToBuffer(arrow.id),
-                AddressUtils.writeAddressToBuffer(arrow.listen) },
-                this.syncport);
-    }
 
     /**
      * If the number of connected peers equals maximum group size, must evict an
@@ -218,8 +183,48 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         // }
     }
 
+    public void run() {
+        if (peers.isEmpty()) {
+        	firsttime=true;
+        	return;
+        }
+    	distributeConnections();
+        net.schedule(this, this.distConnsPeriod);
+    }
+
     /**
-     * Get all connections.
+     * Tell a member of my local membership, that there is a
+     * connection do the peer identified by its address, wich is sent to the
+     * peers.
+     */
+    private void distributeConnections() {
+        Connection[] conns = connections();
+        if (conns.length<2)
+        	return;
+		Connection toSend = conns[rand.nextInt(conns.length)];
+		Connection toReceive = conns[rand.nextInt(conns.length)];
+
+		if (toSend.id == null)
+			return;
+
+		this.tradePeers(toReceive, toSend);
+    }
+    
+    /**
+     * Connect two other peers by informing one of the other.
+     * 
+     * @param target The connection peer.
+     * @param arrow The accepting peer.
+     */
+    public void tradePeers(Connection target, Connection arrow) {
+        target.send(new ByteBuffer[] {
+                UUIDUtils.writeUUIDToBuffer(arrow.id),
+                AddressUtils.writeAddressToBuffer(arrow.listen) },
+                this.syncport);
+    }
+
+    /**
+     * Get all connections that have been validated.
      */
     public synchronized Connection[] connections() {
         return peers.values().toArray(new Connection[peers.size()]);
@@ -245,57 +250,16 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         return addrs;
     }
     
+    /**
+     * Get globally unique ID in the overlay.
+     */
     public UUID getId() {
         return myId;
     }
 
-    public Transport net() {
-        return this.net;
-    }
-
-    /**
-     * Gets the current maximum size for the local membership.
-     * 
-     * @return The current local membership's maximum size
-     */
-    public int getGrp_size() {
-        return grp_size;
-    }
-
-    /**
-     * Sets a new value for the maximum size of the local membership.
-     * 
-     * @param grp_size
-     *            The new maximum membership's size.
-     */
-    public void setGrp_size(int grp_size) {
-        this.grp_size = grp_size;
-    }
-
-    /**
-     * Gets the current period of the call to distributeConnections
-     * 
-     * @return The current period
-     */
-    public int getDistConnsPeriod() {
-        return distConnsPeriod;
-    }
-
-    /**
-     * Sets a new period of the call to distributeConnections
-     * 
-     * @param distConnsPeriod
-     *            the new period
-     */
-    public void setDistConnsPeriod(int distConnsPeriod) {
-        this.distConnsPeriod = distConnsPeriod;
-    }
-
+    private Transport net;
     private short syncport;
     private short idport;
-    
-    private int distConnsPeriod = 1000;
-    private int grp_size;
     
     /**
      * The peers variable can be queried by an external thread for JMX
@@ -304,11 +268,31 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
      * synchronized.
      */
     private HashMap<UUID, Connection> peers;
-    private UUID myId;
 
+    private UUID myId;
     private boolean firsttime=true;
-    private Transport net = null;
     private Random rand = new Random();
+
+    // Configuration parameters
+    
+    private int distConnsPeriod;
+    private int grp_size;
+    
+    public int getGrp_size() {
+        return grp_size;
+    }
+
+    public void setGrp_size(int grp_size) {
+        this.grp_size = grp_size;
+    }
+
+    public int getDistConnsPeriod() {
+        return distConnsPeriod;
+    }
+
+    public void setDistConnsPeriod(int distConnsPeriod) {
+        this.distConnsPeriod = distConnsPeriod;
+    }
 };
 
 // arch-tag: e99e8d36-d4ba-42ad-908a-916aa6c182d9

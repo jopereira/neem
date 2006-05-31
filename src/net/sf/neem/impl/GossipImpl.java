@@ -58,18 +58,20 @@ public class GossipImpl implements Gossip, DataListener {
 	/**
      *  Creates a new instance of GossipImpl.
      */
-    public GossipImpl(MembershipImpl memb, short port, short ctrlport, int fanout) {
-        this.fanout = fanout;
-        this.net = memb.net();
+    public GossipImpl(Transport net, MembershipImpl memb, short port, short ctrlport) {
         this.memb = memb;
         this.syncport = port;
         this.ctrlport = ctrlport;
-        this.msgs = new LinkedHashSet<UUID>();
-        this.cache = new LinkedHashMap<UUID,ByteBuffer[]>();
-        this.queued = new LinkedHashSet<UUID>();
+
+        this.fanout = 4;
         this.maxHops = 10;
         this.minHops = 3;
         this.minSize = 64;
+
+        this.msgs = new LinkedHashSet<UUID>();
+        this.cache = new LinkedHashMap<UUID,ByteBuffer[]>();
+        this.queued = new LinkedHashSet<UUID>();
+
         net.handler(this, this.syncport);
         net.handler(this, this.ctrlport);
     }
@@ -93,7 +95,7 @@ public class GossipImpl implements Gossip, DataListener {
 			handleControl(uuid, hops, info);
 	}
     
-    public void handleData(ByteBuffer[] msg, UUID uuid, byte hops) {    
+    private void handleData(ByteBuffer[] msg, UUID uuid, byte hops) {    
 		if (!msgs.add(uuid))
 			return;
 		
@@ -130,7 +132,7 @@ public class GossipImpl implements Gossip, DataListener {
 		}
     }
 
-    public void handleControl(UUID uuid, byte hops, Connection info) {
+    private void handleControl(UUID uuid, byte hops, Connection info) {
         if (hops == 0 && msgs.contains(uuid)) {
 			// It is a nack and we (still) have it.
 			ByteBuffer[] copy = cache.get(uuid);
@@ -148,6 +150,41 @@ public class GossipImpl implements Gossip, DataListener {
 			
 			purgeQueued();
 		}
+    }
+
+    /**
+     * This method sends a copy of the original message to a fanout of peers of
+     * the local memberhip.
+     * 
+     * @param msg
+     *            The original message
+     * @param fanout
+     *            Number of peers to send the copy of the message to.
+     * @param syncport
+     *            The synchronization port (Gossip or Memberhip) which the
+     *            message is to be delivered to.
+     * @param conns
+     *            Available connections
+     */
+    private void relay(ByteBuffer[] msg, int fanout, short syncport,
+            Connection[] conns) {
+        if (conns.length < 1) {
+            return;
+        }
+
+        if (fanout > conns.length)
+            fanout = conns.length;
+        
+        int index;
+        for (int i = 0; i < fanout; i++) {
+            /*
+             * System.out.println( "Message from " + net.id().toString() + " to : " +
+             * info.addr.toString());
+             */
+            index = rand.nextInt(fanout);
+            if (conns[index] != null)
+                conns[index].send(Buffers.clone(msg), syncport);
+        }
     }
     
     private void purgeMsgs() {
@@ -190,20 +227,10 @@ public class GossipImpl implements Gossip, DataListener {
     private LinkedHashSet<UUID> msgs;
 
     /**
-     *  Number of peers to relay messages to.
-     */
-    private int fanout;
-
-    private int maxHops, minHops, minSize;
-    /**
      *  The Transport port used by the Gossip class instances to exchange messages. 
      */
     private short syncport, ctrlport;
     
-    /**
-     * Maximum number of stored ids.
-     */
-    private int maxIds = 100;
     /**
      *  Map of advertised messages.
      */
@@ -214,7 +241,27 @@ public class GossipImpl implements Gossip, DataListener {
      */
     private LinkedHashSet<UUID> queued;
 
-    //Getters and Setters ---------------------------------------------------
+    /**
+     * Random number generator for selecting targets.
+     */
+    private Random rand = new Random();
+
+    // Configuration parameters
+    
+    /**
+     *  Number of peers to relay messages to.
+     */
+    private int fanout;
+
+    /**
+     * Maximum number of stored ids.
+     */
+    private int maxIds = 100;
+
+    /**
+     * Configuration of retransmission policy.
+     */
+    private int maxHops, minHops, minSize;
     
     public int getFanout() {
         return fanout;
@@ -224,67 +271,13 @@ public class GossipImpl implements Gossip, DataListener {
         this.fanout = fanout;
     }
 
-    /**
-     * Get the maximum number of message ids to store locally.
-     * @return the current maximum
-     */
     public int getMaxIds() {
         return maxIds;
     }
 
-    /**
-     * Set the maximum number of message ids to store locally.
-     * @param maxIds the new maximum
-     */
     public void setMaxIds(int maxIds) {
         this.maxIds = maxIds;
     }
-    
-    /**
-     * This method sends a copy of the original message to a fanout of peers of
-     * the local memberhip.
-     * 
-     * @param msg
-     *            The original message
-     * @param fanout
-     *            Number of peers to send the copy of the message to.
-     * @param syncport
-     *            The synchronization port (Gossip or Memberhip) which the
-     *            message is to be delivered to.
-     * @param conns
-     *            Available connections
-     */
-    private void relay(ByteBuffer[] msg, int fanout, short syncport,
-            Connection[] conns) {
-        if (conns.length < 1) {
-            return;
-        }
-
-        if (fanout > conns.length)
-            fanout = conns.length;
-        
-        int index;
-        for (int i = 0; i < fanout; i++) {
-            /*
-             * System.out.println( "Message from " + net.id().toString() + " to : " +
-             * info.addr.toString());
-             */
-            index = rand.nextInt(fanout);
-            if (conns[index] != null)
-                conns[index].send(Buffers.clone(msg), syncport);
-        }
-    }
-
-    /**
-     * Transport instance through wich the message will be sent. It's a
-     * reference to the invoking class' transport layer instance.
-     */
-    private Transport net;
-
-    /**
-     * Random number generator for selecting targets.
-     */
-    private Random rand = new Random();
 }
 
 // arch-tag: 4a3a77be-0f72-4416-88ee-c6639fe68e90

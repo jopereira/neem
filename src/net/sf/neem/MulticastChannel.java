@@ -69,8 +69,8 @@ public class MulticastChannel implements InterruptibleChannel,
      */
     public MulticastChannel(InetSocketAddress local) throws IOException {
         trans = new Transport(local);
-        mimpls = new MembershipImpl(trans, (short)2, (short)3, 10);
-        gimpls = new GossipImpl(mimpls, (short)0, (short)1, 4);
+        mimpls = new MembershipImpl(trans, (short)2, (short)3);
+        gimpls = new GossipImpl(trans, mimpls, (short)0, (short)1);
         gimpls.handler(new App() {
             public void deliver(ByteBuffer[] buf) {
                 enqueue(buf);

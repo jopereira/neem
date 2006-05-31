@@ -88,13 +88,39 @@ public class Transport implements Runnable {
     public InetSocketAddress id() {
         return id;
     }
-    
+  
+	/**
+     * Get all local addresses.
+     */
+    public InetSocketAddress[] getLocals() {
+    	List<InetSocketAddress> addrs=new ArrayList<InetSocketAddress>();
+    	for(Connection info: connections) {
+    		InetSocketAddress addr=info.getLocal();
+    		if (addr!=null)
+    			addrs.add(addr);
+    	}
+    	return addrs.toArray(new InetSocketAddress[addrs.size()]);
+    }
+  
     /**
      * Get all connections.
      */
     public Connection[] connections() {
         return (Connection[]) connections.toArray(
                 new Connection[connections.size()]);
+    }
+
+	/**
+     * Get addresses of all connected peers.
+     */
+    public InetSocketAddress[] getPeers() {
+    	List<InetSocketAddress> addrs=new ArrayList<InetSocketAddress>();
+    	for(Connection info: connections) {
+    		InetSocketAddress addr=info.getPeer();
+    		if (addr!=null)
+    			addrs.add(addr);
+    	}
+    	return addrs.toArray(new InetSocketAddress[addrs.size()]);
     }
 
     /**
@@ -337,6 +363,8 @@ public class Transport implements Runnable {
      */
     private boolean closed;
     
+    // Configuration parameters
+    
     /**
      * Execution queue size
      */
@@ -349,32 +377,6 @@ public class Transport implements Runnable {
 	public void setDefault_Q_size(int default_Q_size) {
 		this.default_Q_size = default_Q_size;
 	}
-
-	/**
-     * Get addresses of all connected peers.
-     */
-    public InetSocketAddress[] getPeers() {
-    	List<InetSocketAddress> addrs=new ArrayList<InetSocketAddress>();
-    	for(Connection info: connections) {
-    		InetSocketAddress addr=info.getPeer();
-    		if (addr!=null)
-    			addrs.add(addr);
-    	}
-    	return addrs.toArray(new InetSocketAddress[addrs.size()]);
-    }
-
-	/**
-     * Get all local addresses.
-     */
-    public InetSocketAddress[] getLocals() {
-    	List<InetSocketAddress> addrs=new ArrayList<InetSocketAddress>();
-    	for(Connection info: connections) {
-    		InetSocketAddress addr=info.getLocal();
-    		if (addr!=null)
-    			addrs.add(addr);
-    	}
-    	return addrs.toArray(new InetSocketAddress[addrs.size()]);
-    }
 }
 
 // arch-tag: d500660f-d7f0-498f-8f49-eb548dbe39f5

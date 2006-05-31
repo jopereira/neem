@@ -43,29 +43,16 @@ package net.sf.neem;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
-//import net.sf.neem.impl.Connection;
-
 /**
- * Interface for a JMX management bean. This allows several protocol parameters
- * to be queried and set, in order to fine tune protocol behavior. Available
- * parameters will change as the protocol evolves, so this interface is far
- * from set in stone. Don't rely on it too much.
+ * Interface for a JMX management bean. This allows several protocol
+ * parameters to be queried and set, in order to fine tune protocol
+ * behavior. Available parameters will change as the protocol evolves,
+ * so this interface is far from set in stone. Don't rely on it too much.
  */
 public interface ProtocolMBean {
-	/**
-	 * Get the default size of buffer queues.
-	 * @return number of messages
-	 */
-	public int getQueueSize();
+	// --- Gossip
 	
-	/**
-	 * Set the default size of buffer queues. Currently, this does not modify
-	 * existing queues, only those that are created thereafter.
-	 * @param size number of messages
-	 */
-	public void setQueueSize(int size);
-	
-	/**
+    /**
 	 * Get the number of gossip target for each round.
 	 * @return number of targets
 	 */
@@ -89,6 +76,20 @@ public interface ProtocolMBean {
 	 * @param max number of ids
 	 */
 	public void setMaxIds(int max);
+
+	// --- Overlay parameters
+
+	/**
+	 * Get globally unique local id.
+	 * @return local id
+	 */
+    public UUID getID();
+	
+	/**
+	 * Get list of currently connected peer ids.
+	 * @return connected peer ids
+	 */
+    public UUID[] getPeersUUIDs();
 
 	/**
 	 * Get the delay between periodic membership gossip rounds.
@@ -114,6 +115,8 @@ public interface ProtocolMBean {
 	 */
 	public void setGroupSize(int groupsize);
 
+	// --- Transport
+	
 	/**
      * Local listening socket.
 	 */
@@ -124,7 +127,7 @@ public interface ProtocolMBean {
 	 * @return connected peers
 	 */
     public InetSocketAddress[] getPeers();
-    
+
     /**
      * Connect to a new peer.
      * @param addr hostname or address of peer
@@ -132,17 +135,18 @@ public interface ProtocolMBean {
      */
     public void addPeer(String addr, int port);
     
-	/**
-	 * Get list of currently connected peer ids.
-	 * @return connected peer ids
-	 */
-    public UUID[] getPeersUUIDs();
-
     /**
-	 * Get globally unique local id.
-	 * @return local id
+	 * Get the default size of buffer queues.
+	 * @return number of messages
 	 */
-    public UUID getID();
+	public int getQueueSize();
+	
+	/**
+	 * Set the default size of buffer queues. Currently, this does not modify
+	 * existing queues, only those that are created thereafter.
+	 * @param size number of messages
+	 */
+	public void setQueueSize(int size);
 }
 
 // arch-tag: 2c588950-1f71-46ed-be61-f801fb5c90f8

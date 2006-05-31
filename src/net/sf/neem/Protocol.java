@@ -57,15 +57,9 @@ public class Protocol implements ProtocolMBean {
 		this.g_impl = (GossipImpl) neem.gimpls;
 		this.m_impl = neem.mimpls;
 	}
+
+	// Gossip
 	
-    public int getQueueSize() {
-        return net.getDefault_Q_size();
-    }
-
-    public void setQueueSize(int size) {
-        net.setDefault_Q_size(size);
-    }
-
     public int getFanout() {
         return this.g_impl.getFanout();
     }
@@ -82,6 +76,16 @@ public class Protocol implements ProtocolMBean {
         g_impl.setMaxIds(max);
     }
 
+    // --- Overlay
+
+    public UUID getID() {
+		return this.m_impl.getId();
+	}
+    
+    public UUID[] getPeersUUIDs() {
+		return this.m_impl.getPeers();
+	}
+	
     public int getGroupSize() {
         return this.m_impl.getGrp_size();
     }
@@ -97,25 +101,27 @@ public class Protocol implements ProtocolMBean {
     public void setMembershipPeriod(int period) {
         m_impl.setDistConnsPeriod(period);
     }
-
-    public InetSocketAddress[] getPeers() {
-        return this.m_impl.getPeerAddresses();
-    } 
     
-    public UUID[] getPeersUUIDs() {
-		return this.m_impl.getPeers();
-	}
-	
-	public UUID getID() {
-		return this.m_impl.getId();
-	}
+	// -- Transport
 	
 	public InetSocketAddress getLocalSocketAddress() {
 		return net.id();
 	}
 	
+    public InetSocketAddress[] getPeers() {
+        return this.m_impl.getPeerAddresses();
+    } 
+
     public synchronized void addPeer(String addr, int port) {
         this.neem.connect(new InetSocketAddress(addr,port));
+    }
+	
+    public int getQueueSize() {
+        return net.getDefault_Q_size();
+    }
+
+    public void setQueueSize(int size) {
+        net.setDefault_Q_size(size);
     }
     
     private MulticastChannel neem;
