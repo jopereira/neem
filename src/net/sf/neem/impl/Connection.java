@@ -101,7 +101,7 @@ public class Connection {
         key = sock.register(transport.selector,
                 SelectionKey.OP_READ | SelectionKey.OP_WRITE);
         key.attach(this);
-        msg_q = new Queue(transport.getQueueSize());
+        queue = new Queue(transport.getQueueSize());
         connected=true;
     }
 	
@@ -116,7 +116,7 @@ public class Connection {
 		key = sock.register(transport.selector,
 				SelectionKey.OP_CONNECT);
 		key.attach(this);
-		msg_q = new Queue(transport.getQueueSize());
+		queue = new Queue(transport.getQueueSize());
 	}
     	
     /**
@@ -125,22 +125,13 @@ public class Connection {
      * @param port Port, at transport layer, where the message must be delivered.
      */
     public void send(ByteBuffer[] msg, short port) {
-        // Header order:
-        /* --------
-         *|msg size| <- from here
-         * --------
-         *|  uuid  | <- from DataListener
-         * --------
-         *|  msg   | <- from Application
-         * --------
-         */
     	if (key==null) {
             //System.out.println("key was null");
             return;
         }
     	
         Queued b = new Queued(Buffers.clone(msg), new Short(port));
-        msg_q.push((Object) b);
+        queue.push(b);
         handleWrite();
     }
 
@@ -162,14 +153,14 @@ public class Connection {
      * There's something waiting to be written.
      */
     void handleWrite() {
-        if (msg_q.isEmpty() && outgoing == null) {
+        if (queue.isEmpty() && outgoing == null) {
             key.interestOps(SelectionKey.OP_READ);
             return;
         }
 
         try {
             if (outgoing == null) {
-                Queued b = (Queued) msg_q.pop();
+                Queued b = (Queued) queue.pop();
                 
                 ByteBuffer[] msg = b.getMsg();
 
@@ -407,7 +398,7 @@ public class Connection {
 
     /** Message queue
      */
-    public Queue msg_q;
+    public Queue queue;
 
     /**
      * Used by membership management to assign an unique id to the
