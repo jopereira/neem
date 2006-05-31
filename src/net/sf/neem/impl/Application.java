@@ -39,7 +39,7 @@
  */
 
 /*
- * App.java
+ * Application.java
  *
  * Created on March 15, 2005, 4:12 PM
  */
@@ -51,7 +51,7 @@ import java.nio.*;
  * Applications that intend to use the Gossip Multicast Protocol MUST implement this Interface.
  * @author psantos@GSD
  */
-public interface App {
+public interface Application {
 
     /**
      *  This method decodes the message received. It must be inverse to the one used for encoding.

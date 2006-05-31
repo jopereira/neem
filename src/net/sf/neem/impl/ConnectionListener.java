@@ -39,7 +39,7 @@
  */
 
 /*
- * Membership.java
+ * ConnectionListener.java
  *
  * Created on March 17, 2005, 4:07 PM
  */
@@ -53,7 +53,7 @@ package net.sf.neem.impl;
  *
  * @author psantos@GSD
  */
-public interface Membership {
+public interface ConnectionListener {
     
     /**
      *  This method is called from Transport whenever a member joins the group.

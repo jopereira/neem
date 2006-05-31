@@ -69,9 +69,9 @@ public class MulticastChannel implements InterruptibleChannel,
      */
     public MulticastChannel(InetSocketAddress local) throws IOException {
         trans = new Transport(local);
-        mimpls = new MembershipImpl(trans, (short)2, (short)3);
-        gimpls = new GossipImpl(trans, mimpls, (short)0, (short)1);
-        gimpls.handler(new App() {
+        mimpls = new Overlay(trans, (short)2, (short)3);
+        gimpls = new Gossip(trans, mimpls, (short)0, (short)1);
+        gimpls.handler(new Application() {
             public void deliver(ByteBuffer[] buf) {
                 enqueue(buf);
             }
@@ -262,8 +262,8 @@ public class MulticastChannel implements InterruptibleChannel,
     /* Gossip layer */
     Gossip gimpls = null;
 
-    /* Membership layer */
-    MembershipImpl mimpls = null;
+    /* ConnectionListener layer */
+    Overlay mimpls = null;
 
 	private boolean isClosed;
 

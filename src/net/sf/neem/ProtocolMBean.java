@@ -83,50 +83,50 @@ public interface ProtocolMBean {
 	 * Get globally unique local id.
 	 * @return local id
 	 */
-    public UUID getID();
+    public UUID getLocalId();
 	
 	/**
 	 * Get list of currently connected peer ids.
 	 * @return connected peer ids
 	 */
-    public UUID[] getPeersUUIDs();
+    public UUID[] getPeerIds();
 
 	/**
 	 * Get the delay between periodic membership gossip rounds.
 	 * @return period in milliseconds
 	 */
-	public int getMembershipPeriod();
+	public int getShufflePeriod();
 	
 	/**
 	 * Set the delay between periodic membership gossip rounds.
 	 * @param period in milliseconds
 	 */
-	public void setMembershipPeriod(int period);
+	public void setShufflePeriod(int period);
 
 	/**
 	 * Get the number of neighbors.
 	 * @return number of neighbors
 	 */
-	public int getGroupSize();
+	public int getMaxPeers();
 	
 	/**
 	 * Set the number of neighbors.
 	 * @param groupsize number of neighbors
 	 */
-	public void setGroupSize(int groupsize);
+	public void setMaxPeers(int groupsize);
 
 	// --- Transport
 	
 	/**
      * Local listening socket.
 	 */
-    public InetSocketAddress getLocalSocketAddress();
+    public InetSocketAddress getLocalAddress();
     
 	/**
 	 * Get list of currently connected peers.
 	 * @return connected peers
 	 */
-    public InetSocketAddress[] getPeers();
+    public InetSocketAddress[] getPeerAddresses();
 
     /**
      * Connect to a new peer.

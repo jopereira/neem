@@ -39,7 +39,7 @@
  */
 
 /*
- * AddressUtils.java
+ * Addresses.java
  *
  * Created on April 15, 2005, 5:02 PM
  */
@@ -58,7 +58,7 @@ import java.nio.*;
  *
  * @author psantos@GSD
  */
-public abstract class AddressUtils {
+public abstract class Addresses {
 
     /** Write a socket address to a ByteBuffer.
      * @param addr The address to be written.

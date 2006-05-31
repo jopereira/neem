@@ -101,7 +101,7 @@ public class Connection {
         key = sock.register(transport.selector,
                 SelectionKey.OP_READ | SelectionKey.OP_WRITE);
         key.attach(this);
-        msg_q = new Queue(transport.getDefault_Q_size());
+        msg_q = new Queue(transport.getQueueSize());
         connected=true;
     }
 	
@@ -116,7 +116,7 @@ public class Connection {
 		key = sock.register(transport.selector,
 				SelectionKey.OP_CONNECT);
 		key.attach(this);
-		msg_q = new Queue(transport.getDefault_Q_size());
+		msg_q = new Queue(transport.getQueueSize());
 	}
     	
     /**
@@ -131,7 +131,7 @@ public class Connection {
          * --------
          *|  uuid  | <- from DataListener
          * --------
-         *|  msg   | <- from App
+         *|  msg   | <- from Application
          * --------
          */
     	if (key==null) {

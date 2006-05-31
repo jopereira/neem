@@ -195,7 +195,7 @@ public class Transport implements Runnable {
         
     /** Sets the reference to the membership event handler.
      */
-    public void membership_handler(Membership handler) {
+    public void membership_handler(ConnectionListener handler) {
         this.membership_handler = handler;
     }
 
@@ -354,9 +354,9 @@ public class Transport implements Runnable {
     private Map<Short, DataListener> handlers;
 
     /** 
-     * Reference for Membership events handler
+     * Reference for ConnectionListener events handler
      */
-    private Membership membership_handler;
+    private ConnectionListener membership_handler;
 
     /**
      * If we're not responding any more
@@ -368,14 +368,14 @@ public class Transport implements Runnable {
     /**
      * Execution queue size
      */
-    private int default_Q_size = 10;
+    private int queueSize = 10;
 
-    public int getDefault_Q_size() {
-		return default_Q_size;
+    public int getQueueSize() {
+		return queueSize;
 	}
 
-	public void setDefault_Q_size(int default_Q_size) {
-		this.default_Q_size = default_Q_size;
+	public void setQueueSize(int queueSize) {
+		this.queueSize = queueSize;
 	}
 }
 

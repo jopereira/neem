@@ -39,7 +39,7 @@
  */
 
 /*
- * MembershipImpl.java
+ * Overlay.java
  *
  * Created on March 30, 2005, 5:17 PM
  */
@@ -53,28 +53,28 @@ import java.util.Random;
 import java.util.UUID;
 
 /**
- * This class implements the Membership interface. Its methods handle
+ * This class implements the ConnectionListener interface. Its methods handle
  * events related with changes in local group membership as well as
  * exchanging local group information with its peers.
  * 
  * @author psantos@GSD
  */
-public class MembershipImpl implements Membership, DataListener, Runnable {
+public class Overlay implements ConnectionListener, DataListener, Runnable {
     /**
-     * Creates a new instance of MembershipImpl
+     * Creates a new instance of Overlay
      */
-    public MembershipImpl(Transport net, short idport, short syncport) {
+    public Overlay(Transport net, short idport, short shuffleport) {
         this.net = net;
-        this.idport = idport; // ID passing port
-        this.syncport = syncport; // Connection setup port
+        this.idport = idport;
+        this.shuffleport = shuffleport;
    
-        this.grp_size = 10;
-        this.distConnsPeriod = 1000;
+        this.maxPeers = 10;
+        this.shufflePeriod = 1000;
 
         this.myId = UUID.randomUUID();
         this.peers = new HashMap<UUID, Connection>();;
 
-        net.handler(this, this.syncport);
+        net.handler(this, this.shuffleport);
         net.handler(this, this.idport);
         net.membership_handler(this);
     }
@@ -88,8 +88,8 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
     
     private void handleId(ByteBuffer[] msg, Connection info) {
     	try {
-            UUID id = UUIDUtils.readUUIDFromBuffer(msg);
-            InetSocketAddress addr = AddressUtils.readAddressFromBuffer(msg);
+            UUID id = UUIDs.readUUIDFromBuffer(msg);
+            InetSocketAddress addr = Addresses.readAddressFromBuffer(msg);
 
             //System.err.println("--IDed "+addr+" at "+net.id());
             if (peers.containsKey(id))
@@ -109,8 +109,8 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         try {
         	ByteBuffer[] beacon=Buffers.clone(msg);
         	
-            UUID id = UUIDUtils.readUUIDFromBuffer(msg);
-            InetSocketAddress addr = AddressUtils.readAddressFromBuffer(msg);
+            UUID id = UUIDs.readUUIDFromBuffer(msg);
+            InetSocketAddress addr = Addresses.readAddressFromBuffer(msg);
 
             if (peers.containsKey(id))
                 return;
@@ -124,7 +124,7 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
                 //System.err.println("Forward remotely!");
                 Connection[] conns=connections();
                 int idx=rand.nextInt(conns.length);
-                conns[idx].send(Buffers.clone(beacon), this.syncport);
+                conns[idx].send(Buffers.clone(beacon), this.shuffleport);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -134,18 +134,18 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
     public void open(Connection info) {
 		//System.err.println("Opened at "+net.id());
     	if (firsttime) {
-			for (int i = 0; i < grp_size / 2; i++) {
+			for (int i = 0; i < maxPeers / 2; i++) {
 				info.send(new ByteBuffer[] {
-						UUIDUtils.writeUUIDToBuffer(myId),
-						AddressUtils.writeAddressToBuffer(net.id()) },
-						this.syncport);
+						UUIDs.writeUUIDToBuffer(myId),
+						Addresses.writeAddressToBuffer(net.id()) },
+						this.shuffleport);
 			}
 			firsttime=false;
-			net.schedule(this, this.distConnsPeriod);
+			net.schedule(this, this.shufflePeriod);
 		}
     	
-    	info.send(new ByteBuffer[] { UUIDUtils.writeUUIDToBuffer(this.myId),
-                AddressUtils.writeAddressToBuffer(net.id()) }, this.idport);
+    	info.send(new ByteBuffer[] { UUIDs.writeUUIDToBuffer(this.myId),
+                Addresses.writeAddressToBuffer(net.id()) }, this.idport);
         probably_remove();
     }
 
@@ -165,7 +165,7 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
      * newbie, because it has already been added) then read from socket the
      * address where it's accepting connections. Then increase the number of
      * local members. If the nb_members (current number of members in local
-     * membership) is less than grp_size (maximum number of members in local
+     * membership) is less than maxPeers (maximum number of members in local
      * membership), this method only increases by one the number of members.
      */
     private void probably_remove() {
@@ -173,8 +173,8 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         int nc = conns.length;
         //int curr_size = peers.size();
 
-        // if (curr_size >= grp_size) {
-        while( peers.size() - grp_size > 0) {
+        // if (curr_size >= maxPeers) {
+        while( peers.size() - maxPeers > 0) {
             Connection info = conns[rand.nextInt(nc)];
             peers.remove(info.id);
             info.close();
@@ -189,7 +189,7 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
         	return;
         }
     	distributeConnections();
-        net.schedule(this, this.distConnsPeriod);
+        net.schedule(this, this.shufflePeriod);
     }
 
     /**
@@ -218,9 +218,9 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
      */
     public void tradePeers(Connection target, Connection arrow) {
         target.send(new ByteBuffer[] {
-                UUIDUtils.writeUUIDToBuffer(arrow.id),
-                AddressUtils.writeAddressToBuffer(arrow.listen) },
-                this.syncport);
+                UUIDs.writeUUIDToBuffer(arrow.id),
+                Addresses.writeAddressToBuffer(arrow.listen) },
+                this.shuffleport);
     }
 
     /**
@@ -258,7 +258,7 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
     }
 
     private Transport net;
-    private short syncport;
+    private short shuffleport;
     private short idport;
     
     /**
@@ -275,23 +275,23 @@ public class MembershipImpl implements Membership, DataListener, Runnable {
 
     // Configuration parameters
     
-    private int distConnsPeriod;
-    private int grp_size;
+    private int shufflePeriod;
+    private int maxPeers;
     
-    public int getGrp_size() {
-        return grp_size;
+    public int getMaxPeers() {
+        return maxPeers;
     }
 
-    public void setGrp_size(int grp_size) {
-        this.grp_size = grp_size;
+    public void setMaxPeers(int maxPeers) {
+        this.maxPeers = maxPeers;
     }
 
-    public int getDistConnsPeriod() {
-        return distConnsPeriod;
+    public int getShufflePeriod() {
+        return shufflePeriod;
     }
 
-    public void setDistConnsPeriod(int distConnsPeriod) {
-        this.distConnsPeriod = distConnsPeriod;
+    public void setShufflePeriod(int shufflePeriod) {
+        this.shufflePeriod = shufflePeriod;
     }
 };
 
