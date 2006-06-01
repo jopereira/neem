@@ -38,29 +38,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * DataListener.java
- *
- * Created on April 7, 2005, 11:51 AM
- */
-
 package net.sf.neem.impl;
 
 import java.nio.*;
 
 /**
- *  This inteface depicts the methods that a class, wishing to receive messages
- * using this implementation of the Gossip Multicast protocol, MUST provide.
- *
- * @author psantos@GSD
+ * Low level handler for messages. This is called by connections
+ * to deliver received data.
  */
 public interface DataListener {
-
     /**
-     * This method allows classes that implement it, to receive messages through the Transport class, wich implements the NEEM Protocol.
-     * This method is called by the Transport class
+     * Receive a message from from a connection. The caller is
+     * is prepared to handle a BufferUnderFlowException and will
+     * close the connection. Implementations are thus advised to
+     * start by unmarshalling the message. If it has been truncated
+     * or is invalied, the resulting exception will thus do the
+     * right thing
+     * 
      * @param msg The incoming message.
-     * @param info The connection through wich the message is being received.
+     * @param info The source connection.
      * @param port Destination port.
      */
     public void receive(ByteBuffer[] msg, Connection info, short port);
