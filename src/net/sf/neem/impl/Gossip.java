@@ -45,8 +45,9 @@ import java.nio.*;
 
 /**
  * Implementation of gossip. Like bimodal, combines a forward
- * retransmission phase with a repair phase. UUIDs are used
- * to identify and discard duplicates.  
+ * retransmission phase with a repair phase. However, the
+ * optimistic phase is also gossip bases. UUIDs, instead of
+ * sequence numbers are used to identify and discard duplicates.  
  */
 public class Gossip implements DataListener {
 	/**
@@ -63,10 +64,14 @@ public class Gossip implements DataListener {
         this.minHops = 3;
         this.minSize = 64;
 
-        this.msgs = new LinkedHashSet<UUID>();
         this.cache = new LinkedHashMap<UUID,ByteBuffer[]>();
-        this.queued = new LinkedHashSet<UUID>();
-
+        this.queued = new LinkedHashMap<UUID,Known>();
+        this.retransmit = new Periodic(net, 10) {
+        	public void run() {
+        		retransmit();
+        	}
+        };
+        
         net.setDataListener(this, this.dataport);
         net.setDataListener(this, this.ctrlport);
     }
@@ -91,16 +96,16 @@ public class Gossip implements DataListener {
 	}
     
     private void handleData(ByteBuffer[] msg, UUID uuid, byte hops) {    
-		if (!msgs.add(uuid))
+		if (cache.containsKey(uuid))
 			return;
-		
+
+		cache.put(uuid, null);
 		queued.remove(uuid);
 		
 		ByteBuffer[] copy = Buffers.clone(msg);
 
 		// only pass to application a clean message
 		this.handler.deliver(msg);
-		purgeMsgs();
 
 		hops++;
 		
@@ -111,58 +116,74 @@ public class Gossip implements DataListener {
 		out[0] = UUIDs.writeUUIDToBuffer(uuid);
 		out[1] = ByteBuffer.wrap(new byte[] { hops });
 		System.arraycopy(copy, 0, out, 2, copy.length);
-
-		if (hops<=minHops || Buffers.count(msg)<minSize)
-			relay(out, this.fanout, this.dataport, memb.connections());               			
-		else {
+		short port=dataport;
+		
+		if (hops>minHops && Buffers.count(msg)>=minSize) {
 			// Cache message
 			cache.put(uuid, out);
-			purgeCache();
 			
 			// Send out advertisements
 			out = new ByteBuffer[2];
-			out[0] = UUIDs.writeUUIDToBuffer(uuid);;
+			out[0] = UUIDs.writeUUIDToBuffer(uuid);
 			out[1] = ByteBuffer.wrap(new byte[] { hops });
-			relay(out, this.fanout, this.ctrlport, memb.connections());               
+			port=ctrlport;
 		}
+		
+		relay(out, this.fanout, port, memb.connections());
+		purgeCache();
     }
 
     private void handleControl(UUID uuid, byte hops, Connection info) {
-        if (hops == 0 && msgs.contains(uuid)) {
+    	ByteBuffer[] copy = cache.get(uuid);
+        if (hops == 0 && copy!=null) {
 			// It is a nack and we (still) have it.
-			ByteBuffer[] copy = cache.get(uuid);
 			copy = Buffers.clone(copy);
-
 			info.send(copy, this.dataport);
-		} else if (hops > 0 && !msgs.contains(uuid) && queued.add(uuid)) {
-			// It is an advertisement and we don't have it.
-			ByteBuffer uuid_bytes = UUIDs.writeUUIDToBuffer(uuid);
-			ByteBuffer[] out = new ByteBuffer[2];
-
-			out[0] = uuid_bytes;
-			out[1] = ByteBuffer.wrap(new byte[] { 0 });
-			info.send(out, this.ctrlport);
+		} else if (hops > 0 && copy==null) {
+			Known known = queued.get(uuid);
+			if (known==null) {
+				known = new Known(uuid, info);
+				queued.put(uuid, known);				
+				purgeQueued();
+			} else
+				known.senders.add(info);
 			
-			purgeQueued();
+	    	long time=System.nanoTime();
+	    	if (time-known.last>=5000000)
+	    		request(known, time);
+			retransmit.start();
 		}
     }
 
-    /**
-     * This method sends a copy of the original message to a fanout of peers of
-     * the local memberhip.
-     * 
-     * @param msg
-     *            The original message
-     * @param fanout
-     *            Number of peers to send the copy of the message to.
-     * @param dataport
-     *            The synchronization port (Gossip or Memberhip) which the
-     *            message is to be delivered to.
-     * @param conns
-     *            Available connections
-     */
-    private void relay(ByteBuffer[] msg, int fanout, short syncport,
-            Connection[] conns) {
+    private void request(Known known, long time) {
+    	known.last = time;
+    	Connection info = known.senders.remove(known.senders.size()-1);
+	
+    	ByteBuffer uuid_bytes = UUIDs.writeUUIDToBuffer(known.id);
+    	ByteBuffer[] out = new ByteBuffer[2];
+
+    	out[0] = uuid_bytes;
+    	out[1] = ByteBuffer.wrap(new byte[] { 0 });
+    	info.send(out, this.ctrlport);
+    }
+    
+	private void retransmit() {
+    	Iterator<Known> i=queued.values().iterator();
+    	long time=System.nanoTime();
+    	while(i.hasNext()) {
+    		Known known=i.next();
+   	    	if (time-known.last<5000000)
+   	    		continue;
+   	    	if (known.senders.isEmpty())
+   	    		i.remove();
+   	    	else
+   	    		request(known, time);
+    	}
+    	if (queued.isEmpty())
+    		retransmit.stop();		
+	}
+    
+    private void relay(ByteBuffer[] msg, int fanout, short syncport, Connection[] conns) {
         if (conns.length < 1) {
             return;
         }
@@ -181,14 +202,6 @@ public class Gossip implements DataListener {
                 conns[index].send(Buffers.clone(msg), syncport);
         }
     }
-    
-    private void purgeMsgs() {
-    	Iterator<UUID> i=msgs.iterator();
-    	while(i.hasNext() && msgs.size()>maxIds) {
-    		i.next();
-    		i.remove();
-    	}
-    }
 
     private void purgeCache() {
     	Iterator<UUID> i=cache.keySet().iterator();
@@ -199,7 +212,7 @@ public class Gossip implements DataListener {
     }
 
     private void purgeQueued() {
-    	Iterator<UUID> i=queued.iterator();
+    	Iterator<UUID> i=queued.keySet().iterator();
     	while(i.hasNext() && queued.size()>maxIds) {
     		i.next();
     		i.remove();
@@ -217,11 +230,6 @@ public class Gossip implements DataListener {
     private Application handler;
 
     /**
-     *  Set of received messages identifiers.
-     */
-    private LinkedHashSet<UUID> msgs;
-
-    /**
      *  The Transport port used by the Gossip class instances to exchange messages. 
      */
     private short dataport, ctrlport;
@@ -232,9 +240,11 @@ public class Gossip implements DataListener {
     private LinkedHashMap<UUID,ByteBuffer[]> cache;
 
     /**
-     * Pending retransmissions.
+     * Known retransmissions.
      */
-    private LinkedHashSet<UUID> queued;
+    private LinkedHashMap<UUID,Known> queued;
+
+	private Periodic retransmit;
 
     /**
      * Random number generator for selecting targets.

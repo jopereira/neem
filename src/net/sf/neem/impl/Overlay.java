@@ -51,8 +51,8 @@ import java.util.UUID;
  * number of random walks upon initial join (liek SCAMP) with
  * periodic shuffling.
  */
-public class Overlay implements ConnectionListener, DataListener, Runnable {
-    /**
+public class Overlay implements ConnectionListener, DataListener {
+	/**
      * Creates a new instance of Overlay
      */
     public Overlay(Random rand, Transport net, short idport, short shuffleport) {
@@ -62,10 +62,14 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
         this.shuffleport = shuffleport;
    
         this.maxPeers = 10;
-        this.shufflePeriod = 1000;
 
         this.myId = UUID.randomUUID();
-        this.peers = new HashMap<UUID, Connection>();;
+        this.peers = new HashMap<UUID, Connection>();
+        this.shuffle = new Periodic(net, 1000) {
+        	public void run() {
+        		shuffle();
+        	}
+        };
 
         net.setDataListener(this, this.shuffleport);
         net.setDataListener(this, this.idport);
@@ -124,8 +128,7 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
 						Addresses.writeAddressToBuffer(net.id()) },
 						this.shuffleport);
 			}
-			firsttime=false;
-			net.schedule(this, this.shufflePeriod);
+			shuffle.start();
 		}
     	
     	info.send(new ByteBuffer[] { UUIDs.writeUUIDToBuffer(this.myId),
@@ -155,21 +158,16 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
         // }
     }
 
-    public void run() {
-        if (peers.isEmpty()) {
-        	firsttime=true;
-        	return;
-        }
-    	distributeConnections();
-        net.schedule(this, this.shufflePeriod);
-    }
-
     /**
      * Tell a neighbor, that there is a connection do the peer
      * identified by its address, wich is sent to the
      * peers.
      */
-    private void distributeConnections() {
+    private void shuffle() {
+    	if (peers.isEmpty()) {
+    		shuffle.stop();
+    		return;
+    	}
         Connection[] conns = connections();
         if (conns.length<2)
         	return;
@@ -232,6 +230,7 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
     private Transport net;
     private short shuffleport;
     private short idport;
+    private Periodic shuffle;
     
     /**
      * The peers variable can be queried by an external thread for JMX
@@ -247,7 +246,6 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
 
     // Configuration parameters
     
-    private int shufflePeriod;
     private int maxPeers;
     
     public int getMaxPeers() {
@@ -259,11 +257,11 @@ public class Overlay implements ConnectionListener, DataListener, Runnable {
     }
 
     public int getShufflePeriod() {
-        return shufflePeriod;
+        return shuffle.getInterval();
     }
 
     public void setShufflePeriod(int shufflePeriod) {
-        this.shufflePeriod = shufflePeriod;
+        this.shuffle.setInterval(shufflePeriod);
     }
 }
 
