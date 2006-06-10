@@ -73,7 +73,7 @@ public abstract class Periodic implements Runnable {
 	
 	public void doIt() {
 		if (running)
-			runnable.run();
+			run();
 		if (running)
 			trans.schedule(runnable, interval);
 	}
