@@ -48,18 +48,18 @@ import java.util.UUID;
 
 /**
  * Implementation of overlay management. This class combines a
- * number of random walks upon initial join (liek SCAMP) with
- * periodic shuffling.
+ * number of random walks upon initial join with periodic shuffling.
  */
 public class Overlay implements ConnectionListener, DataListener {
 	/**
      * Creates a new instance of Overlay
      */
-    public Overlay(Random rand, Transport net, short idport, short shuffleport) {
+    public Overlay(Random rand, Transport net, short joinport, short idport, short shuffleport) {
     	this.rand = rand;
     	this.net = net;
         this.idport = idport;
         this.shuffleport = shuffleport;
+        this.joinport = joinport;
    
         this.maxPeers = 10;
 
@@ -73,29 +73,42 @@ public class Overlay implements ConnectionListener, DataListener {
 
         net.setDataListener(this, this.shuffleport);
         net.setDataListener(this, this.idport);
+        net.setDataListener(this, this.joinport);
         net.setConnectionListener(this);
     }
 
     public void receive(ByteBuffer[] msg, Connection info, short port) {
     	if (port==this.idport)
     		handleId(msg, info);
-    	else
+    	else if (port==this.shuffleport)
     		handleShuffle(msg);
+    	else
+    		handleJoin(msg);
     }
     
     private void handleId(ByteBuffer[] msg, Connection info) {
-        UUID id = UUIDs.readUUIDFromBuffer(msg);
+		if (firsttime) {
+			info.send(new ByteBuffer[] {
+					UUIDs.writeUUIDToBuffer(myId),
+					Addresses.writeAddressToBuffer(net.id()) },
+					this.joinport);
+			shuffle.start();
+			firsttime=false;
+		}
+
+		UUID id = UUIDs.readUUIDFromBuffer(msg);
 		InetSocketAddress addr = Addresses.readAddressFromBuffer(msg);
 
-		// System.err.println("--IDed "+addr+" at "+net.id());
-		if (peers.containsKey(id))
+		if (peers.containsKey(id)) {
 			info.close();
-		else
-			synchronized (this) {
-				info.id = id;
-				info.listen = addr;
-				peers.put(id, info);
-			}
+			return;
+		}
+		
+		synchronized (this) {
+			info.id = id;
+			info.listen = addr;
+			peers.put(id, info);
+		}		
     }
 
     private void handleShuffle(ByteBuffer[] msg) {
@@ -108,54 +121,47 @@ public class Overlay implements ConnectionListener, DataListener {
 			return;
 
 		// Flip a coin...
-		if (peers.size() == 0 || rand.nextFloat() > 0.5) {
-			// System.err.println("Open locally!");
+		if (peers.size() < maxPeers || rand.nextFloat() > 0.5) {
 			net.add(addr);
 		} else {
-			// System.err.println("Forward remotely!");
 			Connection[] conns = connections();
 			int idx = rand.nextInt(conns.length);
 			conns[idx].send(Buffers.clone(beacon), this.shuffleport);
 		}
     }
+    private void handleJoin(ByteBuffer[] msg) {
+    	ByteBuffer[] beacon = Buffers.clone(msg);
 
-    public void open(Connection info) {
-		// System.err.println("Opened at "+net.id());
-    	if (firsttime) {
-			for (int i = 0; i < maxPeers / 2; i++) {
-				info.send(new ByteBuffer[] {
-						UUIDs.writeUUIDToBuffer(myId),
-						Addresses.writeAddressToBuffer(net.id()) },
-						this.shuffleport);
-			}
-			shuffle.start();
+		Connection[] conns = connections();
+    	for(int i=0;i<conns.length;i++) {
+			conns[i].send(Buffers.clone(beacon), this.shuffleport);
 		}
-    	
+    }
+    
+    public void open(Connection info) {
     	info.send(new ByteBuffer[] { UUIDs.writeUUIDToBuffer(this.myId),
-                Addresses.writeAddressToBuffer(net.id()) }, this.idport);
-        purgeConnections();
+            Addresses.writeAddressToBuffer(net.id()) }, this.idport);
+    	purgeConnections();
     }
 
     public synchronized void close(Connection info) {
-        // "CLOSE@" + myId + " : " + addr.toString());
         if (info.id != null) {
             peers.remove(info.id);
         }
+        if (peers.isEmpty())
+        	firsttime=true;
     }
 
     private void purgeConnections() {
         Connection[] conns = connections();
         int nc = conns.length;
-        //int curr_size = peers.size();
 
-        // if (curr_size >= maxPeers) {
-        while( peers.size() - maxPeers > 0) {
+        while(peers.size() > maxPeers) {
             Connection info = conns[rand.nextInt(nc)];
             peers.remove(info.id);
             info.close();
+            info.id = null;
         }
-        // info.id = null;
-        // }
     }
 
     /**
@@ -168,6 +174,7 @@ public class Overlay implements ConnectionListener, DataListener {
     		shuffle.stop();
     		return;
     	}
+    	
         Connection[] conns = connections();
         if (conns.length<2)
         	return;
@@ -228,6 +235,7 @@ public class Overlay implements ConnectionListener, DataListener {
     }
 
     private Transport net;
+    private short joinport;
     private short shuffleport;
     private short idport;
     private Periodic shuffle;
