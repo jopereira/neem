@@ -104,21 +104,21 @@ public class Gossip implements DataListener {
 		
 		ByteBuffer[] copy = Buffers.clone(msg);
 
-		// only pass to application a clean message
-		this.handler.deliver(msg);
+		if (hops>0)
+			this.handler.deliver(msg);
 
 		hops++;
 		
 		if (hops>maxHops)
 			return;
 		
-		ByteBuffer[] out = new ByteBuffer[msg.length + 2];
+		ByteBuffer[] out = new ByteBuffer[copy.length + 2];
 		out[0] = UUIDs.writeUUIDToBuffer(uuid);
 		out[1] = ByteBuffer.wrap(new byte[] { hops });
 		System.arraycopy(copy, 0, out, 2, copy.length);
 		short port=dataport;
 		
-		if (hops>minHops && Buffers.count(msg)>=minSize) {
+		if (hops>minHops && Buffers.count(copy)>=minSize) {
 			// Cache message
 			cache.put(uuid, out);
 			
