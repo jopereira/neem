@@ -62,6 +62,10 @@ public class Queued {
 	public short getPort() {
 		return (this.port);
 	}
+	
+	public String toString() {
+		return Buffers.count(msg)+"bytes to "+port;
+	}
 
 	private ByteBuffer[] msg;
 	private short port;

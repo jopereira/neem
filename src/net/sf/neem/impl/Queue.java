@@ -51,12 +51,12 @@ public class Queue {
     /**
      * Creates a new queue.
      * 
-     * @param default_Q_size The maximum number of elements this queue can hold.
+     * @param max The maximum number of elements this queue can hold.
      * @param random 
      */
-    public Queue(int default_Q_size, Random random) {
+    public Queue(int max, Random random) {
         this.queue = new ArrayList<Queued>();
-        this.max_threshold = default_Q_size;
+        this.max = max;
         this.rand=random;
     }
 
@@ -66,7 +66,7 @@ public class Queue {
      * @param o The object to be enqueued.
      */
     public void push(Queued o) {
-        if (queue.size()<max_threshold)
+        if (queue.size()<max)
             this.queue.add(o);
         else {
             int pos = rand.nextInt(queue.size() - 1);
@@ -89,11 +89,15 @@ public class Queue {
     	return queue.isEmpty();
     }
     
+    public String toString() {
+    	return queue.toString();
+    }
+    
     /* Object storage vector */
     private List<Queued> queue;
     
     /* Level of occupancy above which this queue drops all messages. */
-    public int max_threshold;
+    public int max;
     
     private Random rand;
 }
