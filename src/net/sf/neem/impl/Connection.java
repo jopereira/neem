@@ -131,7 +131,7 @@ public class Connection {
             return;
         }
     	
-        Queued b = new Queued(Buffers.clone(msg), new Short(port));
+        Queued b = new Queued(msg, new Short(port));
         queue.push(b);
         handleWrite();
     }
@@ -316,7 +316,14 @@ public class Connection {
      * When the hanlder behaves as client.
      */
     void handleConnect() throws IOException {
-        try {
+        try {	
+        	/*
+        	 * Amazing. The Java runtime (JDK 1.5.0_05 Linux) will notify
+        	 * us of connection multiple times, making all hell break
+        	 * loose. The workaround is simple, yet effective.
+        	 */
+        	if (connected)
+        		return;
             if (sock.finishConnect()) {
             	connected=true;
                 sock.socket().setReceiveBufferSize(1024);
