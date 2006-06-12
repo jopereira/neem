@@ -65,7 +65,7 @@ public class Overlay implements ConnectionListener, DataListener {
 
         this.myId = UUID.randomUUID();
         this.peers = new HashMap<UUID, Connection>();
-        this.shuffle = new Periodic(net, 1000) {
+        this.shuffle = new Periodic(rand, net, 1000) {
         	public void run() {
         		shuffle();
         	}

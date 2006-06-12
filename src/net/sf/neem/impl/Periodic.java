@@ -40,6 +40,8 @@
 
 package net.sf.neem.impl;
 
+import java.util.Random;
+
 /**
  * A stopable and restartable periodic activity. This uses the scheduling
  * mechanism in the transport layer.
@@ -49,10 +51,12 @@ public abstract class Periodic implements Runnable {
 	private int interval;
 	private Transport trans;
 	private Runnable runnable;
+	private Random rand;
 
-	public Periodic(Transport trans, int interval) {
+	public Periodic(Random rand, Transport trans, int interval) {
 		this.interval=interval;
 		this.trans=trans;
+		this.rand=rand;
 		runnable=new Runnable() {
 			public void run() {
 				doIt();
@@ -64,7 +68,7 @@ public abstract class Periodic implements Runnable {
 		if (running)
 			return;
 		running=true;
-		trans.schedule(runnable, interval);
+		trans.schedule(runnable, rand.nextInt(interval*2));
 	}
 	
 	public void stop() {
@@ -75,7 +79,7 @@ public abstract class Periodic implements Runnable {
 		if (running)
 			run();
 		if (running)
-			trans.schedule(runnable, interval);
+			trans.schedule(runnable, rand.nextInt(interval*2));
 	}
 	
 	public int getInterval() {

@@ -62,11 +62,15 @@ public class Gossip implements DataListener {
         this.fanout = 4;
         this.maxHops = 10;
         this.minHops = 3;
-        this.minSize = 64;
+        /*
+         * This is disables nacks, as it interacts baddly with frequent
+         * shuffling. Too bad. :-(
+         */
+        this.minSize = 64000;
 
         this.cache = new LinkedHashMap<UUID,ByteBuffer[]>();
         this.queued = new LinkedHashMap<UUID,Known>();
-        this.retransmit = new Periodic(net, 10) {
+        this.retransmit = new Periodic(rand, net, 10) {
         	public void run() {
         		retransmit();
         	}
@@ -95,7 +99,7 @@ public class Gossip implements DataListener {
 			handleControl(uuid, hops, info);
 	}
     
-    private void handleData(ByteBuffer[] msg, UUID uuid, byte hops) {    
+    private void handleData(ByteBuffer[] msg, UUID uuid, byte hops) { 
 		if (cache.containsKey(uuid))
 			return;
 
@@ -184,22 +188,32 @@ public class Gossip implements DataListener {
 	}
     
     private void relay(ByteBuffer[] msg, int fanout, short syncport, Connection[] conns) {
-        if (conns.length < 1) {
-            return;
+        // Select destinations
+        Connection[] sample;
+        if (conns.length <= fanout)
+        	// Neighborhood too small: flood.
+        	sample=conns;
+        else {
+        	// Naive random sample. This is acceptable as long as local
+        	// neighborhoods are very small.
+        	sample = new Connection[fanout];
+			for (int i = 0; i < sample.length;) {
+				Connection c = conns[rand.nextInt(conns.length)];
+				for (int j = 0; j < i; j++)
+					if (sample[j] == c) {
+						c = null;
+						break;
+					}
+				if (c != null) {
+					sample[i] = c;
+					i++;
+				}
+			}
         }
-
-        if (fanout > conns.length)
-            fanout = conns.length;
         
-        int index;
-        for (int i = 0; i < fanout; i++) {
-            /*
-             * System.out.println( "Message from " + net.id().toString() + " to : " +
-             * info.addr.toString());
-             */
-            index = rand.nextInt(fanout);
-            if (conns[index] != null)
-                conns[index].send(Buffers.clone(msg), syncport);
+        // Forward
+        for(int i = 0; i < sample.length; i++) {
+            conns[i].send(Buffers.clone(msg), syncport);
         }
     }
 
