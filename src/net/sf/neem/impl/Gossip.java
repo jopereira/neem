@@ -67,17 +67,13 @@ public class Gossip implements DataListener {
          */
         this.fanout = 11;
         this.maxHops = 6;
-        
-        /*
-         * Disable pull gossip. This doesn't seem to be
-         * ok yet.
-         */
-        this.minHops = 10;
-        this.minSize = 64000;
+        this.minHops = 2;
+        this.minSize = 64;
+        this.pullPeriod = 20;
 
         this.cache = new LinkedHashMap<UUID,ByteBuffer[]>();
         this.queued = new LinkedHashMap<UUID,Known>();
-        this.retransmit = new Periodic(rand, net, 10) {
+        this.retransmit = new Periodic(rand, net, pullPeriod*2) {
         	public void run() {
         		retransmit();
         	}
@@ -129,10 +125,10 @@ public class Gossip implements DataListener {
 		System.arraycopy(copy, 0, out, 2, copy.length);
 		short port=dataport;
 		
-		if (hops>minHops && Buffers.count(copy)>=minSize) {
+		if (hops>minHops && Buffers.count(copy)>=minSize) {	
 			// Cache message
 			cache.put(uuid, out);
-			
+
 			// Send out advertisements
 			out = new ByteBuffer[2];
 			out[0] = UUIDs.writeUUIDToBuffer(uuid);
@@ -160,7 +156,7 @@ public class Gossip implements DataListener {
 				known.senders.add(info);
 			
 	    	long time=System.nanoTime();
-	    	if (time-known.last>=5000000)
+	    	if (time-known.last>=pullPeriod*1000000)
 	    		request(known, time);
 			retransmit.start();
 		}
@@ -183,11 +179,11 @@ public class Gossip implements DataListener {
     	long time=System.nanoTime();
     	while(i.hasNext()) {
     		Known known=i.next();
-   	    	if (time-known.last<5000000)
+   	    	if (time-known.last<pullPeriod*1000000)
    	    		continue;
    	    	if (known.senders.isEmpty())
    	    		i.remove();
-   	    	else
+    		else
    	    		request(known, time);
     	}
     	if (queued.isEmpty())
@@ -269,7 +265,8 @@ public class Gossip implements DataListener {
      * Configuration of retransmission policy.
      */
     private int maxHops, minHops, minSize;
-    
+	private int pullPeriod;
+
     public int getFanout() {
         return fanout;
     }
