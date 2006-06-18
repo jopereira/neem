@@ -59,13 +59,20 @@ public class Gossip implements DataListener {
         this.ctrlport = ctrlport;
         this.rand = rand;
 
-        this.fanout = 4;
-        this.maxHops = 10;
-        this.minHops = 3;
         /*
-         * This is disables nacks, as it interacts baddly with frequent
-         * shuffling. Too bad. :-(
+         * Default configuration suitable for ~500 nodes, 99%
+         * probability of delivery, 1% node failure. Use
+         * apps.jmx.MkConfig to compute values for other
+         * configurations.
          */
+        this.fanout = 11;
+        this.maxHops = 6;
+        
+        /*
+         * Disable pull gossip. This doesn't seem to be
+         * ok yet.
+         */
+        this.minHops = 10;
         this.minSize = 64000;
 
         this.cache = new LinkedHashMap<UUID,ByteBuffer[]>();
@@ -95,7 +102,7 @@ public class Gossip implements DataListener {
 
     	if (port == this.dataport)
 			handleData(msg, uuid, hops);
-		else if (port == this.ctrlport)
+    	else if (port == this.ctrlport)
 			handleControl(uuid, hops, info);
 	}
     
@@ -189,31 +196,12 @@ public class Gossip implements DataListener {
     
     private void relay(ByteBuffer[] msg, int fanout, short syncport, Connection[] conns) {
         // Select destinations
-        Connection[] sample;
-        if (conns.length <= fanout)
-        	// Neighborhood too small: flood.
-        	sample=conns;
-        else {
-        	// Naive random sample. This is acceptable as long as local
-        	// neighborhoods are very small.
-        	sample = new Connection[fanout];
-			for (int i = 0; i < sample.length;) {
-				Connection c = conns[rand.nextInt(conns.length)];
-				for (int j = 0; j < i; j++)
-					if (sample[j] == c) {
-						c = null;
-						break;
-					}
-				if (c != null) {
-					sample[i] = c;
-					i++;
-				}
-			}
-        }
+    	int[] universe=RandomSamples.mkUniverse(conns.length);
+    	int samples=RandomSamples.uniformSample(fanout, universe, rand);
         
         // Forward
-        for(int i = 0; i < sample.length; i++) {
-            conns[i].send(Buffers.clone(msg), syncport);
+        for(int i = 0; i < samples; i++) {
+            conns[universe[i]].send(Buffers.clone(msg), syncport);
         }
     }
 

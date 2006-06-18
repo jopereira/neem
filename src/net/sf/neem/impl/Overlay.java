@@ -60,8 +60,14 @@ public class Overlay implements ConnectionListener, DataListener {
         this.idport = idport;
         this.shuffleport = shuffleport;
         this.joinport = joinport;
-   
-        this.maxPeers = 10;
+ 
+        /*
+         * Default configuration suitable for ~500 nodes, 99%
+         * probability of connectivity, 10% node failure. Use
+         * apps.jmx.MkConfig to compute values for other
+         * configurations.
+         */
+        this.maxPeers = 12;
 
         this.myId = UUID.randomUUID();
         this.peers = new HashMap<UUID, Connection>();
