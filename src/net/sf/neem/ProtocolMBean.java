@@ -76,6 +76,46 @@ public interface ProtocolMBean {
 	 * @param max number of ids
 	 */
 	public void setMaxIds(int max);
+    
+	/**
+	 * Get number of messages delivered to the application.
+	 */
+	public int getDelivered();
+    
+	/**
+	 * Get number of messages multicast locally by the application.
+	 */
+    public int getMulticast();
+    
+    /**
+     * Get number of data packets received.
+     */
+    public int getDataReceived();
+    
+    /**
+     * Get number of data packets transmitted.
+     */
+    public int getDataSent();
+    
+    /**
+     * Get number of packet hints received.
+     */
+    public int getHintsReceived();
+    
+    /**
+     * Get number of packet hints transmitted.
+     */
+    public int getHintsSent();
+    
+    /**
+     * Get number of pull request transmitted.
+     */
+    public int getPullReceived();
+    
+    /**
+     * Get number of pull requests transmitted.
+     */
+    public int getPullSent();
 
 	// --- Overlay parameters
 
@@ -114,7 +154,28 @@ public interface ProtocolMBean {
 	 * @param groupsize number of neighbors
 	 */
 	public void setMaxPeers(int groupsize);
-
+    
+	/**
+	 * Get number of direct join requests received.
+	 */
+	public int getJoinRequests();
+	
+	/**
+	 * Get number of connections purged after overflowing
+	 * local neighborhood.
+	 */
+	public int getPurgedConnections();
+	
+	/**
+	 * Get number of shuffle requests received.
+	 */
+	public int getShufflesReceived();
+	
+	/**
+	 * Get number of shuffle requests transmitted.
+	 */
+	public int getShufflesSent();
+	
 	// --- Transport
 	
 	/**
@@ -147,6 +208,36 @@ public interface ProtocolMBean {
 	 * @param size number of messages
 	 */
 	public void setQueueSize(int size);
+	
+	/**
+	 * Get number of socket connections accepted.
+	 */
+    public int getAcceptedSocks();
+
+    /**
+     * Get number of successful sockets connected.
+     */
+    public int getConnectedSocks();
+    
+    /**
+     * Get number of packets received.
+     */
+    public int getPacketsReceived();
+    
+    /**
+     * Get number of packets transmited.
+     */
+    public int getPacketsSent();
+    
+    /**
+     * Get number of raw bytes received.
+     */
+    public int getBytesReceived();
+    
+    /**
+     * Get number of raw bytes transmitted.
+     */
+    public int getBytesSent();
 }
 
 // arch-tag: 2c588950-1f71-46ed-be61-f801fb5c90f8

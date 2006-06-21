@@ -88,6 +88,7 @@ public class Gossip implements DataListener {
     }
         
     public void multicast(ByteBuffer[] msg) {
+    	mcast++;
     	handleData(msg, UUID.randomUUID(), (byte)0);
     }
     
@@ -102,7 +103,9 @@ public class Gossip implements DataListener {
 			handleControl(uuid, hops, info);
 	}
     
-    private void handleData(ByteBuffer[] msg, UUID uuid, byte hops) { 
+    private void handleData(ByteBuffer[] msg, UUID uuid, byte hops) {
+    	dataIn++;
+    	
 		if (cache.containsKey(uuid))
 			return;
 
@@ -111,8 +114,10 @@ public class Gossip implements DataListener {
 		
 		ByteBuffer[] copy = Buffers.clone(msg);
 
-		if (hops>0)
+		if (hops>0) {
 			this.handler.deliver(msg);
+			deliv++;
+		}
 
 		hops++;
 		
@@ -134,7 +139,10 @@ public class Gossip implements DataListener {
 			out[0] = UUIDs.writeUUIDToBuffer(uuid);
 			out[1] = ByteBuffer.wrap(new byte[] { hops });
 			port=ctrlport;
-		}
+			
+			ackOut+=fanout;
+		} else
+			dataOut+=fanout;
 		
 		relay(out, this.fanout, port, memb.connections());
 		purgeCache();
@@ -146,7 +154,10 @@ public class Gossip implements DataListener {
 			// It is a nack and we (still) have it.
 			copy = Buffers.clone(copy);
 			info.send(copy, this.dataport);
+        	nackIn++;
+			dataOut++;
 		} else if (hops > 0 && copy==null) {
+			ackIn++;
 			Known known = queued.get(uuid);
 			if (known==null) {
 				known = new Known(uuid, info);
@@ -163,6 +174,7 @@ public class Gossip implements DataListener {
     }
 
     private void request(Known known, long time) {
+    	nackOut++;
     	known.last = time;
     	Connection info = known.senders.remove(known.senders.size()-1);
 	
@@ -282,6 +294,8 @@ public class Gossip implements DataListener {
     public void setMaxIds(int maxIds) {
         this.maxIds = maxIds;
     }
+    
+    public int mcast, deliv, dataIn, dataOut, ackIn, ackOut, nackIn, nackOut;
 }
 
 // arch-tag: 4a3a77be-0f72-4416-88ee-c6639fe68e90

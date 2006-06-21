@@ -189,9 +189,11 @@ public class Connection {
             if (outgoing != null) {
                 long n = sock.write(outgoing, 0, outgoing.length);
                 dirty=true;
+                transport.bytesOut+=n;
 
                 outremaining -= n;
                 if (outremaining == 0) {
+                	transport.pktOut++;
                     outgoing = null;
                 }
                 key.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
@@ -216,7 +218,7 @@ public class Connection {
             long read = 0;
 
             while ((read = sock.read(incoming)) > 0) {
-            	;
+            	transport.bytesIn+=read;
             }
             if (read < 0) {
                 handleClose();
@@ -269,6 +271,7 @@ public class Connection {
 
             // Is the message complete?
             if (msgsize == 0) {
+            	transport.pktIn++;
                 final ByteBuffer[] msg = (ByteBuffer[]) incomingmb.toArray(
                         new ByteBuffer[incomingmb.size()]);
                 transport.deliver(this, prt, msg);
@@ -303,6 +306,8 @@ public class Connection {
             return;
         }
         
+        transport.accepted++;
+        
         try {
             transport.deliverSocket(nsock);
         } catch (IOException e) {// Just drop it.
@@ -325,6 +330,8 @@ public class Connection {
         	if (connected)
         		return;
             if (sock.finishConnect()) {
+            	transport.connected++;
+            	
             	connected=true;
                 sock.socket().setReceiveBufferSize(1024);
                 sock.socket().setSendBufferSize(1024);

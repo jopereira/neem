@@ -65,7 +65,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
- * Implementation of the NEEM network layer.
+ * Implementation of the network layer.
  */
 public class Transport implements Runnable {
     private Connection idinfo;
@@ -351,9 +351,11 @@ public class Transport implements Runnable {
     private SortedMap<Long, Runnable> timers;
 
     /** 
-     * Service indicator
+     * Statistics
      */
-    public int accepted = 0;
+    public int accepted, connected;
+    public int pktOut, pktIn;
+    public int bytesOut, bytesIn;
 
     /** 
      * Storage for DataListener protocol events handlers

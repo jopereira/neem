@@ -75,6 +75,38 @@ public class Protocol implements ProtocolMBean {
     public void setMaxIds(int max) {
         g_impl.setMaxIds(max);
     }
+    
+    public int getDelivered() {
+    	return g_impl.deliv;
+    }
+    
+    public int getMulticast() {
+    	return g_impl.mcast;
+    }
+    
+    public int getDataReceived() {
+    	return g_impl.dataIn;
+    }
+    
+    public int getDataSent() {
+    	return g_impl.dataOut;
+    }
+    
+    public int getHintsReceived() {
+    	return g_impl.ackIn;
+    }
+    
+    public int getHintsSent() {
+    	return g_impl.ackOut;
+    }
+    
+    public int getPullReceived() {
+    	return g_impl.nackIn;
+    }
+    
+    public int getPullSent() {
+    	return g_impl.nackOut;
+    }
 
     // --- Overlay
 
@@ -101,7 +133,23 @@ public class Protocol implements ProtocolMBean {
     public void setShufflePeriod(int period) {
         m_impl.setShufflePeriod(period);
     }
-    
+
+    public int getJoinRequests() {
+    	return m_impl.joins;
+    }
+	
+	public int getPurgedConnections() {
+		return m_impl.purged;
+	}
+	
+	public int getShufflesReceived() {
+		return m_impl.shuffleIn;
+	}
+	
+	public int getShufflesSent() {
+		return m_impl.shuffleOut;
+	}
+
 	// -- Transport
 	
 	public InetSocketAddress getLocalAddress() {
@@ -122,6 +170,30 @@ public class Protocol implements ProtocolMBean {
 
     public void setQueueSize(int size) {
         net.setQueueSize(size);
+    }
+    
+    public int getAcceptedSocks() {
+    	return net.accepted;
+    }
+
+    public int getConnectedSocks() {
+    	return net.connected;
+    }
+    
+    public int getPacketsReceived() {
+    	return net.pktIn;
+    }
+    
+    public int getPacketsSent() {
+    	return net.pktOut;
+    }
+    
+    public int getBytesReceived() {
+    	return net.bytesIn;
+    }
+    
+    public int getBytesSent() {
+    	return net.bytesOut;
     }
     
     private MulticastChannel neem;

@@ -118,6 +118,7 @@ public class Overlay implements ConnectionListener, DataListener {
     }
 
     private void handleShuffle(ByteBuffer[] msg) {
+    	shuffleIn++;
     	ByteBuffer[] beacon = Buffers.clone(msg);
 
 		UUID id = UUIDs.readUUIDFromBuffer(msg);
@@ -130,17 +131,20 @@ public class Overlay implements ConnectionListener, DataListener {
 		if (peers.size() < maxPeers || rand.nextFloat() > 0.5) {
 			net.add(addr);
 		} else {
+			shuffleOut++;
 			Connection[] conns = connections();
 			int idx = rand.nextInt(conns.length);
 			conns[idx].send(Buffers.clone(beacon), this.shuffleport);
 		}
     }
     private void handleJoin(ByteBuffer[] msg) {
+    	joins++;
     	ByteBuffer[] beacon = Buffers.clone(msg);
 
 		Connection[] conns = connections();
     	for(int i=0;i<conns.length;i++) {
-			conns[i].send(Buffers.clone(beacon), this.shuffleport);
+    		shuffleOut++;
+    		conns[i].send(Buffers.clone(beacon), this.shuffleport);
 		}
     }
     
@@ -167,6 +171,7 @@ public class Overlay implements ConnectionListener, DataListener {
             peers.remove(info.id);
             info.close();
             info.id = null;
+            purged++;
         }
     }
 
@@ -200,6 +205,7 @@ public class Overlay implements ConnectionListener, DataListener {
      * @param arrow The accepting peer.
      */
     public void tradePeers(Connection target, Connection arrow) {
+    	shuffleOut++;
         target.send(new ByteBuffer[] {
                 UUIDs.writeUUIDToBuffer(arrow.id),
                 Addresses.writeAddressToBuffer(arrow.listen) },
@@ -277,6 +283,8 @@ public class Overlay implements ConnectionListener, DataListener {
     public void setShufflePeriod(int shufflePeriod) {
         this.shuffle.setInterval(shufflePeriod);
     }
+    
+    public int joins, purged, shuffleIn, shuffleOut; 
 }
 
 // arch-tag: e99e8d36-d4ba-42ad-908a-916aa6c182d9
