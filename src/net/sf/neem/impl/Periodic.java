@@ -38,27 +38,57 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * App.java
- *
- * Created on March 15, 2005, 4:12 PM
- */
 package net.sf.neem.impl;
 
-import java.nio.*;
+import java.util.Random;
 
 /**
- * Applications that intend to use the Gossip Multicast Protocol MUST implement this Interface.
- * @author psantos@GSD
+ * A stopable and restartable periodic activity. This uses the scheduling
+ * mechanism in the transport layer.
  */
-public interface App {
+public abstract class Periodic implements Runnable {	
+	private boolean running;
+	private int interval;
+	private Transport trans;
+	private Runnable runnable;
+	private Random rand;
 
-    /**
-     *  This method decodes the message received. It must be inverse to the one used for encoding.
-     * It's called by the gossip layer.
-     * @param msg The message being delivered.
-     */
-    public void deliver(ByteBuffer[] msg);
+	public Periodic(Random rand, Transport trans, int interval) {
+		this.interval=interval;
+		this.trans=trans;
+		this.rand=rand;
+		runnable=new Runnable() {
+			public void run() {
+				doIt();
+			}
+		};
+	}
+	
+	public void start() {
+		if (running)
+			return;
+		running=true;
+		trans.schedule(runnable, rand.nextInt(interval*2));
+	}
+	
+	public void stop() {
+		running=false;
+	}
+	
+	public void doIt() {
+		if (running)
+			run();
+		if (running)
+			trans.schedule(runnable, rand.nextInt(interval*2));
+	}
+	
+	public int getInterval() {
+		return interval;
+	}
+	
+	public void setInterval(int interval) {
+		this.interval=interval;
+	}
 }
 
-// arch-tag: 6b30f28e-5375-46ef-9963-8296bf64f9eb
+// arch-tag: 1f1f86ca-08ae-4b87-aad3-3b5a7884e1a7

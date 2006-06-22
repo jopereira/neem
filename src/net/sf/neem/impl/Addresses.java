@@ -1,6 +1,6 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005-2006, University of Minho
+ * Copyright (c) 2005-2006 University of Minho
  * All rights reserved.
  *
  * Contributors:
@@ -40,26 +40,60 @@
 
 package net.sf.neem.impl;
 
+import java.io.*;
+import java.net.*;
 import java.nio.*;
 
 /**
- * Low level handler for messages. This is called by connections
- * to deliver received data.
+ * Address manipulation utilities. Provides methods to read/write
+ * InetSocketAddress addresses from/to a ByteBuffers.
  */
-public interface DataListener {
+public abstract class Addresses {
+	private Addresses() {}
+	
     /**
-     * Receive a message from from a connection. The caller is
-     * is prepared to handle a BufferUnderFlowException and will
-     * close the connection. Implementations are thus advised to
-     * start by unmarshalling the message. If it has been truncated
-     * or is invalied, the resulting exception will thus do the
-     * right thing
+     * Write a socket address to a ByteBuffer.
      * 
-     * @param msg The incoming message.
-     * @param info The source connection.
-     * @param port Destination port.
+     * @param addr The address to be written.
      */
-    public void receive(ByteBuffer[] msg, Connection info, short port);
+    public static ByteBuffer writeAddressToBuffer(InetSocketAddress addr) {
+		ByteBuffer msg = null;
+
+		msg = ByteBuffer.allocate(6);
+		msg.put(addr.getAddress().getAddress());
+		int port = addr.getPort();
+		msg.putShort((short) port);
+		msg.flip();
+		return msg;
+    }
+    
+    /**
+	 * Read a socket address from an array of ByteBuffers into an
+	 * InetSocketAddress.
+	 * 
+	 * @param msg
+	 *            The buffer from which to read the address from.
+	 * @return The address read.
+	 */
+    public static InetSocketAddress readAddressFromBuffer(ByteBuffer[] msg) {
+		InetSocketAddress addr = null;
+		int port = 0;
+		byte[] dst = null;
+		InetAddress ia = null;
+
+		ByteBuffer buf = Buffers.sliceCompact(msg, 6);
+		dst = new byte[4];
+		buf.get(dst, 0, dst.length);
+		port = ((int) buf.getShort()) & 0xffff;
+		try {
+			ia = InetAddress.getByAddress(dst);
+		} catch (UnknownHostException e) {
+			// We are sure that this does not happen, as the
+			// byte array is created with the correct size.
+		}
+		addr = new InetSocketAddress(ia, port);
+		return addr;
+    }
 }
 
-// arch-tag: b3b8ed98-df7f-419d-b0b4-14484e44419c
+// arch-tag: f387d158-3ec6-4001-af1b-5d4a8fb441eb

@@ -1,6 +1,6 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005-2006 University of Minho
+ * Copyright (c) 2005-2006, University of Minho
  * All rights reserved.
  *
  * Contributors:
@@ -38,67 +38,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * AddressUtils.java
- *
- * Created on April 15, 2005, 5:02 PM
- */
-
 package net.sf.neem.impl;
 
-
-import java.io.*;
-import java.net.*;
-import java.nio.*;
-
+import java.util.LinkedList;
+import java.util.List;
+import java.util.UUID;
 
 /**
- *  This abstract class provides methods to read/write InetSocketAddress 
- * addresses from/to a ByteBuffer Object or a Transport.Connection.
- *
- * @author psantos@GSD
+ * Known but yet unreceived message. This is used to manage a retransmission
+ * queue to request known but yet unreceived message.
  */
-public abstract class AddressUtils {
-
-    /** Write a socket address to a ByteBuffer.
-     * @param addr The address to be written.
-     * @return The Buffer with the address written into.
-     */
-    public static ByteBuffer writeAddressToBuffer(InetSocketAddress addr) {
-        ByteBuffer msg = null;
-
-        try {
-            msg = ByteBuffer.allocate(6);
-            msg.put(addr.getAddress().getAddress());
-            int port=addr.getPort();
-            msg.putShort((short)port);
-            msg.flip();
-        } catch (Exception e) {}
-        return msg;
-    }
-    
-    /** Read a socket address from an array of ByteBuffers into an InetSocketAddress.
-     * @param msg The buffer from which to read the address from.
-     * @return The address read.
-     */
-    public static InetSocketAddress readAddressFromBuffer(ByteBuffer[] msg) {
-        InetSocketAddress addr = null;
-        int port = 0;
-        byte[] dst = null;
-        InetAddress ia = null;
+public class Known {
+	public UUID id;
+	public List<Connection> senders;
+	public long last;
 	
-        ByteBuffer buf=Buffers.sliceCompact(msg, 6);
-        try {
-            dst = new byte[4];
-            buf.get(dst, 0, dst.length);
-            port=((int)buf.getShort())&0xffff;
-            ia = InetAddress.getByAddress(dst);
-            addr = new InetSocketAddress(ia, port);
-        } catch (IOException e) {} catch (IllegalArgumentException iae) {
-            System.out.println("Prob: " + ia.toString() + ":" + port);
-        }
-        return addr;
-    }
+	public Known(UUID id, Connection sender) {
+		this.id = id;
+		this.senders = new LinkedList<Connection>();
+		this.senders.add(sender);
+		this.last = -1;
+	}
 }
 
-// arch-tag: f387d158-3ec6-4001-af1b-5d4a8fb441eb
+// arch-tag: f3b4f2c0-3fa7-4008-8d33-6ed42a185d7c

@@ -38,20 +38,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Queued.java
- *
- * Created on May 2, 2005, 7:04 PM
- */
-
 package net.sf.neem.impl;
 
 import java.nio.*;
 
 /**
  * Message and port wrapper for distribution enqueueing.
- * 
- * @author psantos
  */
 public class Queued {
 
@@ -69,6 +61,10 @@ public class Queued {
 	/** Returns the port to wich the message is intended */
 	public short getPort() {
 		return (this.port);
+	}
+	
+	public String toString() {
+		return Buffers.count(msg)+"bytes to "+port;
 	}
 
 	private ByteBuffer[] msg;

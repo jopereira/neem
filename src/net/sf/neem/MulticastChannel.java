@@ -61,23 +61,23 @@ import java.util.*;
 public class MulticastChannel implements InterruptibleChannel,
         ReadableByteChannel, WritableByteChannel {
 
-    /**
+	/**
      * Creates a new instance of a multicast channel.
      * 
      * @param local
      *            the local address to bind to
      */
     public MulticastChannel(InetSocketAddress local) throws IOException {
-        // this.props = this.props.loadFromXML(new );
-        trans = new Transport(local);
-        mimpls = new MembershipImpl(trans, (short)1, (short)2, 10);
-        gimpls = new GossipImpl(mimpls, (short)0, 4);
-        gimpls.handler(new App() {
+    	Random rand = new Random();
+    	net = new Transport(rand, local);
+        overlay = new Overlay(rand, net, (short)2, (short)3, (short)4);
+        gossip = new Gossip(rand, net, overlay, (short)0, (short)1);
+        gossip.handler(new Application() {
             public void deliver(ByteBuffer[] buf) {
                 enqueue(buf);
             }
         });
-        t = new Thread(trans);
+        t = new Thread(net);
         t.setDaemon(true);
         t.start();
     }
@@ -100,7 +100,7 @@ public class MulticastChannel implements InterruptibleChannel,
             return;
         isClosed = true;
         notifyAll();
-        trans.close();
+        net.close();
     }
 
     /**
@@ -120,9 +120,9 @@ public class MulticastChannel implements InterruptibleChannel,
         if (!loopback)
             enqueue(Buffers.clone(new ByteBuffer[] { cmsg }));
         int ret = cmsg.remaining();
-        trans.queue(new Runnable() {
+        net.queue(new Runnable() {
             public void run() {
-                gimpls.multicast(new ByteBuffer[] { cmsg });
+                gossip.multicast(new ByteBuffer[] { cmsg });
             }
         });
         return ret;
@@ -176,22 +176,22 @@ public class MulticastChannel implements InterruptibleChannel,
      * @return the address being advertised to peers
      */
     public InetSocketAddress getLocalSocketAddress() {
-        return this.trans.id();
+        return this.net.id();
     }
 
     /**
      * Add an address of a remote peer. This is used to add the address of peers
      * that act as rendezvous points when joining the group. Any peer can be
      * used, as the protocol is fully symmetrical. This can be called a number
-     * of times to more quickly build a local membership.
+     * of times to more quickly build a local neighborhood.
      * 
      * @param peer
      *            The address of the peer.
      */
     public void connect(final InetSocketAddress peer) {
-        trans.queue(new Runnable() {
+        net.queue(new Runnable() {
             public void run() {
-                trans.add(peer);
+                net.add(peer);
             }
         });
     }
@@ -258,15 +258,15 @@ public class MulticastChannel implements InterruptibleChannel,
     }
 
     /* Transport layer */
-    Transport trans = null;
+    Transport net = null;
 
     /* Gossip layer */
-    Gossip gimpls = null;
+    Gossip gossip = null;
 
-    /* Membership layer */
-    MembershipImpl mimpls = null;
+    /* ConnectionListener layer */
+    Overlay overlay = null;
 
-    private boolean isClosed;
+	private boolean isClosed;
 
     private boolean loopback, truncate;
 

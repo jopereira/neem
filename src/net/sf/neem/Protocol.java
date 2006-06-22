@@ -43,8 +43,8 @@ package net.sf.neem;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
-import net.sf.neem.impl.GossipImpl;
-import net.sf.neem.impl.MembershipImpl;
+import net.sf.neem.impl.Gossip;
+import net.sf.neem.impl.Overlay;
 import net.sf.neem.impl.Transport;
 
 /**
@@ -53,71 +53,201 @@ import net.sf.neem.impl.Transport;
 public class Protocol implements ProtocolMBean {
 	Protocol(MulticastChannel neem) {
 		this.neem = neem;
-        this.net = neem.trans;
-		this.g_impl = (GossipImpl) neem.gimpls;
-		this.m_impl = neem.mimpls;
+        this.net = neem.net;
+		this.gossip = neem.gossip;
+		this.overlay = neem.overlay;
 	}
+
+	// Gossip
 	
-    public int getQueueSize() {
-        return net.getDefault_Q_size();
+    public int getGossipFanout() {
+        return gossip.getFanout();
     }
 
-    public void setQueueSize(int size) {
-        net.setDefault_Q_size(size);
-    }
-
-    public int getFanout() {
-        return this.g_impl.getFanout();
-    }
-
-    public void setFanout(int fanout) {
-        this.g_impl.setFanout(fanout);
+    public void setGossipFanout(int fanout) {
+        gossip.setFanout(fanout);
     }
 
     public int getMaxIds() {
-        return g_impl.getMaxIds();
+        return gossip.getMaxIds();
     }
 
     public void setMaxIds(int max) {
-        g_impl.setMaxIds(max);
-    }
-
-    public int getGroupSize() {
-        return this.m_impl.getGrp_size();
-    }
-
-    public void setGroupSize(int groupsize) {
-        this.m_impl.setGrp_size(groupsize);
+        gossip.setMaxIds(max);
     }
     
-    public int getMembershipPeriod() {
-        return m_impl.getDistConnsPeriod();
-    }
+	public int getMinPullSize() {
+		return gossip.getMinPullSize();
+	}
 
-    public void setMembershipPeriod(int period) {
-        m_impl.setDistConnsPeriod(period);
-    }
+	public void setMinPullSize(int minPullSize) {
+		gossip.setMinPullSize(minPullSize);
+	}
 
-    public InetSocketAddress[] getPeers() {
-        return this.net.getPeers();
-    } 
+	public int getPullPeriod() {
+		return gossip.getPullPeriod();
+	}
+
+	public void setPullPeriod(int pullPeriod) {
+		gossip.setPullPeriod(pullPeriod);
+	}
+
+	public int getPushTimeToLive() {
+		return gossip.getPushttl();
+	}
+
+	public void setPushTimeToLive(int pushttl) {
+		gossip.setPushttl(pushttl);
+	}
+
+	public int getTimeToLive() {
+		return gossip.getTtl();
+	}
+
+	public void setTimeToLive(int ttl) {
+		gossip.setTtl(ttl);
+	}
+
+    public int getDelivered() {
+    	return gossip.deliv;
+    }
     
-    public UUID[] getPeersUUIDs() {
-		return this.m_impl.getPeers();
+    public int getMulticast() {
+    	return gossip.mcast;
+    }
+    
+    public int getDataReceived() {
+    	return gossip.dataIn;
+    }
+    
+    public int getDataSent() {
+    	return gossip.dataOut;
+    }
+    
+    public int getHintsReceived() {
+    	return gossip.ackIn;
+    }
+    
+    public int getHintsSent() {
+    	return gossip.ackOut;
+    }
+    
+    public int getPullReceived() {
+    	return gossip.nackIn;
+    }
+    
+    public int getPullSent() {
+    	return gossip.nackOut;
+    }
+
+    // --- Overlay
+
+    public UUID getLocalId() {
+		return overlay.getId();
+	}
+    
+    public UUID[] getPeerIds() {
+		return overlay.getPeers();
 	}
 	
-	public UUID getID() {
-		return this.m_impl.getId();
-	}
+    public int getOverlayFanout() {
+        return overlay.getFanout();
+    }
+
+    public void setOverlayFanout(int fanout) {
+        overlay.setFanout(fanout);
+    }
     
+    public int getShufflePeriod() {
+        return overlay.getShufflePeriod();
+    }
+
+    public void setShufflePeriod(int period) {
+        overlay.setShufflePeriod(period);
+    }
+
+    public int getJoinRequests() {
+    	return overlay.joins;
+    }
+	
+	public int getPurgedConnections() {
+		return overlay.purged;
+	}
+	
+	public int getShufflesReceived() {
+		return overlay.shuffleIn;
+	}
+	
+	public int getShufflesSent() {
+		return overlay.shuffleOut;
+	}
+
+	// -- Transport
+	
+	public InetSocketAddress getLocalAddress() {
+		return net.id();
+	}
+	
+    public InetSocketAddress[] getPeerAddresses() {
+        return overlay.getPeerAddresses();
+    } 
+
     public synchronized void addPeer(String addr, int port) {
-        this.neem.connect(new InetSocketAddress(addr,port));
+        neem.connect(new InetSocketAddress(addr,port));
+    }
+	
+    public int getQueueSize() {
+        return net.getQueueSize();
+    }
+
+    public void setQueueSize(int size) {
+        net.setQueueSize(size);
+    }
+	
+	public int getBufferSize() {
+		return net.getBufferSize();
+	}
+	
+	public void setBufferSize(int size) {
+		net.setBufferSize(size);
+	}
+	
+    public int getAcceptedSocks() {
+    	return net.accepted;
+    }
+
+    public int getConnectedSocks() {
+    	return net.connected;
+    }
+    
+    public int getPacketsReceived() {
+    	return net.pktIn;
+    }
+    
+    public int getPacketsSent() {
+    	return net.pktOut;
+    }
+    
+    public int getBytesReceived() {
+    	return net.bytesIn;
+    }
+    
+    public int getBytesSent() {
+    	return net.bytesOut;
+    }
+    
+    // --- Global
+    
+    public void resetCounters() {
+		net.resetCounters();
+		overlay.resetCounters();
+		gossip.resetCounters();
     }
     
     private MulticastChannel neem;
 	private Transport net;
-	private GossipImpl g_impl;
-	private MembershipImpl m_impl;
+	private Gossip gossip;
+	private Overlay overlay;
 };
 
 // arch-tag: 08505269-5fca-435f-a7ae-8a87af222676 

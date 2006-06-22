@@ -52,16 +52,17 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 /**
- * Socket manipulation utilities.
+ * Connection with a peer. This class provides event handlers
+ * for a connection. It also implements multiplexing and queueing.
  */
 public class Connection {
-
     /**
 	 * Create a new connection.
 	 * 
-	 * @param trans transport object
+	 * @param net transport object
 	 * @param bind local address to bind to, if any
 	 * @param conn allow simultaneous outgoing connection
+     * @param rand random generator
 	 * @throws IOException 
 	 */
 	Connection(Transport trans, InetSocketAddress bind, boolean conn) throws IOException {
@@ -88,7 +89,7 @@ public class Connection {
     /**
      * Create a new connection from an existing socket (used to associate a Connection to 
      * an incoming connection request).
-     * @param trans Transport layer instance that received the connect request
+     * @param net Transport layer instance that received the connect request
      * @param sock The accepting socket.
      * @throws IOException If an I/O operation did not succeed.
      */
@@ -96,12 +97,12 @@ public class Connection {
         this.transport = trans;
         this.sock = sock;
         sock.configureBlocking(false);
-        sock.socket().setSendBufferSize(1024);
-        sock.socket().setReceiveBufferSize(1024);
+        sock.socket().setSendBufferSize(transport.getBufferSize());
+        sock.socket().setReceiveBufferSize(transport.getBufferSize());
         key = sock.register(transport.selector,
                 SelectionKey.OP_READ | SelectionKey.OP_WRITE);
         key.attach(this);
-        msg_q = new Queue(transport.getDefault_Q_size());
+        queue = new Queue(transport.getQueueSize(), transport.rand);
         connected=true;
     }
 	
@@ -116,7 +117,7 @@ public class Connection {
 		key = sock.register(transport.selector,
 				SelectionKey.OP_CONNECT);
 		key.attach(this);
-		msg_q = new Queue(transport.getDefault_Q_size());
+		queue = new Queue(transport.getQueueSize(), transport.rand);
 	}
     	
     /**
@@ -125,22 +126,11 @@ public class Connection {
      * @param port Port, at transport layer, where the message must be delivered.
      */
     public void send(ByteBuffer[] msg, short port) {
-        // Header order:
-        /* --------
-         *|msg size| <- from here
-         * --------
-         *|  uuid  | <- from DataListener
-         * --------
-         *|  msg   | <- from App
-         * --------
-         */
-    	if (key==null) {
-            //System.out.println("key was null");
+    	if (key==null)
             return;
-        }
     	
-        Queued b = new Queued(Buffers.clone(msg), new Short(port));
-        msg_q.push((Object) b);
+        Queued b = new Queued(msg, new Short(port));
+        queue.push(b);
         handleWrite();
     }
 
@@ -148,7 +138,7 @@ public class Connection {
     	handleClose();
     }
 
-    // ////// Event handlers
+    // --- Event handlers
     
 	void handleGC() {
 		if (!dirty && outgoing == null) {
@@ -162,14 +152,14 @@ public class Connection {
      * There's something waiting to be written.
      */
     void handleWrite() {
-        if (msg_q.isEmpty() && outgoing == null) {
+        if (queue.isEmpty() && outgoing == null) {
             key.interestOps(SelectionKey.OP_READ);
             return;
         }
 
         try {
             if (outgoing == null) {
-                Queued b = (Queued) msg_q.pop();
+                Queued b = (Queued) queue.pop();
                 
                 ByteBuffer[] msg = b.getMsg();
 
@@ -197,9 +187,11 @@ public class Connection {
             if (outgoing != null) {
                 long n = sock.write(outgoing, 0, outgoing.length);
                 dirty=true;
+                transport.bytesOut+=n;
 
                 outremaining -= n;
                 if (outremaining == 0) {
+                	transport.pktOut++;
                     outgoing = null;
                 }
                 key.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
@@ -216,7 +208,7 @@ public class Connection {
     void handleRead() {
         // New buffer?
         if (incoming == null || incoming.remaining() == 0) {
-            incoming = ByteBuffer.allocate(1024);
+            incoming = ByteBuffer.allocate(transport.getBufferSize());
             copy = incoming.asReadOnlyBuffer();
         }
         // Read as much as we can with a single buffer.            
@@ -224,7 +216,7 @@ public class Connection {
             long read = 0;
 
             while ((read = sock.read(incoming)) > 0) {
-            	;
+            	transport.bytesIn+=read;
             }
             if (read < 0) {
                 handleClose();
@@ -247,7 +239,6 @@ public class Connection {
                 if (copy.remaining() >= 6) {
                     msgsize = copy.getInt();
                     port = copy.getShort();
-                    // System.out.println("Port: " + port);
                 } else {
                     break;
                 }
@@ -277,6 +268,7 @@ public class Connection {
 
             // Is the message complete?
             if (msgsize == 0) {
+            	transport.pktIn++;
                 final ByteBuffer[] msg = (ByteBuffer[]) incomingmb.toArray(
                         new ByteBuffer[incomingmb.size()]);
                 transport.deliver(this, prt, msg);
@@ -288,7 +280,7 @@ public class Connection {
         // Avoid a fragmented header. If/when more data is
         // available select will call us back.
         if (incoming.remaining() + copy.remaining() < 6) {
-            ByteBuffer compacted = ByteBuffer.allocate(1024);
+            ByteBuffer compacted = ByteBuffer.allocate(transport.getBufferSize());
 
             while (copy.hasRemaining()) {
                 compacted.put(copy.get());
@@ -311,10 +303,12 @@ public class Connection {
             return;
         }
         
+        transport.accepted++;
+        
         try {
             transport.deliverSocket(nsock);
-        } catch (IOException e) {// Just drop it.
-            System.out.println(e.getMessage()); // Debugging
+        } catch (IOException e) {
+        	// Just drop it.
         }
     
     }
@@ -324,25 +318,34 @@ public class Connection {
      * When the hanlder behaves as client.
      */
     void handleConnect() throws IOException {
-        try {
+        try {	
+        	/*
+        	 * Amazing. The Java runtime (JDK 1.5.0_05 Linux) will notify
+        	 * us of connection multiple times, making all hell break
+        	 * loose. The workaround is simple, yet effective.
+        	 */
+        	if (connected)
+        		return;
             if (sock.finishConnect()) {
+            	transport.connected++;
+            	
             	connected=true;
-                sock.socket().setReceiveBufferSize(1024);
-                sock.socket().setSendBufferSize(1024);
+                sock.socket().setReceiveBufferSize(transport.getBufferSize());
+                sock.socket().setSendBufferSize(transport.getBufferSize());
 
                 transport.notifyOpen(this);
                 key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
                 return;
             }
-        } catch (Exception e) {// Fall through, see below:
-            System.out.println("Could not connect");
+        } catch (Exception e) {
+        	// Fall through, see below:
         } 
         handleClose();
     }
 
     /**
      * Closed connection event handler.
-     * Either by membership or death of peer.
+     * Either by overlay management or death of peer.
      */
     void handleClose() {
     	if (key!=null) {
@@ -407,16 +410,16 @@ public class Connection {
 
     /** Message queue
      */
-    public Queue msg_q;
+    public Queue queue;
 
     /**
-     * Used by membership management to assign an unique id to the
+     * Used by overlay management to assign an unique id to the
      * remote process.
      */
     public UUID id;
     
     /**
-     * Used by membership management to keep the socket where
+     * Used by overlay management to keep the socket where
      * this peer can be contacted.
      */
     public InetSocketAddress listen;

@@ -43,39 +43,38 @@ package net.sf.neem;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
-//import net.sf.neem.impl.Connection;
-
 /**
- * Interface for a JMX management bean. This allows several protocol parameters
- * to be queried and set, in order to fine tune protocol behavior. Available
- * parameters will change as the protocol evolves, so this interface is far
- * from set in stone. Don't rely on it too much.
+ * Interface for a JMX management bean. This allows several protocol
+ * parameters to be queried and set, in order to fine tune protocol
+ * behavior. Available parameters will change as the protocol evolves,
+ * so this interface is far from set in stone. Don't rely on it too much.
  */
 public interface ProtocolMBean {
-	/**
-	 * Get the default size of buffer queues.
-	 * @return number of messages
-	 */
-	public int getQueueSize();
+	// --- Gossip
 	
-	/**
-	 * Set the default size of buffer queues. Currently, this does not modify
-	 * existing queues, only those that are created thereafter.
-	 * @param size number of messages
-	 */
-	public void setQueueSize(int size);
-	
-	/**
+    /**
 	 * Get the number of gossip target for each round.
 	 * @return number of targets
 	 */
-	public int getFanout();
+	public int getGossipFanout();
 	
 	/**
 	 * Set the number of gossip target for each round.
 	 * @param fanout number of targets
 	 */
-	public void setFanout(int fanout);
+	public void setGossipFanout(int fanout);
+	
+	/**
+	 * Get the maximum number of times that a message is relayed.
+	 * @return number of hops
+	 */
+	public int getTimeToLive();
+
+	/**
+	 * Set the maximum number of times that a message is relayed.
+	 * @param ttl number of hops
+	 */
+	public void setTimeToLive(int ttl);
 	
 	/**
 	 * Get the maximum number of cached message ids.
@@ -89,37 +88,159 @@ public interface ProtocolMBean {
 	 * @param max number of ids
 	 */
 	public void setMaxIds(int max);
+    
+	/**
+	 * Get the maximum number of times that a message is pushed.
+	 * @return number of hops
+	 */
+	public int getPushTimeToLive();
 
 	/**
-	 * Get the delay between periodic membership gossip rounds.
+	 * Set the maximum number of times that a message is pushed.
+	 * 0 disables pushing. A large value (at least, larger than
+	 * time-to-live) disables pulling.
+	 * @param pushttl number of hops
+	 */
+	public void setPushTimeToLive(int pushttl);
+
+	/**
+	 * Get the minimum size of messages that can be pulled.
+	 * @return size in bytes
+	 */
+	public int getMinPullSize();
+
+	/**
+	 * Set the minimum size of messages that can be pulled. Smaller
+	 * messages are always pushed. Setting it to a large value disables
+	 * pulling.
+	 * @param minPullSize size in bytes
+	 */
+	public void setMinPullSize(int minPullSize);
+
+	/**
+	 * Get period for retrying to pull known messages.
 	 * @return period in milliseconds
 	 */
-	public int getMembershipPeriod();
+	public int getPullPeriod();
+
+	/**
+	 * Set period for retrying to pull known messages.
+	 * @param pullPeriod period in milliseconds
+	 */
+	public void setPullPeriod(int pullPeriod);
+
+	/**
+	 * Get number of messages delivered to the application.
+	 */
+	public int getDelivered();
+    
+	/**
+	 * Get number of messages multicast locally by the application.
+	 */
+    public int getMulticast();
+    
+    /**
+     * Get number of data packets received.
+     */
+    public int getDataReceived();
+    
+    /**
+     * Get number of data packets transmitted.
+     */
+    public int getDataSent();
+    
+    /**
+     * Get number of packet hints received.
+     */
+    public int getHintsReceived();
+    
+    /**
+     * Get number of packet hints transmitted.
+     */
+    public int getHintsSent();
+    
+    /**
+     * Get number of pull request transmitted.
+     */
+    public int getPullReceived();
+    
+    /**
+     * Get number of pull requests transmitted.
+     */
+    public int getPullSent();
+
+	// --- Overlay parameters
+
+	/**
+	 * Get globally unique local id.
+	 * @return local id
+	 */
+    public UUID getLocalId();
 	
 	/**
-	 * Set the delay between periodic membership gossip rounds.
+	 * Get list of currently connected peer ids.
+	 * @return connected peer ids
+	 */
+    public UUID[] getPeerIds();
+
+	/**
+	 * Get the delay between periodic shuffle.
+	 * @return period in milliseconds
+	 */
+	public int getShufflePeriod();
+	
+	/**
+	 * Set the delay between periodic shuffle.
 	 * @param period in milliseconds
 	 */
-	public void setMembershipPeriod(int period);
+	public void setShufflePeriod(int period);
 
 	/**
 	 * Get the number of neighbors.
 	 * @return number of neighbors
 	 */
-	public int getGroupSize();
+	public int getOverlayFanout();
 	
 	/**
 	 * Set the number of neighbors.
 	 * @param groupsize number of neighbors
 	 */
-	public void setGroupSize(int groupsize);
+	public void setOverlayFanout(int fanout);
+    
+	/**
+	 * Get number of direct join requests received.
+	 */
+	public int getJoinRequests();
+	
+	/**
+	 * Get number of connections purged after overflowing
+	 * local neighborhood.
+	 */
+	public int getPurgedConnections();
+	
+	/**
+	 * Get number of shuffle requests received.
+	 */
+	public int getShufflesReceived();
+	
+	/**
+	 * Get number of shuffle requests transmitted.
+	 */
+	public int getShufflesSent();
+	
+	// --- Transport
+	
+	/**
+     * Local listening socket.
+	 */
+    public InetSocketAddress getLocalAddress();
     
 	/**
 	 * Get list of currently connected peers.
 	 * @return connected peers
 	 */
-    public InetSocketAddress[] getPeers();
-    
+    public InetSocketAddress[] getPeerAddresses();
+
     /**
      * Connect to a new peer.
      * @param addr hostname or address of peer
@@ -127,17 +248,67 @@ public interface ProtocolMBean {
      */
     public void addPeer(String addr, int port);
     
-	/**
-	 * Get list of currently connected peer ids.
-	 * @return connected peer ids
+    /**
+	 * Get the default size of buffer queues.
+	 * @return number of messages
 	 */
-    public UUID[] getPeersUUIDs();
+	public int getQueueSize();
+	
+	/**
+	 * Set the default size of buffer queues. Currently, this does not modify
+	 * existing queues, only those that are created thereafter.
+	 * @param size number of messages
+	 */
+	public void setQueueSize(int size);
+	
+	/**
+	 * Get the default size of socket buffers.
+	 * @return size in bytes
+	 */
+	public int getBufferSize();
+	
+	/**
+	 * Set the default size of socket buffers.
+	 * @param size size in bytes
+	 */
+	public void setBufferSize(int size);
+	
+	/**
+	 * Get number of socket connections accepted.
+	 */
+    public int getAcceptedSocks();
 
     /**
-	 * Get globally unique local id.
-	 * @return local id
-	 */
-    public UUID getID();
+     * Get number of successful sockets connected.
+     */
+    public int getConnectedSocks();
+    
+    /**
+     * Get number of packets received.
+     */
+    public int getPacketsReceived();
+    
+    /**
+     * Get number of packets transmited.
+     */
+    public int getPacketsSent();
+    
+    /**
+     * Get number of raw bytes received.
+     */
+    public int getBytesReceived();
+    
+    /**
+     * Get number of raw bytes transmitted.
+     */
+    public int getBytesSent();
+    
+    // --- Global
+    
+    /**
+     * Resets all counters.
+     */
+    public void resetCounters();
 }
 
 // arch-tag: 2c588950-1f71-46ed-be61-f801fb5c90f8

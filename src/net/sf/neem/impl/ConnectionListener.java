@@ -40,26 +40,24 @@
 
 package net.sf.neem.impl;
 
-import java.nio.*;
-
 /**
- * Low level handler for messages. This is called by connections
- * to deliver received data.
+ * Low level connection handler. This is implemented by overlay
+ * management modules to be informed of connections being
+ * opened and closed by the transport layer.
  */
-public interface DataListener {
+public interface ConnectionListener {
     /**
-     * Receive a message from from a connection. The caller is
-     * is prepared to handle a BufferUnderFlowException and will
-     * close the connection. Implementations are thus advised to
-     * start by unmarshalling the message. If it has been truncated
-     * or is invalied, the resulting exception will thus do the
-     * right thing
+     * Notification of a new connection.
      * 
-     * @param msg The incoming message.
-     * @param info The source connection.
-     * @param port Destination port.
+     * @param info The connection to the new peer.
      */
-    public void receive(ByteBuffer[] msg, Connection info, short port);
+    public void open(Connection info);
+
+    /**
+     * Notification of a connection being closed.
+     * @param info The recently closed connection.
+     */
+    public void close(Connection info);
 }
 
-// arch-tag: b3b8ed98-df7f-419d-b0b4-14484e44419c
+// arch-tag: ffede092-c2f3-43d3-a370-e70051be1ede

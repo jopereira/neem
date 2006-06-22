@@ -40,16 +40,15 @@
 
 package net.sf.neem.impl;
 
-
 import java.nio.*;
 import java.util.*;
 
-
 /**
- *  This class provides Buffer manipulation utilities.
+ * Buffer manipulation utilities.
  */
-public class Buffers {
-
+public abstract class Buffers {
+	private Buffers() {}
+	
     /**
      * Remove data from the head of a buffer array. No copying of
      * data is done. This is useful if data if being resent. This operation
@@ -163,7 +162,6 @@ public class Buffers {
         }
         return res;
     }
-
 }
 
 // arch-tag: 8ef66d5b-cc0a-47e6-b8db-8fcfe04095ac

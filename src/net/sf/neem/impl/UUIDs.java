@@ -38,41 +38,40 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Membership.java
- *
- * Created on March 17, 2005, 4:07 PM
- */
 package net.sf.neem.impl;
 
-/**
- *  This interface defines the methods to handle events related with changes in 
- * local group. Events about new connections, closing of open connections 
- * and selection of peers for fanout from the members of the group must be
- * handled by these methods.
- *
- * @author psantos@GSD
- */
-public interface Membership {
-    
-    /**
-     *  This method is called from Transport whenever a member joins the group.
-     * When called, if it's the first time it's called starts 
-     * periodically telling our peers of our open 
-     * connections. Then it'll randomly select a peer to be evicted from our local 
-     * membership. If it's not the first time this method is called, only the 2nd 
-     * step will be executed.
-     * @param info The connection to the new peer.
-     */
-    public void open(Connection info); // event
+import java.nio.ByteBuffer;
+import java.util.UUID;
 
-    /**
-     *  This method is called from Transport whenever a member leaves the group.
-     * When called, decreases the number of connected members by one, as the connection
-     * to the now disconnected peer has already been removed at the transport layer.
-     * @param info The recently closed connection.
+/**
+ * UUID manipulation utilities.
+ */
+public abstract class UUIDs {
+	private UUIDs() {}
+	
+	/**
+	 * Write an UUID to a ByteBuffer.
+     * @param uuid The uuid to be written.
+     * @return The Buffer with the uuid written into.
      */
-    public void close(Connection info); // event
+    public static ByteBuffer writeUUIDToBuffer(UUID uuid) {
+        ByteBuffer uuid_bytes = ByteBuffer.allocate(16);
+        uuid_bytes.putLong(uuid.getMostSignificantBits());
+        uuid_bytes.putLong(uuid.getLeastSignificantBits());
+        uuid_bytes.flip();
+        return uuid_bytes;
+    }
+    
+    /** Read an UUID from an array of ByteBuffers into an UUID.
+     * @param msg The buffer from which to read the UUID from.
+     * @return The address read.
+     */
+    public static UUID readUUIDFromBuffer(ByteBuffer[] msg) {
+    	ByteBuffer tmp = Buffers.sliceCompact(msg, 16); 
+        long msb = tmp.getLong();
+        long lsb = tmp.getLong();
+        return new UUID(msb, lsb);
+    }
 }
 
-// arch-tag: ffede092-c2f3-43d3-a370-e70051be1ede
+// arch-tag: fb3615b7-6e20-4f6a-9b1c-9f60d92dde29
