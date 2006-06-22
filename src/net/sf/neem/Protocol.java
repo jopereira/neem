@@ -250,4 +250,3 @@ public class Protocol implements ProtocolMBean {
 	private Overlay overlay;
 };
 
-// arch-tag: 08505269-5fca-435f-a7ae-8a87af222676 

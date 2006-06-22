@@ -56,4 +56,3 @@ public interface Application {
     public void deliver(ByteBuffer[] msg);
 }
 
-// arch-tag: 6b30f28e-5375-46ef-9963-8296bf64f9eb

@@ -64,4 +64,3 @@ public class BufferTooSmallException extends IOException {
 	private static final long serialVersionUID = 1L;
 }
 
-// arch-tag: 8b7ef5c3-8dbf-479c-8ce2-21ff867e56c6

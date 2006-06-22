@@ -311,4 +311,3 @@ public interface ProtocolMBean {
     public void resetCounters();
 }
 
-// arch-tag: 2c588950-1f71-46ed-be61-f801fb5c90f8

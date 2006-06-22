@@ -275,4 +275,3 @@ public class MulticastChannel implements InterruptibleChannel,
     private Thread t;
 }
 
-// arch-tag: cd998499-184b-4c75-a0a0-34180eb3c92c

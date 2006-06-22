@@ -335,4 +335,3 @@ public class Gossip implements DataListener {
 	}
 }
 
-// arch-tag: 4a3a77be-0f72-4416-88ee-c6639fe68e90
