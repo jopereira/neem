@@ -264,7 +264,7 @@ public class Transport implements Runnable {
                 // server socket. Invdidual connections are dropped silently.
                 e.printStackTrace();
             } catch (CancelledKeyException cke) {
-                System.out.println("The selected key was closed.");
+            	// Silently ignore.
             }
         }
     }
@@ -351,13 +351,6 @@ public class Transport implements Runnable {
     private SortedMap<Long, Runnable> timers;
 
     /** 
-     * Statistics
-     */
-    public int accepted, connected;
-    public int pktOut, pktIn;
-    public int bytesOut, bytesIn;
-
-    /** 
      * Storage for DataListener protocol events handlers
      */
     private Map<Short, DataListener> handlers;
@@ -365,7 +358,7 @@ public class Transport implements Runnable {
     /** 
      * Reference for ConnectionListener events handler
      */
-    private ConnectionListener chandler;
+    private ConnectionListener chandler; // bing!
 
     /**
      * If we're not responding any more
@@ -380,6 +373,7 @@ public class Transport implements Runnable {
      * Execution queue size
      */
     private int queueSize = 10;
+    private int bufferSize = 1024;
 
     public int getQueueSize() {
 		return queueSize;
@@ -387,6 +381,24 @@ public class Transport implements Runnable {
 
 	public void setQueueSize(int queueSize) {
 		this.queueSize = queueSize;
+	}
+
+	public int getBufferSize() {
+		return bufferSize;
+	}
+
+	public void setBufferSize(int bufferSize) {
+		this.bufferSize = bufferSize;
+	}
+
+	// Statistics
+	
+    public int accepted, connected;
+    public int pktOut, pktIn;
+    public int bytesOut, bytesIn;
+
+    public void resetCounters() {
+        accepted=connected=pktOut=pktIn=bytesOut=bytesIn=0;
 	}
 }
 

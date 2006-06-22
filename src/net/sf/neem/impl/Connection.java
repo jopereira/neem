@@ -59,7 +59,7 @@ public class Connection {
     /**
 	 * Create a new connection.
 	 * 
-	 * @param trans transport object
+	 * @param net transport object
 	 * @param bind local address to bind to, if any
 	 * @param conn allow simultaneous outgoing connection
      * @param rand random generator
@@ -89,7 +89,7 @@ public class Connection {
     /**
      * Create a new connection from an existing socket (used to associate a Connection to 
      * an incoming connection request).
-     * @param trans Transport layer instance that received the connect request
+     * @param net Transport layer instance that received the connect request
      * @param sock The accepting socket.
      * @throws IOException If an I/O operation did not succeed.
      */
@@ -97,8 +97,8 @@ public class Connection {
         this.transport = trans;
         this.sock = sock;
         sock.configureBlocking(false);
-        sock.socket().setSendBufferSize(1024);
-        sock.socket().setReceiveBufferSize(1024);
+        sock.socket().setSendBufferSize(transport.getBufferSize());
+        sock.socket().setReceiveBufferSize(transport.getBufferSize());
         key = sock.register(transport.selector,
                 SelectionKey.OP_READ | SelectionKey.OP_WRITE);
         key.attach(this);
@@ -126,10 +126,8 @@ public class Connection {
      * @param port Port, at transport layer, where the message must be delivered.
      */
     public void send(ByteBuffer[] msg, short port) {
-    	if (key==null) {
-            //System.out.println("key was null");
+    	if (key==null)
             return;
-        }
     	
         Queued b = new Queued(msg, new Short(port));
         queue.push(b);
@@ -210,7 +208,7 @@ public class Connection {
     void handleRead() {
         // New buffer?
         if (incoming == null || incoming.remaining() == 0) {
-            incoming = ByteBuffer.allocate(1024);
+            incoming = ByteBuffer.allocate(transport.getBufferSize());
             copy = incoming.asReadOnlyBuffer();
         }
         // Read as much as we can with a single buffer.            
@@ -241,7 +239,6 @@ public class Connection {
                 if (copy.remaining() >= 6) {
                     msgsize = copy.getInt();
                     port = copy.getShort();
-                    // System.out.println("Port: " + port);
                 } else {
                     break;
                 }
@@ -283,7 +280,7 @@ public class Connection {
         // Avoid a fragmented header. If/when more data is
         // available select will call us back.
         if (incoming.remaining() + copy.remaining() < 6) {
-            ByteBuffer compacted = ByteBuffer.allocate(1024);
+            ByteBuffer compacted = ByteBuffer.allocate(transport.getBufferSize());
 
             while (copy.hasRemaining()) {
                 compacted.put(copy.get());
@@ -310,8 +307,8 @@ public class Connection {
         
         try {
             transport.deliverSocket(nsock);
-        } catch (IOException e) {// Just drop it.
-            System.out.println(e.getMessage()); // Debugging
+        } catch (IOException e) {
+        	// Just drop it.
         }
     
     }
@@ -333,15 +330,15 @@ public class Connection {
             	transport.connected++;
             	
             	connected=true;
-                sock.socket().setReceiveBufferSize(1024);
-                sock.socket().setSendBufferSize(1024);
+                sock.socket().setReceiveBufferSize(transport.getBufferSize());
+                sock.socket().setSendBufferSize(transport.getBufferSize());
 
                 transport.notifyOpen(this);
                 key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
                 return;
             }
-        } catch (Exception e) {// Fall through, see below:
-            System.out.println("Could not connect");
+        } catch (Exception e) {
+        	// Fall through, see below:
         } 
         handleClose();
     }

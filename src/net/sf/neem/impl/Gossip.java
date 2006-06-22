@@ -66,9 +66,9 @@ public class Gossip implements DataListener {
          * configurations.
          */
         this.fanout = 11;
-        this.maxHops = 6;
-        this.minHops = 2;
-        this.minSize = 64;
+        this.ttl = 6;
+        this.pushttl = 2;
+        this.minPullSize = 64;
         this.pullPeriod = 20;
 
         this.cache = new LinkedHashMap<UUID,ByteBuffer[]>();
@@ -93,7 +93,6 @@ public class Gossip implements DataListener {
     }
     
     public void receive(ByteBuffer[] msg, Connection info, short port) { 
-    	// System.out.println("Receive@Gossip: " + msg.length);
     	UUID uuid = UUIDs.readUUIDFromBuffer(msg);
     	byte hops = Buffers.sliceCompact(msg, 1).get();
 
@@ -121,7 +120,7 @@ public class Gossip implements DataListener {
 
 		hops++;
 		
-		if (hops>maxHops)
+		if (hops>ttl)
 			return;
 		
 		ByteBuffer[] out = new ByteBuffer[copy.length + 2];
@@ -130,7 +129,7 @@ public class Gossip implements DataListener {
 		System.arraycopy(copy, 0, out, 2, copy.length);
 		short port=dataport;
 		
-		if (hops>minHops && Buffers.count(copy)>=minSize) {	
+		if (hops>pushttl && Buffers.count(copy)>=minPullSize) {	
 			// Cache message
 			cache.put(uuid, out);
 
@@ -276,7 +275,7 @@ public class Gossip implements DataListener {
     /**
      * Configuration of retransmission policy.
      */
-    private int maxHops, minHops, minSize;
+    private int ttl, pushttl, minPullSize;
 	private int pullPeriod;
 
     public int getFanout() {
@@ -294,8 +293,46 @@ public class Gossip implements DataListener {
     public void setMaxIds(int maxIds) {
         this.maxIds = maxIds;
     }
+
+	public int getMinPullSize() {
+		return minPullSize;
+	}
+
+	public void setMinPullSize(int minPullSize) {
+		this.minPullSize = minPullSize;
+	}
+
+	public int getPullPeriod() {
+		return pullPeriod;
+	}
+
+	public void setPullPeriod(int pullPeriod) {
+		this.pullPeriod = pullPeriod;
+	}
+
+	public int getPushttl() {
+		return pushttl;
+	}
+
+	public void setPushttl(int pushttl) {
+		this.pushttl = pushttl;
+	}
+
+	public int getTtl() {
+		return ttl;
+	}
+
+	public void setTtl(int ttl) {
+		this.ttl = ttl;
+	}
+	
+	// Statistics
     
     public int mcast, deliv, dataIn, dataOut, ackIn, ackOut, nackIn, nackOut;
+
+	public void resetCounters() {
+		mcast=deliv=dataIn=dataOut=ackIn=ackOut=nackIn=nackOut=0;
+	}
 }
 
 // arch-tag: 4a3a77be-0f72-4416-88ee-c6639fe68e90

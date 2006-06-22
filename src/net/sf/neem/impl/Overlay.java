@@ -67,7 +67,7 @@ public class Overlay implements ConnectionListener, DataListener {
          * apps.jmx.MkConfig to compute values for other
          * configurations.
          */
-        this.maxPeers = 12;
+        this.fanout = 12;
 
         this.myId = UUID.randomUUID();
         this.peers = new HashMap<UUID, Connection>();
@@ -128,7 +128,7 @@ public class Overlay implements ConnectionListener, DataListener {
 			return;
 
 		// Flip a coin...
-		if (peers.size() < maxPeers || rand.nextFloat() > 0.5) {
+		if (peers.size() < fanout || rand.nextFloat() > 0.5) {
 			net.add(addr);
 		} else {
 			shuffleOut++;
@@ -166,7 +166,7 @@ public class Overlay implements ConnectionListener, DataListener {
         Connection[] conns = connections();
         int nc = conns.length;
 
-        while(peers.size() > maxPeers) {
+        while(peers.size() > fanout) {
             Connection info = conns[rand.nextInt(nc)];
             peers.remove(info.id);
             info.close();
@@ -266,14 +266,14 @@ public class Overlay implements ConnectionListener, DataListener {
 
     // Configuration parameters
     
-    private int maxPeers;
+    private int fanout;
     
-    public int getMaxPeers() {
-        return maxPeers;
+    public int getFanout() {
+        return fanout;
     }
 
-    public void setMaxPeers(int maxPeers) {
-        this.maxPeers = maxPeers;
+    public void setFanout(int fanout) {
+        this.fanout = fanout;
     }
 
     public int getShufflePeriod() {
@@ -284,7 +284,13 @@ public class Overlay implements ConnectionListener, DataListener {
         this.shuffle.setInterval(shufflePeriod);
     }
     
-    public int joins, purged, shuffleIn, shuffleOut; 
+    // Statistics
+    
+    public int joins, purged, shuffleIn, shuffleOut;
+
+	public void resetCounters() {
+		joins=purged=shuffleIn=shuffleOut=0;
+	} 
 }
 
 // arch-tag: e99e8d36-d4ba-42ad-908a-916aa6c182d9

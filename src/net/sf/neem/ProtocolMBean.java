@@ -56,13 +56,25 @@ public interface ProtocolMBean {
 	 * Get the number of gossip target for each round.
 	 * @return number of targets
 	 */
-	public int getFanout();
+	public int getGossipFanout();
 	
 	/**
 	 * Set the number of gossip target for each round.
 	 * @param fanout number of targets
 	 */
-	public void setFanout(int fanout);
+	public void setGossipFanout(int fanout);
+	
+	/**
+	 * Get the maximum number of times that a message is relayed.
+	 * @return number of hops
+	 */
+	public int getTimeToLive();
+
+	/**
+	 * Set the maximum number of times that a message is relayed.
+	 * @param ttl number of hops
+	 */
+	public void setTimeToLive(int ttl);
 	
 	/**
 	 * Get the maximum number of cached message ids.
@@ -77,6 +89,46 @@ public interface ProtocolMBean {
 	 */
 	public void setMaxIds(int max);
     
+	/**
+	 * Get the maximum number of times that a message is pushed.
+	 * @return number of hops
+	 */
+	public int getPushTimeToLive();
+
+	/**
+	 * Set the maximum number of times that a message is pushed.
+	 * 0 disables pushing. A large value (at least, larger than
+	 * time-to-live) disables pulling.
+	 * @param pushttl number of hops
+	 */
+	public void setPushTimeToLive(int pushttl);
+
+	/**
+	 * Get the minimum size of messages that can be pulled.
+	 * @return size in bytes
+	 */
+	public int getMinPullSize();
+
+	/**
+	 * Set the minimum size of messages that can be pulled. Smaller
+	 * messages are always pushed. Setting it to a large value disables
+	 * pulling.
+	 * @param minPullSize size in bytes
+	 */
+	public void setMinPullSize(int minPullSize);
+
+	/**
+	 * Get period for retrying to pull known messages.
+	 * @return period in milliseconds
+	 */
+	public int getPullPeriod();
+
+	/**
+	 * Set period for retrying to pull known messages.
+	 * @param pullPeriod period in milliseconds
+	 */
+	public void setPullPeriod(int pullPeriod);
+
 	/**
 	 * Get number of messages delivered to the application.
 	 */
@@ -147,13 +199,13 @@ public interface ProtocolMBean {
 	 * Get the number of neighbors.
 	 * @return number of neighbors
 	 */
-	public int getMaxPeers();
+	public int getOverlayFanout();
 	
 	/**
 	 * Set the number of neighbors.
 	 * @param groupsize number of neighbors
 	 */
-	public void setMaxPeers(int groupsize);
+	public void setOverlayFanout(int fanout);
     
 	/**
 	 * Get number of direct join requests received.
@@ -238,6 +290,13 @@ public interface ProtocolMBean {
      * Get number of raw bytes transmitted.
      */
     public int getBytesSent();
+    
+    // --- Global
+    
+    /**
+     * Resets all counters.
+     */
+    public void resetCounters();
 }
 
 // arch-tag: 2c588950-1f71-46ed-be61-f801fb5c90f8

@@ -57,41 +57,42 @@ public abstract class Addresses {
      * @param addr The address to be written.
      */
     public static ByteBuffer writeAddressToBuffer(InetSocketAddress addr) {
-        ByteBuffer msg = null;
+		ByteBuffer msg = null;
 
-        try {
-            msg = ByteBuffer.allocate(6);
-            msg.put(addr.getAddress().getAddress());
-            int port=addr.getPort();
-            msg.putShort((short)port);
-            msg.flip();
-        } catch (Exception e) {}
-        return msg;
+		msg = ByteBuffer.allocate(6);
+		msg.put(addr.getAddress().getAddress());
+		int port = addr.getPort();
+		msg.putShort((short) port);
+		msg.flip();
+		return msg;
     }
     
     /**
-     * Read a socket address from an array of ByteBuffers into an InetSocketAddress.
-     * 
-     * @param msg The buffer from which to read the address from.
-     * @return The address read.
-     */
+	 * Read a socket address from an array of ByteBuffers into an
+	 * InetSocketAddress.
+	 * 
+	 * @param msg
+	 *            The buffer from which to read the address from.
+	 * @return The address read.
+	 */
     public static InetSocketAddress readAddressFromBuffer(ByteBuffer[] msg) {
-        InetSocketAddress addr = null;
-        int port = 0;
-        byte[] dst = null;
-        InetAddress ia = null;
-	
-        ByteBuffer buf=Buffers.sliceCompact(msg, 6);
-        try {
-            dst = new byte[4];
-            buf.get(dst, 0, dst.length);
-            port=((int)buf.getShort())&0xffff;
-            ia = InetAddress.getByAddress(dst);
-            addr = new InetSocketAddress(ia, port);
-        } catch (IOException e) {} catch (IllegalArgumentException iae) {
-            System.out.println("Prob: " + ia.toString() + ":" + port);
-        }
-        return addr;
+		InetSocketAddress addr = null;
+		int port = 0;
+		byte[] dst = null;
+		InetAddress ia = null;
+
+		ByteBuffer buf = Buffers.sliceCompact(msg, 6);
+		dst = new byte[4];
+		buf.get(dst, 0, dst.length);
+		port = ((int) buf.getShort()) & 0xffff;
+		try {
+			ia = InetAddress.getByAddress(dst);
+		} catch (UnknownHostException e) {
+			// We are sure that this does not happen, as the
+			// byte array is created with the correct size.
+		}
+		addr = new InetSocketAddress(ia, port);
+		return addr;
     }
 }
 

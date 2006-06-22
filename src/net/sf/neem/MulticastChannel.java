@@ -69,15 +69,15 @@ public class MulticastChannel implements InterruptibleChannel,
      */
     public MulticastChannel(InetSocketAddress local) throws IOException {
     	Random rand = new Random();
-    	trans = new Transport(rand, local);
-        mimpls = new Overlay(rand, trans, (short)2, (short)3, (short)4);
-        gimpls = new Gossip(rand, trans, mimpls, (short)0, (short)1);
-        gimpls.handler(new Application() {
+    	net = new Transport(rand, local);
+        overlay = new Overlay(rand, net, (short)2, (short)3, (short)4);
+        gossip = new Gossip(rand, net, overlay, (short)0, (short)1);
+        gossip.handler(new Application() {
             public void deliver(ByteBuffer[] buf) {
                 enqueue(buf);
             }
         });
-        t = new Thread(trans);
+        t = new Thread(net);
         t.setDaemon(true);
         t.start();
     }
@@ -100,7 +100,7 @@ public class MulticastChannel implements InterruptibleChannel,
             return;
         isClosed = true;
         notifyAll();
-        trans.close();
+        net.close();
     }
 
     /**
@@ -120,9 +120,9 @@ public class MulticastChannel implements InterruptibleChannel,
         if (!loopback)
             enqueue(Buffers.clone(new ByteBuffer[] { cmsg }));
         int ret = cmsg.remaining();
-        trans.queue(new Runnable() {
+        net.queue(new Runnable() {
             public void run() {
-                gimpls.multicast(new ByteBuffer[] { cmsg });
+                gossip.multicast(new ByteBuffer[] { cmsg });
             }
         });
         return ret;
@@ -176,7 +176,7 @@ public class MulticastChannel implements InterruptibleChannel,
      * @return the address being advertised to peers
      */
     public InetSocketAddress getLocalSocketAddress() {
-        return this.trans.id();
+        return this.net.id();
     }
 
     /**
@@ -189,9 +189,9 @@ public class MulticastChannel implements InterruptibleChannel,
      *            The address of the peer.
      */
     public void connect(final InetSocketAddress peer) {
-        trans.queue(new Runnable() {
+        net.queue(new Runnable() {
             public void run() {
-                trans.add(peer);
+                net.add(peer);
             }
         });
     }
@@ -258,13 +258,13 @@ public class MulticastChannel implements InterruptibleChannel,
     }
 
     /* Transport layer */
-    Transport trans = null;
+    Transport net = null;
 
     /* Gossip layer */
-    Gossip gimpls = null;
+    Gossip gossip = null;
 
     /* ConnectionListener layer */
-    Overlay mimpls = null;
+    Overlay overlay = null;
 
 	private boolean isClosed;
 

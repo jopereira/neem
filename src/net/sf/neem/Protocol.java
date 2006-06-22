@@ -53,101 +53,133 @@ import net.sf.neem.impl.Transport;
 public class Protocol implements ProtocolMBean {
 	Protocol(MulticastChannel neem) {
 		this.neem = neem;
-        this.net = neem.trans;
-		this.g_impl = (Gossip) neem.gimpls;
-		this.m_impl = neem.mimpls;
+        this.net = neem.net;
+		this.gossip = neem.gossip;
+		this.overlay = neem.overlay;
 	}
 
 	// Gossip
 	
-    public int getFanout() {
-        return this.g_impl.getFanout();
+    public int getGossipFanout() {
+        return gossip.getFanout();
     }
 
-    public void setFanout(int fanout) {
-        this.g_impl.setFanout(fanout);
+    public void setGossipFanout(int fanout) {
+        gossip.setFanout(fanout);
     }
 
     public int getMaxIds() {
-        return g_impl.getMaxIds();
+        return gossip.getMaxIds();
     }
 
     public void setMaxIds(int max) {
-        g_impl.setMaxIds(max);
+        gossip.setMaxIds(max);
     }
     
+	public int getMinPullSize() {
+		return gossip.getMinPullSize();
+	}
+
+	public void setMinPullSize(int minPullSize) {
+		gossip.setMinPullSize(minPullSize);
+	}
+
+	public int getPullPeriod() {
+		return gossip.getPullPeriod();
+	}
+
+	public void setPullPeriod(int pullPeriod) {
+		gossip.setPullPeriod(pullPeriod);
+	}
+
+	public int getPushTimeToLive() {
+		return gossip.getPushttl();
+	}
+
+	public void setPushTimeToLive(int pushttl) {
+		gossip.setPushttl(pushttl);
+	}
+
+	public int getTimeToLive() {
+		return gossip.getTtl();
+	}
+
+	public void setTimeToLive(int ttl) {
+		gossip.setTtl(ttl);
+	}
+
     public int getDelivered() {
-    	return g_impl.deliv;
+    	return gossip.deliv;
     }
     
     public int getMulticast() {
-    	return g_impl.mcast;
+    	return gossip.mcast;
     }
     
     public int getDataReceived() {
-    	return g_impl.dataIn;
+    	return gossip.dataIn;
     }
     
     public int getDataSent() {
-    	return g_impl.dataOut;
+    	return gossip.dataOut;
     }
     
     public int getHintsReceived() {
-    	return g_impl.ackIn;
+    	return gossip.ackIn;
     }
     
     public int getHintsSent() {
-    	return g_impl.ackOut;
+    	return gossip.ackOut;
     }
     
     public int getPullReceived() {
-    	return g_impl.nackIn;
+    	return gossip.nackIn;
     }
     
     public int getPullSent() {
-    	return g_impl.nackOut;
+    	return gossip.nackOut;
     }
 
     // --- Overlay
 
     public UUID getLocalId() {
-		return this.m_impl.getId();
+		return overlay.getId();
 	}
     
     public UUID[] getPeerIds() {
-		return this.m_impl.getPeers();
+		return overlay.getPeers();
 	}
 	
-    public int getMaxPeers() {
-        return this.m_impl.getMaxPeers();
+    public int getOverlayFanout() {
+        return overlay.getFanout();
     }
 
-    public void setMaxPeers(int groupsize) {
-        this.m_impl.setMaxPeers(groupsize);
+    public void setOverlayFanout(int fanout) {
+        overlay.setFanout(fanout);
     }
     
     public int getShufflePeriod() {
-        return m_impl.getShufflePeriod();
+        return overlay.getShufflePeriod();
     }
 
     public void setShufflePeriod(int period) {
-        m_impl.setShufflePeriod(period);
+        overlay.setShufflePeriod(period);
     }
 
     public int getJoinRequests() {
-    	return m_impl.joins;
+    	return overlay.joins;
     }
 	
 	public int getPurgedConnections() {
-		return m_impl.purged;
+		return overlay.purged;
 	}
 	
 	public int getShufflesReceived() {
-		return m_impl.shuffleIn;
+		return overlay.shuffleIn;
 	}
 	
 	public int getShufflesSent() {
-		return m_impl.shuffleOut;
+		return overlay.shuffleOut;
 	}
 
 	// -- Transport
@@ -157,11 +189,11 @@ public class Protocol implements ProtocolMBean {
 	}
 	
     public InetSocketAddress[] getPeerAddresses() {
-        return this.m_impl.getPeerAddresses();
+        return overlay.getPeerAddresses();
     } 
 
     public synchronized void addPeer(String addr, int port) {
-        this.neem.connect(new InetSocketAddress(addr,port));
+        neem.connect(new InetSocketAddress(addr,port));
     }
 	
     public int getQueueSize() {
@@ -196,10 +228,18 @@ public class Protocol implements ProtocolMBean {
     	return net.bytesOut;
     }
     
+    // --- Global
+    
+    public void resetCounters() {
+		net.resetCounters();
+		overlay.resetCounters();
+		gossip.resetCounters();
+    }
+    
     private MulticastChannel neem;
 	private Transport net;
-	private Gossip g_impl;
-	private Overlay m_impl;
+	private Gossip gossip;
+	private Overlay overlay;
 };
 
 // arch-tag: 08505269-5fca-435f-a7ae-8a87af222676 
