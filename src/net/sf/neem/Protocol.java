@@ -203,7 +203,15 @@ public class Protocol implements ProtocolMBean {
     public void setQueueSize(int size) {
         net.setQueueSize(size);
     }
-    
+	
+	public int getBufferSize() {
+		return net.getBufferSize();
+	}
+	
+	public void setBufferSize(int size) {
+		net.setBufferSize(size);
+	}
+	
     public int getAcceptedSocks() {
     	return net.accepted;
     }

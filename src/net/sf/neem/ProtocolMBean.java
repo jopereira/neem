@@ -262,6 +262,18 @@ public interface ProtocolMBean {
 	public void setQueueSize(int size);
 	
 	/**
+	 * Get the default size of socket buffers.
+	 * @return size in bytes
+	 */
+	public int getBufferSize();
+	
+	/**
+	 * Set the default size of socket buffers.
+	 * @param size size in bytes
+	 */
+	public void setBufferSize(int size);
+	
+	/**
 	 * Get number of socket connections accepted.
 	 */
     public int getAcceptedSocks();
