@@ -67,7 +67,7 @@ public class Overlay implements ConnectionListener, DataListener {
          * apps.jmx.MkConfig to compute values for other
          * configurations.
          */
-        this.fanout = 12;
+        this.fanout = 15;
 
         this.myId = UUID.randomUUID();
         this.peers = new HashMap<UUID, Connection>();

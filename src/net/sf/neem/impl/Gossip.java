@@ -69,7 +69,7 @@ public class Gossip implements DataListener {
         this.ttl = 6;
         this.pushttl = 2;
         this.minPullSize = 64;
-        this.pullPeriod = 20;
+        this.pullPeriod = 120;
 
         this.cache = new LinkedHashMap<UUID,ByteBuffer[]>();
         this.queued = new LinkedHashMap<UUID,Known>();
@@ -165,9 +165,6 @@ public class Gossip implements DataListener {
 			} else
 				known.senders.add(info);
 			
-	    	long time=System.nanoTime();
-	    	if (time-known.last>=pullPeriod*1000000)
-	    		request(known, time);
 			retransmit.start();
 		}
     }
