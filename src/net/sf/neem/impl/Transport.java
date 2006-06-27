@@ -81,7 +81,7 @@ public class Transport implements Runnable {
         idinfo = new Connection(this, local, false);
         connections.add(idinfo); 
 
-        id = new InetSocketAddress(InetAddress.getLocalHost(), local.getPort());
+        id = new InetSocketAddress(InetAddress.getLocalHost(), idinfo.getLocal().getPort());
     }
     
     /**
