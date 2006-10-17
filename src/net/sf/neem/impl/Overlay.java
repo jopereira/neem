@@ -93,13 +93,12 @@ public class Overlay implements ConnectionListener, DataListener {
     }
     
     private void handleId(ByteBuffer[] msg, Connection info) {
-		if (firsttime) {
+		if (peers.isEmpty()) {
 			info.send(new ByteBuffer[] {
 					UUIDs.writeUUIDToBuffer(myId),
 					Addresses.writeAddressToBuffer(net.id()) },
 					this.joinport);
 			shuffle.start();
-			firsttime=false;
 		}
 
 		UUID id = UUIDs.readUUIDFromBuffer(msg);
@@ -158,8 +157,9 @@ public class Overlay implements ConnectionListener, DataListener {
         if (info.id != null) {
             peers.remove(info.id);
         }
-        if (peers.isEmpty())
-        	firsttime=true;
+        if (peers.isEmpty()) {
+			// Disconnected. Should it notify the application?
+		}
     }
 
     private void purgeConnections() {
@@ -261,7 +261,6 @@ public class Overlay implements ConnectionListener, DataListener {
     private HashMap<UUID, Connection> peers;
 
     private UUID myId;
-    private boolean firsttime=true;
     private Random rand;
 
     // Configuration parameters

@@ -75,7 +75,7 @@ public class Connection {
 			}
 			sock.socket().bind(bind);
 		}
-		if (bind != null) {
+		if (bind != null && bind.getPort()!=0) {
 			ssock = ServerSocketChannel.open();
 			ssock.configureBlocking(false);
 			ssock.socket().bind(bind);

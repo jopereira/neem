@@ -203,7 +203,7 @@ public interface ProtocolMBean {
 	
 	/**
 	 * Set the number of neighbors.
-	 * @param groupsize number of neighbors
+	 * @param fanout number of neighbors
 	 */
 	public void setOverlayFanout(int fanout);
     
