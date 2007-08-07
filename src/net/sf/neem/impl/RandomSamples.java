@@ -1,6 +1,6 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005-2006, University of Minho
+ * Copyright (c) 2005-2007, University of Minho
  * All rights reserved.
  *
  * Contributors:
@@ -56,7 +56,7 @@ public class RandomSamples {
 	 * Usually, the result is used as indexes in some
 	 * ordered collection, which is the true universe. This
 	 * is efficient, as it is O(n), for small samples and
-	 * O(universe.lenght-n) for large samples.
+	 * O(universe.length-n) for large samples.
 	 * 
 	 * @param n size of sample.
 	 * @param universe universe to draw from.

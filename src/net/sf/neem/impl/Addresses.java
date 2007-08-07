@@ -1,6 +1,6 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005-2006 University of Minho
+ * Copyright (c) 2005-2007 University of Minho
  * All rights reserved.
  *
  * Contributors:
@@ -40,9 +40,10 @@
 
 package net.sf.neem.impl;
 
-import java.io.*;
-import java.net.*;
-import java.nio.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 
 /**
  * Address manipulation utilities. Provides methods to read/write

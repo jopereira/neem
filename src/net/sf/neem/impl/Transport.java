@@ -1,6 +1,6 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005-2006, University of Minho
+ * Copyright (c) 2005-2007, University of Minho
  * All rights reserved.
  *
  * Contributors:
@@ -56,7 +56,6 @@ import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -108,7 +107,7 @@ public class Transport implements Runnable {
      * Get all connections.
      */
     public Connection[] connections() {
-        return (Connection[]) connections.toArray(
+        return connections.toArray(
                 new Connection[connections.size()]);
     }
 
@@ -129,13 +128,8 @@ public class Transport implements Runnable {
      * Call periodically to garbage collect idle connections.
      */
     public void gc() {
-        Iterator i = connections.iterator();
-
-        while (i.hasNext()) {
-            Connection info = (Connection) i.next();
-
+    	for(Connection info: connections)
             info.handleGC();
-        }
     }
 
     /**
@@ -239,8 +233,7 @@ public class Transport implements Runnable {
                             
                     // Execute pending event-handlers.
                             
-                    for (Iterator j = selector.selectedKeys().iterator(); j.hasNext();) {
-                        SelectionKey key = (SelectionKey) j.next();
+                    for (SelectionKey key: selector.selectedKeys()) {
                         Connection info = (Connection) key.attachment();
 
                         if (!key.isValid()) {
@@ -261,7 +254,7 @@ public class Transport implements Runnable {
                         
             } catch (IOException e) {
                 // This handles only exceptions thrown by the selector and the
-                // server socket. Invdidual connections are dropped silently.
+                // server socket. Individual connections are dropped silently.
                 e.printStackTrace();
             } catch (CancelledKeyException cke) {
             	// Silently ignore.

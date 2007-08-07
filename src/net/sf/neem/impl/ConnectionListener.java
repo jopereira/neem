@@ -1,6 +1,6 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005-2006, University of Minho
+ * Copyright (c) 2005-2007, University of Minho
  * All rights reserved.
  *
  * Contributors:

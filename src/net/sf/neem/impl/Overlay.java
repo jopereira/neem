@@ -1,6 +1,6 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005-2006, University of Minho
+ * Copyright (c) 2005-2007, University of Minho
  * All rights reserved.
  *
  * Contributors:
@@ -136,6 +136,7 @@ public class Overlay implements ConnectionListener, DataListener {
 			conns[idx].send(Buffers.clone(beacon), this.shuffleport);
 		}
     }
+
     private void handleJoin(ByteBuffer[] msg) {
     	joins++;
     	ByteBuffer[] beacon = Buffers.clone(msg);

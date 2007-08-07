@@ -1,6 +1,6 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005-2006, University of Minho
+ * Copyright (c) 2005-2007, University of Minho
  * All rights reserved.
  *
  * Contributors:
@@ -40,13 +40,24 @@
 
 package net.sf.neem;
 
-import net.sf.neem.impl.*;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousCloseException;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.InterruptibleChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
+import java.util.LinkedList;
+import java.util.Random;
 
-import java.net.*;
-import java.io.*;
-import java.nio.*;
-import java.nio.channels.*;
-import java.util.*;
+import net.sf.neem.impl.Application;
+import net.sf.neem.impl.Buffers;
+import net.sf.neem.impl.Gossip;
+import net.sf.neem.impl.Overlay;
+import net.sf.neem.impl.Transport;
 
 /**
  * Channel interface to a NeEM epidemic multicast group. This interface is

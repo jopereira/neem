@@ -1,6 +1,6 @@
 /*
  * NeEM - Network-friendly Epidemic Multicast
- * Copyright (c) 2005-2006, University of Minho
+ * Copyright (c) 2005-2007, University of Minho
  * All rights reserved.
  *
  * Contributors:
@@ -40,13 +40,16 @@
 
 package net.sf.neem.impl;
 
-import java.util.*;
-import java.nio.*;
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Random;
+import java.util.UUID;
 
 /**
  * Implementation of gossip. Like bimodal, combines a forward
  * retransmission phase with a repair phase. However, the
- * optimistic phase is also gossip bases. UUIDs, instead of
+ * optimistic phase is also gossip based. UUIDs, instead of
  * sequence numbers are used to identify and discard duplicates.  
  */
 public class Gossip implements DataListener {
