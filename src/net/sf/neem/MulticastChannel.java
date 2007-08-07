@@ -41,6 +41,7 @@
 package net.sf.neem;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -73,15 +74,28 @@ public class MulticastChannel implements InterruptibleChannel,
         ReadableByteChannel, WritableByteChannel {
 
 	/**
+     * Creates a new instance of a multicast channel. Note that the bind address
+     * will be used to bind both listening and connecting sockets. The bind port
+     * will be used only for the listening socket. 
+     * 
+     * @param local the local address to bind to
+     */
+	public MulticastChannel(InetSocketAddress local) throws IOException {
+		this(local, null);
+	}
+		   
+	/**
      * Creates a new instance of a multicast channel.
      * 
-     * @param local
-     *            the local address to bind to
-     */
-    public MulticastChannel(InetSocketAddress local) throws IOException {
+     * @param local the local address to bind to
+     * @param pub public address to advertise to peers
+     */		   
+	public MulticastChannel(InetSocketAddress local, InetSocketAddress pub) throws IOException {
     	Random rand = new Random();
     	net = new Transport(rand, local);
-        overlay = new Overlay(rand, net, (short)2, (short)3, (short)4);
+    	if (pub==null)
+    		pub = new InetSocketAddress(InetAddress.getLocalHost(), net.getLocal().getPort());
+        overlay = new Overlay(rand, pub, net, (short)2, (short)3, (short)4);
         gossip = new Gossip(rand, net, overlay, (short)0, (short)1);
         gossip.handler(new Application() {
             public void deliver(ByteBuffer[] buf) {
@@ -187,7 +201,7 @@ public class MulticastChannel implements InterruptibleChannel,
      * @return the address being advertised to peers
      */
     public InetSocketAddress getLocalSocketAddress() {
-        return this.net.id();
+        return this.net.getLocal();
     }
 
     /**

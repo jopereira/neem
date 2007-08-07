@@ -42,16 +42,12 @@ package net.sf.neem.impl;
 
 import java.io.IOException;
 import java.net.BindException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,8 +63,6 @@ import java.util.TreeMap;
  * Implementation of the network layer.
  */
 public class Transport implements Runnable {
-    private Connection idinfo;
-
 	public Transport(Random rand, InetSocketAddress local) throws IOException, BindException {
 		this.rand=rand;
 		
@@ -78,37 +72,21 @@ public class Transport implements Runnable {
 
         connections = new HashSet<Connection>();
         idinfo = new Connection(this, local, false);
-        connections.add(idinfo); 
-
-        id = new InetSocketAddress(InetAddress.getLocalHost(), idinfo.getLocal().getPort());
+        connections.add(idinfo);
     }
-    
-    /**
-     * Get local id.
-     */
-    public InetSocketAddress id() {
-        return id;
-    }
-  
+      
 	/**
-     * Get all local addresses.
+     * Get local address.
      */
-    public InetSocketAddress[] getLocals() {
-    	List<InetSocketAddress> addrs=new ArrayList<InetSocketAddress>();
-    	for(Connection info: connections) {
-    		InetSocketAddress addr=info.getLocal();
-    		if (addr!=null)
-    			addrs.add(addr);
-    	}
-    	return addrs.toArray(new InetSocketAddress[addrs.size()]);
+    public InetSocketAddress getLocal() {
+    	return idinfo.getLocal();
     }
   
     /**
      * Get all connections.
      */
     public Connection[] connections() {
-        return connections.toArray(
-                new Connection[connections.size()]);
+        return connections.toArray(new Connection[connections.size()]);
     }
 
 	/**
@@ -262,20 +240,6 @@ public class Transport implements Runnable {
         }
     }
 
-	void deliverSocket(SocketChannel sock) throws IOException, SocketException, ClosedChannelException {
-		final Connection info = new Connection(this, sock);
-
-		synchronized(this) {
-			this.connections.add(info); // adiciona nova connection as connections conhecidas
-		}
-		queue(new Runnable() {
-		    public void run() {
-		    	chandler.open(info);
-		    }
-		});
-		this.accepted++;
-	}
-
 	void notifyOpen(final Connection info) {
         synchronized(this) {
         	connections.add(info);
@@ -320,11 +284,8 @@ public class Transport implements Runnable {
 		});
 	}
 
-    /**
-	 * Local id for each instance
-	 */
-    private InetSocketAddress id;
-    
+    private Connection idinfo;
+
     /**
      * Selector for events
      */
@@ -358,6 +319,9 @@ public class Transport implements Runnable {
      */
     private boolean closed;
     
+    /**
+     * Shared random number generator
+     */
     Random rand;
     
     // Configuration parameters

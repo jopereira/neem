@@ -185,7 +185,7 @@ public class Protocol implements ProtocolMBean {
 	// -- Transport
 	
 	public InetSocketAddress getLocalAddress() {
-		return net.id();
+		return net.getLocal();
 	}
 	
     public InetSocketAddress[] getPeerAddresses() {

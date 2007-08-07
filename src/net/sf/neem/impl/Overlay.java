@@ -54,8 +54,9 @@ public class Overlay implements ConnectionListener, DataListener {
 	/**
      * Creates a new instance of Overlay
      */
-    public Overlay(Random rand, Transport net, short joinport, short idport, short shuffleport) {
+    public Overlay(Random rand, InetSocketAddress id, Transport net, short joinport, short idport, short shuffleport) {
     	this.rand = rand;
+    	this.netid = id;
     	this.net = net;
         this.idport = idport;
         this.shuffleport = shuffleport;
@@ -96,7 +97,7 @@ public class Overlay implements ConnectionListener, DataListener {
 		if (peers.isEmpty()) {
 			info.send(new ByteBuffer[] {
 					UUIDs.writeUUIDToBuffer(myId),
-					Addresses.writeAddressToBuffer(net.id()) },
+					Addresses.writeAddressToBuffer(netid) },
 					this.joinport);
 			shuffle.start();
 		}
@@ -150,7 +151,7 @@ public class Overlay implements ConnectionListener, DataListener {
     
     public void open(Connection info) {
     	info.send(new ByteBuffer[] { UUIDs.writeUUIDToBuffer(this.myId),
-            Addresses.writeAddressToBuffer(net.id()) }, this.idport);
+            Addresses.writeAddressToBuffer(netid) }, this.idport);
     	purgeConnections();
     }
 
@@ -248,6 +249,7 @@ public class Overlay implements ConnectionListener, DataListener {
     }
 
     private Transport net;
+	private InetSocketAddress netid;
     private short joinport;
     private short shuffleport;
     private short idport;

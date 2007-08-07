@@ -299,23 +299,21 @@ public class Connection {
                 
         SocketChannel nsock = ssock.accept();
        
+        /*
+         * Accept seems to be selected often (JDK 1.5.0_05 Linux), even when there is
+         * nothing out there to accept. *sigh*
+         */
         if (nsock == null) {
             return;
         }
         
         transport.accepted++;
-        
-        try {
-            transport.deliverSocket(nsock);
-        } catch (IOException e) {
-        	// Just drop it.
-        }
-    
+        transport.notifyOpen(new Connection(transport,nsock));   
     }
 
     /**
-     * Open connection event hadler.
-     * When the hanlder behaves as client.
+     * Open connection event handler.
+     * When the handler behaves as client.
      */
     void handleConnect() throws IOException {
         try {	
