@@ -65,7 +65,7 @@ import java.util.logging.Logger;
  */
 public class Transport implements Runnable {
 	private static Logger logger = Logger.getLogger("net.sf.neem.impl.Transport");
-	
+
 	public Transport(Random rand, InetSocketAddress local) throws IOException, BindException {
 		this.rand=rand;
 		
@@ -74,8 +74,9 @@ public class Transport implements Runnable {
         selector = SelectorProvider.provider().openSelector();
 
         connections = new HashSet<Connection>();
-        idinfo = new Connection(this, local, false);
-        connections.add(idinfo);
+        idinfo = new Acceptor(this, local);
+        
+        this.bind = new InetSocketAddress(local.getAddress(), 0);
     }
       
 	/**
@@ -156,8 +157,7 @@ public class Transport implements Runnable {
      */
     public void add(InetSocketAddress addr) {
         try {
-           Connection info = new Connection(this, null, true);
-           info.connect(addr);
+           new Connection(this, bind, addr);
         } catch (IOException e) {
         	logger.log(Level.WARNING, "failed to add peer "+addr, e);
         }
@@ -215,7 +215,7 @@ public class Transport implements Runnable {
                     // Execute pending event-handlers.
                             
                     for (SelectionKey key: selector.selectedKeys()) {
-                        Connection info = (Connection) key.attachment();
+                        Handler info = (Handler) key.attachment();
 
                         if (!key.isValid()) {
                             info.handleClose();
@@ -283,13 +283,15 @@ public class Transport implements Runnable {
 					handler.receive(msg, source, prt);
 				} catch(BufferUnderflowException e) {
 	            	logger.log(Level.WARNING, "corrupt or truncated message from "+source.getRemoteAddress(), e);
-					source.close();
+					source.handleClose();
 				}
 			}
 		});
 	}
 
-    private Connection idinfo;
+	private InetSocketAddress bind;
+	
+    private Acceptor idinfo;
 
     /**
      * Selector for events

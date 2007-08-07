@@ -46,48 +46,35 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Connection with a peer. This class provides event handlers
- * for a connection. It also implements multiplexing and queueing.
+ * for a connection. It also implements multiplexing and queuing.
  */
-public class Connection {
-	private static Logger logger = Logger.getLogger("net.sf.neem.impl.Transport");
-	
-    /**
+public class Connection extends Handler {
+	/**
 	 * Create a new connection.
 	 * 
 	 * @param net transport object
 	 * @param bind local address to bind to, if any
-	 * @param conn allow simultaneous outgoing connection
-     * @param rand random generator
+	 * @param remote target address
 	 * @throws IOException 
 	 */
-	Connection(Transport trans, InetSocketAddress bind, boolean conn) throws IOException {
-    	this.transport = trans;
-		if (conn) {
-			sock = SocketChannel.open();
-			sock.configureBlocking(false);
-			if (bind != null) {
-				sock.socket().setReuseAddress(true);
-			}
+	Connection(Transport trans, InetSocketAddress bind, InetSocketAddress remote) throws IOException {
+    	super(trans);
+		sock = SocketChannel.open();
+		sock.configureBlocking(false);
+		if (bind != null) {
 			sock.socket().bind(bind);
 		}
-		if (bind != null && bind.getPort()!=0) {
-			ssock = ServerSocketChannel.open();
-			ssock.configureBlocking(false);
-			ssock.socket().bind(bind);
-
-			skey = ssock.register(transport.selector,
-					SelectionKey.OP_ACCEPT);
-			skey.attach(this);
-		}
+        sock.connect(remote);
+		key = sock.register(transport.selector, SelectionKey.OP_CONNECT);
+		key.attach(this);
+		queue = new Queue(transport.getQueueSize(), transport.rand);
 	}
     
     /**
@@ -98,7 +85,7 @@ public class Connection {
      * @throws IOException If an I/O operation did not succeed.
      */
     Connection(Transport trans, SocketChannel sock) throws IOException {
-        this.transport = trans;
+        super(trans);
         this.sock = sock;
         sock.configureBlocking(false);
         sock.socket().setSendBufferSize(transport.getBufferSize());
@@ -109,20 +96,6 @@ public class Connection {
         queue = new Queue(transport.getQueueSize(), transport.rand);
         connected=true;
     }
-	
-	/**
-	 * Initiate connection to remote address.
-	 * 
-	 * @param remote address of target
-	 * @throws IOException
-	 */
-	void connect(InetSocketAddress remote) throws IOException {
-        sock.connect(remote);
-		key = sock.register(transport.selector,
-				SelectionKey.OP_CONNECT);
-		key.attach(this);
-		queue = new Queue(transport.getQueueSize(), transport.rand);
-	}
     	
     /**
      * Send message to peers
@@ -136,10 +109,6 @@ public class Connection {
         Queued b = new Queued(msg, new Short(port));
         queue.push(b);
         handleWrite();
-    }
-
-    public void close() {
-    	handleClose();
     }
 
     // --- Event handlers
@@ -304,19 +273,6 @@ public class Connection {
      * When the handler behaves as server.
      */
     void handleAccept() throws IOException {
-                
-        SocketChannel nsock = ssock.accept();
-       
-        /*
-         * Accept seems to be selected often (JDK 1.5.0_05 Linux), even when there is
-         * nothing out there to accept. *sigh*
-         */
-        if (nsock == null) {
-            return;
-        }
-        
-        transport.accepted++;
-        transport.notifyOpen(new Connection(transport,nsock));   
     }
 
     /**
@@ -367,16 +323,6 @@ public class Connection {
 			sock = null;
 			transport.notifyClose(this);
     	}
-    	if (skey!=null) {
-            try {
-                skey.channel().close();
-                skey.cancel();        
-                ssock.close();
-            } catch (IOException e) {
-            	// Don't care, we're cleaning up anyway...
-            	logger.log(Level.WARNING, "failed to cleanup", e);
-            }
-    	}
     }
 
 	public InetSocketAddress getPeer() {
@@ -385,19 +331,11 @@ public class Connection {
 		return null;
 	}
 
-	public InetSocketAddress getLocal() {
-		if (ssock!=null)
-			return (InetSocketAddress) ssock.socket().getLocalSocketAddress();
-		return null;
-	}
-    
     public InetAddress getRemoteAddress() {
         return ((InetSocketAddress) this.sock.socket().getRemoteSocketAddress()).getAddress();
     }
     
-    private Transport transport;
     protected SocketChannel sock;
-    private SelectionKey key;
 
     private ByteBuffer incoming, copy;
     private ArrayList<ByteBuffer> incomingmb;
@@ -410,12 +348,7 @@ public class Connection {
     private boolean dirty, connected;
 
     /**
-     * Socket used to listen for connections
-     */
-    private ServerSocketChannel ssock;
-    private SelectionKey skey;
-
-    /** Message queue
+     * Message queue
      */
     public Queue queue;
 

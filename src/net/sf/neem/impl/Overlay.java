@@ -106,7 +106,7 @@ public class Overlay implements ConnectionListener, DataListener {
 		InetSocketAddress addr = Addresses.readAddressFromBuffer(msg);
 
 		if (peers.containsKey(id)) {
-			info.close();
+			info.handleClose();
 			return;
 		}
 		
@@ -171,7 +171,7 @@ public class Overlay implements ConnectionListener, DataListener {
         while(peers.size() > fanout) {
             Connection info = conns[rand.nextInt(nc)];
             peers.remove(info.id);
-            info.close();
+            info.handleClose();
             info.id = null;
             purged++;
         }
