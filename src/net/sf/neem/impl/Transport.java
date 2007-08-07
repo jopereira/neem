@@ -24,7 +24,6 @@
  *  - Neither the name of the University of Minho nor the names of its
  *  contributors may be used to endorse or promote products derived from
  *  this software without specific prior written permission.
- * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -58,11 +57,15 @@ import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Implementation of the network layer.
  */
 public class Transport implements Runnable {
+	private static Logger logger = Logger.getLogger("net.sf.neem.impl.Transport");
+	
 	public Transport(Random rand, InetSocketAddress local) throws IOException, BindException {
 		this.rand=rand;
 		
@@ -156,7 +159,7 @@ public class Transport implements Runnable {
            Connection info = new Connection(this, null, true);
            info.connect(addr);
         } catch (IOException e) {
-        	// We don't care
+        	logger.log(Level.WARNING, "failed to add peer "+addr, e);
         }
     }
 
@@ -233,9 +236,10 @@ public class Transport implements Runnable {
             } catch (IOException e) {
                 // This handles only exceptions thrown by the selector and the
                 // server socket. Individual connections are dropped silently.
-                e.printStackTrace();
+            	logger.log(Level.SEVERE, "main loop failed, terminating", e);
+            	close();
             } catch (CancelledKeyException cke) {
-            	// Silently ignore.
+            	// Don't care
             }
         }
     }
@@ -278,6 +282,7 @@ public class Transport implements Runnable {
 				try {
 					handler.receive(msg, source, prt);
 				} catch(BufferUnderflowException e) {
+	            	logger.log(Level.WARNING, "corrupt or truncated message from "+source.getRemoteAddress(), e);
 					source.close();
 				}
 			}

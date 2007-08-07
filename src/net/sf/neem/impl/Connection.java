@@ -50,12 +50,16 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Connection with a peer. This class provides event handlers
  * for a connection. It also implements multiplexing and queueing.
  */
 public class Connection {
+	private static Logger logger = Logger.getLogger("net.sf.neem.impl.Transport");
+	
     /**
 	 * Create a new connection.
 	 * 
@@ -148,7 +152,8 @@ public class Connection {
 		}
 	}
     
-    /** Write event handler.
+    /**
+     * Write event handler.
      * There's something waiting to be written.
      */
     void handleWrite() {
@@ -197,9 +202,10 @@ public class Connection {
                 key.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
             }            
         } catch (IOException e) {
+        	logger.log(Level.INFO, "failed to write to "+getRemoteAddress(), e);
             handleClose();
-            //return;
         } catch (CancelledKeyException cke) {
+        	// Make sure connection is closed
             transport.notifyClose(this);
         }
         
@@ -225,6 +231,7 @@ public class Connection {
             dirty=true;
             copy.limit(incoming.position());
         } catch (IOException e) {
+        	logger.log(Level.INFO, "failed to read from "+getRemoteAddress(), e);
             handleClose();
             return;
         }
@@ -292,8 +299,9 @@ public class Connection {
         
     }
 
-    /** Open connection event hadler.
-     * When the hanlder behaves as server.
+    /**
+     * Open connection event handler.
+     * When the handler behaves as server.
      */
     void handleAccept() throws IOException {
                 
@@ -315,7 +323,7 @@ public class Connection {
      * Open connection event handler.
      * When the handler behaves as client.
      */
-    void handleConnect() throws IOException {
+    void handleConnect() {
         try {	
         	/*
         	 * Amazing. The Java runtime (JDK 1.5.0_05 Linux) will notify
@@ -333,12 +341,11 @@ public class Connection {
 
                 transport.notifyOpen(this);
                 key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-                return;
             }
-        } catch (Exception e) {
-        	// Fall through, see below:
+        } catch (IOException e) {
+        	logger.log(Level.WARNING, "failed to connect", e);
+            handleClose();
         } 
-        handleClose();
     }
 
     /**
@@ -354,7 +361,8 @@ public class Connection {
 				sock.close();
 			} catch (IOException e) {
 				// Don't care, we're cleaning up anyway...
-			}
+		       	logger.log(Level.WARNING, "failed to cleanup", e);
+		    }
 			key = null;
 			sock = null;
 			transport.notifyClose(this);
@@ -366,6 +374,7 @@ public class Connection {
                 ssock.close();
             } catch (IOException e) {
             	// Don't care, we're cleaning up anyway...
+            	logger.log(Level.WARNING, "failed to cleanup", e);
             }
     	}
     }
