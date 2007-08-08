@@ -108,10 +108,10 @@ public class Acceptor extends Handler {
     		return;
     	
 		try {
-			key = null;
 			key.channel().close();
 			key.cancel();
 			sock.close();
+			key = null;
 		} catch (IOException e) {
 			// Don't care, we're cleaning up anyway...
 			logger.log(Level.WARNING, "failed to cleanup", e);
