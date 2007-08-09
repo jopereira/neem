@@ -94,7 +94,7 @@ public class MulticastChannel implements InterruptibleChannel,
     	Random rand = new Random();
     	net = new Transport(rand, local);
     	if (pub==null)
-    		pub = new InetSocketAddress(InetAddress.getLocalHost(), net.getLocal().getPort());
+    		pub = new InetSocketAddress(InetAddress.getLocalHost(), net.getLocalSocketAddress().getPort());
         overlay = new Overlay(rand, pub, net, (short)2, (short)3, (short)4);
         gossip = new Gossip(rand, net, overlay, (short)0, (short)1);
         gossip.handler(new Application() {
@@ -196,14 +196,25 @@ public class MulticastChannel implements InterruptibleChannel,
     }
 
     /**
-     * Get the address that is being advertised to peers.
+     * Get the address that is being advertised to peers. This might not
+     * be the real socket address that was bound.
      * 
      * @return the address being advertised to peers
      */
-    public InetSocketAddress getLocalSocketAddress() {
-        return this.net.getLocal();
+    public InetSocketAddress getPeerSocketAddress() {
+        return this.overlay.getLocalSocketAddress();
     }
 
+    /**
+     * Get the address of the local socket. This might not
+     * be the address that is being advertised to peers.
+     * 
+     * @return the local socket address
+     */
+    public InetSocketAddress getLocalSocketAddress() {
+        return this.net.getLocalSocketAddress();
+    }
+    
     /**
      * Add an address of a remote peer. This is used to add the address of peers
      * that act as rendezvous points when joining the group. Any peer can be

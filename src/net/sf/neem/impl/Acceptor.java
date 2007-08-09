@@ -114,11 +114,11 @@ public class Acceptor extends Handler {
 			key = null;
 		} catch (IOException e) {
 			// Don't care, we're cleaning up anyway...
-			logger.log(Level.WARNING, "failed to cleanup", e);
+			logger.log(Level.WARNING, "cleanup failed", e);
 		}
 	}
  
-	public InetSocketAddress getLocal() {
+	public InetSocketAddress getLocalSocketAddress() {
 		if (sock!=null)
 			return (InetSocketAddress) sock.socket().getLocalSocketAddress();
 		return null;

@@ -247,6 +247,10 @@ public class Overlay implements ConnectionListener, DataListener {
     public UUID getId() {
         return myId;
     }
+    
+    public InetSocketAddress getLocalSocketAddress() {
+    	return netid;
+    }
 
     private Transport net;
 	private InetSocketAddress netid;

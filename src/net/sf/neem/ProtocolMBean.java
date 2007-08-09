@@ -182,6 +182,12 @@ public interface ProtocolMBean {
 	 * @return connected peer ids
 	 */
     public UUID[] getPeerIds();
+    
+    /**
+     * Get the address being advertised to peers.
+     * @return the address
+     */
+    public InetSocketAddress getPublicAddress();
 
 	/**
 	 * Get the delay between periodic shuffle.

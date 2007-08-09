@@ -72,9 +72,13 @@ public class Connection extends Handler {
 			sock.socket().bind(bind);
 		}
         sock.connect(remote);
-		key = sock.register(transport.selector, SelectionKey.OP_CONNECT);
+
+        key = sock.register(transport.selector, SelectionKey.OP_CONNECT);
 		key.attach(this);
 		queue = new Queue(transport.getQueueSize(), transport.rand);
+		
+		if (logger.isLoggable(Level.INFO))
+			logger.log(Level.INFO, "opening connection to "+remote);
 	}
     
     /**
@@ -90,11 +94,15 @@ public class Connection extends Handler {
         sock.configureBlocking(false);
         sock.socket().setSendBufferSize(transport.getBufferSize());
         sock.socket().setReceiveBufferSize(transport.getBufferSize());
+        
         key = sock.register(transport.selector,
-                SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+                SelectionKey.OP_READ | SelectionKey.OP_WRITE); 
         key.attach(this);
         queue = new Queue(transport.getQueueSize(), transport.rand);
         connected=true;
+
+        if (logger.isLoggable(Level.INFO))
+        	logger.log(Level.INFO, "accepted connection from "+getPeer());
     }
     	
     /**
@@ -171,7 +179,6 @@ public class Connection extends Handler {
                 key.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
             }            
         } catch (IOException e) {
-        	logger.log(Level.INFO, "failed to write to "+getRemoteAddress(), e);
             handleClose();
         } catch (CancelledKeyException cke) {
         	// Make sure connection is closed
@@ -200,7 +207,6 @@ public class Connection extends Handler {
             dirty=true;
             copy.limit(incoming.position());
         } catch (IOException e) {
-        	logger.log(Level.INFO, "failed to read from "+getRemoteAddress(), e);
             handleClose();
             return;
         }
@@ -297,9 +303,12 @@ public class Connection extends Handler {
 
                 transport.notifyOpen(this);
                 key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+
+                if (logger.isLoggable(Level.INFO))
+        			logger.log(Level.INFO, "connected to "+getPeer());
             }
         } catch (IOException e) {
-        	logger.log(Level.WARNING, "failed to connect", e);
+        	logger.log(Level.WARNING, "connect failed", e);
             handleClose();
         } 
     }
@@ -310,6 +319,9 @@ public class Connection extends Handler {
      */
     void handleClose() {
     	if (key!=null) {
+    		if (logger.isLoggable(Level.INFO))
+    			logger.log(Level.INFO, "closed connection with "+getPeer());
+
     		try {
     			connected=false;
 				key.channel().close();
@@ -317,7 +329,7 @@ public class Connection extends Handler {
 				sock.close();
 			} catch (IOException e) {
 				// Don't care, we're cleaning up anyway...
-		       	logger.log(Level.WARNING, "failed to cleanup", e);
+		       	logger.log(Level.WARNING, "cleanup failed", e);
 		    }
 			key = null;
 			sock = null;

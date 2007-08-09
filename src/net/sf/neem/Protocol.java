@@ -150,7 +150,11 @@ public class Protocol implements ProtocolMBean {
 		return overlay.getPeers();
 	}
 	
-    public int getOverlayFanout() {
+	public InetSocketAddress getPublicAddress() {
+		return overlay.getLocalSocketAddress();
+	}
+	
+	public int getOverlayFanout() {
         return overlay.getFanout();
     }
 
@@ -185,7 +189,7 @@ public class Protocol implements ProtocolMBean {
 	// -- Transport
 	
 	public InetSocketAddress getLocalAddress() {
-		return net.getLocal();
+		return net.getLocalSocketAddress();
 	}
 	
     public InetSocketAddress[] getPeerAddresses() {
@@ -248,5 +252,6 @@ public class Protocol implements ProtocolMBean {
 	private Transport net;
 	private Gossip gossip;
 	private Overlay overlay;
+
 };
 

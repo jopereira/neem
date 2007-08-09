@@ -82,8 +82,8 @@ public class Transport implements Runnable {
 	/**
      * Get local address.
      */
-    public InetSocketAddress getLocal() {
-    	return idinfo.getLocal();
+    public InetSocketAddress getLocalSocketAddress() {
+    	return idinfo.getLocalSocketAddress();
     }
   
     /**
