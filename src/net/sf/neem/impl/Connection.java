@@ -287,13 +287,6 @@ public class Connection extends Handler {
      */
     void handleConnect() {
         try {	
-        	/*
-        	 * Amazing. The Java runtime (JDK 1.5.0_05 Linux) will notify
-        	 * us of connection multiple times, making all hell break
-        	 * loose. The workaround is simple, yet effective.
-        	 */
-        	if (connected)
-        		return;
             if (sock.finishConnect()) {
             	transport.connected++;
             	

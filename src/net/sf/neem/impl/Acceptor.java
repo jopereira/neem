@@ -83,14 +83,6 @@ public class Acceptor extends Handler {
     void handleAccept() throws IOException {                
         SocketChannel nsock = sock.accept();
        
-        /*
-         * Accept seems to be selected often (JDK 1.5.0_05 Linux), even when there is
-         * nothing out there to accept. *sigh*
-         */
-        if (nsock == null) {
-            return;
-        }
-        
         transport.accepted++;
         transport.notifyOpen(new Connection(transport,nsock));   
     }
