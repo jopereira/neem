@@ -51,6 +51,7 @@ import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -213,8 +214,10 @@ public class Transport implements Runnable {
                         break;
                             
                     // Execute pending event-handlers.
-                            
-                    for (SelectionKey key: selector.selectedKeys()) {
+                 
+                    Iterator<SelectionKey> keys=selector.selectedKeys().iterator();
+                    while(keys.hasNext()) {
+                    	SelectionKey key=keys.next();
                         Handler info = (Handler) key.attachment();
 
                         if (!key.isValid()) {
@@ -229,7 +232,8 @@ public class Transport implements Runnable {
                             info.handleConnect();
                         } else if (key.isWritable()) {
                             info.handleWrite();
-                        } 
+                        }
+                        keys.remove();
                     }
                 }
                         
