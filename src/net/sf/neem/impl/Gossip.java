@@ -190,7 +190,7 @@ public class Gossip implements DataListener {
     	long time=System.nanoTime();
     	while(i.hasNext()) {
     		Known known=i.next();
-   	    	if (time-known.last<pullPeriod*1000000)
+   	    	if (time-known.last<pullPeriod*1000000L)
    	    		continue;
    	    	if (known.senders.isEmpty())
    	    		i.remove();

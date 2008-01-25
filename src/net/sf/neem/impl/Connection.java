@@ -114,7 +114,7 @@ public class Connection extends Handler {
     	if (key==null)
             return;
     	
-        Queued b = new Queued(msg, new Short(port));
+        Queued b = new Queued(msg, port);
         queue.push(b);
         handleWrite();
     }
@@ -246,7 +246,7 @@ public class Connection extends Handler {
 
             incomingmb.add(slice);
             msgsize -= slicesize;
-            final Short prt = new Short(port);
+            final Short prt = port;
 
             // Is the message complete?
             if (msgsize == 0) {

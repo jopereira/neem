@@ -142,7 +142,7 @@ public class Transport implements Runnable {
      * @param delay delay before execution
      */
     public synchronized void schedule(Runnable task, long delay) {
-        Long key = new Long(System.nanoTime() + delay*1000000);
+        Long key = System.nanoTime() + delay*1000000;
 
         while(timers.containsKey(key))
         	key=key+1;
@@ -168,7 +168,7 @@ public class Transport implements Runnable {
      * Add a reference to a message handler.
      */
     public void setDataListener(DataListener handler, short port) {
-        this.handlers.put(new Short(port), handler);
+        this.handlers.put(port, handler);
     }
         
     /**

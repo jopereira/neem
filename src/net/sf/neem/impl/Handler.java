@@ -48,7 +48,7 @@ import java.util.logging.Logger;
  * Abstract event handler.
  */
 public abstract class Handler {
-	protected static Logger logger = Logger.getLogger("net.sf.neem.impl.Transport");
+	protected static final Logger logger = Logger.getLogger("net.sf.neem.impl.Transport");
 
     public Handler(Transport transport) {
 		this.transport = transport;
