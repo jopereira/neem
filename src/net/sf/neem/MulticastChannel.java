@@ -53,6 +53,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.UUID;
 
 import net.sf.neem.impl.Application;
 import net.sf.neem.impl.Buffers;
@@ -81,7 +82,7 @@ public class MulticastChannel implements InterruptibleChannel,
      * @param local the local address to bind to
      */
 	public MulticastChannel(InetSocketAddress local) throws IOException {
-		this(local, null);
+		this(local, null, null);
 	}
 		   
 	/**
@@ -90,12 +91,14 @@ public class MulticastChannel implements InterruptibleChannel,
      * @param local the local address to bind to
      * @param pub public address to advertise to peers
      */		   
-	public MulticastChannel(InetSocketAddress local, InetSocketAddress pub) throws IOException {
+	public MulticastChannel(InetSocketAddress local, InetSocketAddress pub, UUID id) throws IOException {
     	Random rand = new Random();
     	net = new Transport(rand, local);
     	if (pub==null)
     		pub = new InetSocketAddress(InetAddress.getLocalHost(), net.getLocalSocketAddress().getPort());
-        overlay = new Overlay(rand, pub, net, (short)2, (short)3, (short)4);
+    	if (id==null)
+    		id = UUID.randomUUID();
+        overlay = new Overlay(rand, pub, id, net, (short)2, (short)3, (short)4);
         gossip = new Gossip(rand, net, overlay, (short)0, (short)1);
         gossip.handler(new Application() {
             public void deliver(ByteBuffer[] buf) {

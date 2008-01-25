@@ -54,7 +54,7 @@ public class Overlay implements ConnectionListener, DataListener {
 	/**
      * Creates a new instance of Overlay
      */
-    public Overlay(Random rand, InetSocketAddress id, Transport net, short joinport, short idport, short shuffleport) {
+    public Overlay(Random rand, InetSocketAddress id, UUID myId, Transport net, short joinport, short idport, short shuffleport) {
     	this.rand = rand;
     	this.netid = id;
     	this.net = net;
@@ -70,7 +70,7 @@ public class Overlay implements ConnectionListener, DataListener {
          */
         this.fanout = 15;
 
-        this.myId = UUID.randomUUID();
+        this.myId = myId;
         this.peers = new HashMap<UUID, Connection>();
         this.shuffle = new Periodic(rand, net, 1000) {
         	public void run() {
