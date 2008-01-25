@@ -52,7 +52,7 @@ public class BufferTooSmallException extends IOException {
 	BufferTooSmallException(int required) {this.required=required;}
 
 	/**
-	 * Obtains the number of bytes remaining required in the buffer to propertly
+	 * Obtains the number of bytes remaining required in the buffer to properly
 	 * handle the next message in the queue.
 	 * 
 	 * @return number of bytes required

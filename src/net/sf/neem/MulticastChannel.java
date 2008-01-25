@@ -169,9 +169,12 @@ public class MulticastChannel implements InterruptibleChannel,
      *             the waiting thread has been interrupted
      * @throws AsynchronousCloseException
      *             the channel has been closed while waiting
+     * @throws BufferTooSmallException
+     * 	           the buffer is too small for the next incoming message
+     * 	           and the channel is configured to not truncate messages
      */
     public synchronized int read(ByteBuffer msg) throws ClosedChannelException,
-            ClosedByInterruptException, AsynchronousCloseException {
+            ClosedByInterruptException, AsynchronousCloseException, BufferTooSmallException {
         if (isClosed)
             throw new ClosedChannelException();
         try {
@@ -185,7 +188,7 @@ public class MulticastChannel implements InterruptibleChannel,
             throw new AsynchronousCloseException();
         ByteBuffer[] buf = queue.getFirst();
         if (msg.remaining() < Buffers.count(buf) && !truncate)
-            throw new BufferOverflowException();
+            throw new BufferTooSmallException(Buffers.count(buf));
         buf = queue.removeFirst();
         return Buffers.copy(msg, buf);
     }
