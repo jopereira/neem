@@ -15,12 +15,51 @@ of node and network faults and scale to very large numbers of
 participants. The resulting protocol can be used for event
 dissemination to a very large number of interested parties.
 
-Implementation is based on Java5 and takes advantage of the NIO
+Implementation is based on Java and takes advantage of the NIO
 interfaces to maintain multiple network connections without threading
 overhead. The goal of this implementation is to be small,
 self-contained, and practical.
 
-2. Latest Version
+2. Demos and Tools
+------------------
+
+This package contains demonstration applications for the NeEM protocol.
+Currently:
+
+ - net.sf.neem.apps.Chat - simple console-based interactive chat application
+
+ - net.sf.neem.apps.Glue - glue multiple groups together
+
+ - net.sf.neem.apps.jmx.Reconfig - change protocol configuration of multiple
+ running peers using JMX
+
+ - net.sf.neem.apps.jmx.DumpGraph - dumps current overlay network as a Graphviz
+ .dot file
+
+ - net.sf.neem.apps.perf.Crowd - launches a batch of silent peers
+
+ - net.sf.neem.apps.perf.Source - injects traffic in a group
+
+ - net.sf.neem.apps.perf.Drain - logs traffic received from a group
+
+To test remote access with JMX, as required by net.sf.neem.apps.jmx.*, use the 
+following VM options:
+
+ java -Dcom.sun.management.jmxremote.port=someport \
+	-Dcom.sun.management.jmxremote.authenticate=false \
+	-Dcom.sun.management.jmxremote.ssl=false net.sf.neem.apps.Chat ...
+
+where "someport" is an available TCP/IP port for listening.
+Then run apps.jmx.* as follows:
+
+ java net.sf.neem.apps.jmx.DumpGraph hostname:someport
+ java net.sf.neem.apps.jmx.Reconfig data/default.properties hostname.someport
+
+WARNING: This configuration disables access control! For a production
+environment disable JMX remote access or check JMX documentation to
+learn how to setup secure access control.
+
+3. Latest Version
 -----------------
 
 For further documentation and download of the latest version go to the
@@ -28,7 +67,7 @@ NeEM homepage at:
 	
 	http://neem.sf.net
 
-3. Credits
+4. Credits
 ----------
 
 This implementation of the NeEM protocol was developed by:
@@ -44,7 +83,7 @@ Microsoft Research. People involved were J. Pereira, L. Rodrigues,
 R. Oliveira, A.-M. Kermarrec, A. Pinto, M. J. Monteiro, and
 S. Formigo.
 
-4. License
+5. License
 ----------
 
 Redistribution and use in source and binary forms, with or without

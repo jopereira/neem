@@ -1,4 +1,4 @@
-<project name="NeEM - Network-friendly Epidemic Multicast" default="build" basedir=".">
+<project xmlns:ivy="antlib:org.apache.ivy.ant" name="NeEM - Network-friendly Epidemic Multicast" default="build" basedir=".">
 	<description>
         See http://neem.sf.net for details.
     </description>
@@ -8,15 +8,17 @@
 	<property name="dist" location="build/lib" />
 	<property name="docs" location="build/api" />
 
-	<target name="build" depends="jar,javadoc" />
-	<target name="release" depends="bintar,srctar" />
-
-	<target name="relname" unless="RELEASE">
-		<tstamp />
-		<property name="RELEASE" value="${DSTAMP}"/>
-		<echo>Release name not set. Using current date.</echo>
-		<echo>Use "ant -DRELEASE=name release" to set the release name.</echo>
+	<target name="resolve" description="fetch dependencies with Ivy">
+		<ivy:retrieve />
 	</target>
+
+	<target name="publish" depends="resolve,jars" description="publish artifact to local Ivy repo">
+		<ivy:publish resolver="local" overwrite="true">
+			<artifacts pattern="build/lib/[artifact]-[type].[ext]"/>
+		</ivy:publish>
+	</target>
+
+	<target name="build" depends="jars" />
 
 	<target name="init">
 		<mkdir dir="${build}" />
@@ -24,43 +26,38 @@
 		<mkdir dir="${docs}" />
 	</target>
 
+	<target name="jars" depends="compile,javadoc" description="generate packages">
+		<jar jarfile="${dist}/neem-jar.jar">
+			<fileset dir="${build}/classes">
+				<include name="**" />
+				<exclude name="net/sf/neem/apps/**" />
+			</fileset>
+		</jar>
+		<jar jarfile="${dist}/neem-apps-jar.jar">
+			<fileset dir="${build}/classes">
+				<include name="net/sf/neem/apps/**" />
+			</fileset>
+		</jar>
+		<jar jarfile="${dist}/neem-javadoc.jar" basedir="${build}/api"/>
+		<jar jarfile="${dist}/neem-source.jar">
+			<fileset dir="${basedir}">
+				<include name="src/**" />
+				<include name="build.xml" />
+				<include name="ivy.xml" />
+				<include name="README" />
+			</fileset>
+		</jar>
+	</target>
+
 	<target name="compile" depends="init" description="compile the source ">
 		<mkdir dir="${build}/classes" />
 		<javac srcdir="${src}" destdir="${build}/classes"/>
 	</target>
 
-	<target name="jar" depends="compile" description="generate the distribution">
-		<jar jarfile="${dist}/neem.jar" basedir="${build}/classes"/>
-	</target>
-
 	<target name="javadoc" depends="init" description="Generate Javadoc for NeEM">
 		<javadoc destdir="${docs}" author="true" version="true" use="true" windowtitle="NeEM API" sourcepath="${src}" packagenames="net.sf.neem,net.sf.neem.impl" overview="${src}/overview.html">
-			<bottom><![CDATA[<i>Copyright &copy; 2005 University of Minho, Portugal. All Rights Reserved.</i>]]></bottom>
+			<bottom><![CDATA[<i>Copyright &copy; 2005-2007 University of Minho, Portugal. All Rights Reserved.</i>]]></bottom>
 		</javadoc>
-	</target>
-
-	<target name="bintar" depends="javadoc,jar,relname" description="pack it up nicely">
-		<tar destfile="${build}/neem-${RELEASE}-bin.tar.gz" compression="gzip">
-			<tarfileset dir="${basedir}" prefix="neem-${RELEASE}">
-				<include name="README" />
-				<exclude name="**/.arch-ids/**" />
-			</tarfileset>
-			<tarfileset dir="${build}" prefix="neem-${RELEASE}">
-				<include name="lib/**" />
-				<include name="api/**" />
-			</tarfileset>
-		</tar>
-	</target>
-
-	<target name="srctar" depends="init,relname" description="src tarball">
-		<tar destfile="${build}/neem-${RELEASE}.tar.gz" compression="gzip">
-			<tarfileset dir="${basedir}" prefix="neem-${RELEASE}">
-				<include name="src/**" />
-				<include name="build.xml" />
-				<include name="README" />
-				<exclude name="**/.arch-ids/**" />
-			</tarfileset>
-		</tar>
 	</target>
 
 	<target name="clean" description="clean up">
