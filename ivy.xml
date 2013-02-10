@@ -2,8 +2,8 @@
     <info organisation="net.sf.neem" module="neem" revision="0.8-SNAPSHOT"/>
 	<publications>
 		<artifact name="neem" type="jar" ext="jar"/>
-		<artifact name="neem-apps" type="jar" ext="jar"/>
 		<artifact name="neem" type="javadoc" ext="jar"/>
 		<artifact name="neem" type="source" ext="jar"/>
+		<artifact name="neem-apps" type="jar" ext="jar"/>
 	</publications>
 </ivy-module>

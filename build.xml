@@ -40,11 +40,8 @@
 		</jar>
 		<jar jarfile="${dist}/neem-javadoc.jar" basedir="${build}/api"/>
 		<jar jarfile="${dist}/neem-source.jar">
-			<fileset dir="${basedir}">
-				<include name="src/**" />
-				<include name="build.xml" />
-				<include name="ivy.xml" />
-				<include name="README" />
+			<fileset dir="${src}">
+				<include name="**" />
 			</fileset>
 		</jar>
 	</target>
