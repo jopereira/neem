@@ -5,7 +5,7 @@
 
 	<property name="src" location="src/" />
 	<property name="build" location="build" />
-	<property name="dist" location="build/lib" />
+	<property name="dist" location="build" />
 	<property name="docs" location="build/api" />
 
 	<target name="resolve" description="fetch dependencies with Ivy">
@@ -14,7 +14,7 @@
 
 	<target name="publish" depends="resolve,jars" description="publish artifact to local Ivy repo">
 		<ivy:publish resolver="local" overwrite="true">
-			<artifacts pattern="build/lib/[artifact]-[type].[ext]"/>
+			<artifacts pattern="build/[artifact](-[classifier]).[ext]"/>
 		</ivy:publish>
 	</target>
 
@@ -27,19 +27,13 @@
 	</target>
 
 	<target name="jars" depends="compile,javadoc" description="generate packages">
-		<jar jarfile="${dist}/neem-jar.jar">
+		<jar jarfile="${dist}/neem.jar">
 			<fileset dir="${build}/classes">
 				<include name="**" />
-				<exclude name="net/sf/neem/apps/**" />
-			</fileset>
-		</jar>
-		<jar jarfile="${dist}/neem-apps-jar.jar">
-			<fileset dir="${build}/classes">
-				<include name="net/sf/neem/apps/**" />
 			</fileset>
 		</jar>
 		<jar jarfile="${dist}/neem-javadoc.jar" basedir="${build}/api"/>
-		<jar jarfile="${dist}/neem-source.jar">
+		<jar jarfile="${dist}/neem-sources.jar">
 			<fileset dir="${src}">
 				<include name="**" />
 			</fileset>

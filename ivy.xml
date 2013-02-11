@@ -1,9 +1,8 @@
-<ivy-module version="2.0">
+<ivy-module version="2.0" xmlns:m="http://ant.apache.org/ivy/maven">
     <info organisation="net.sf.neem" module="neem" revision="0.8-SNAPSHOT"/>
 	<publications>
-		<artifact name="neem" type="jar" ext="jar"/>
-		<artifact name="neem" type="javadoc" ext="jar"/>
-		<artifact name="neem" type="source" ext="jar"/>
-		<artifact name="neem-apps" type="jar" ext="jar"/>
+		<artifact name="neem" ext="jar"/>
+		<artifact name="neem" type="javadoc" ext="jar" m:classifier="javadoc"/>
+		<artifact name="neem" type="source" ext="jar" m:classifier="sources"/>
 	</publications>
 </ivy-module>
