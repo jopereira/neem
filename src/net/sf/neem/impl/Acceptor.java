@@ -45,7 +45,6 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.logging.Level;
 
 /**
  * Listening socket accepting connections.
@@ -106,7 +105,7 @@ public class Acceptor extends Handler {
 			key = null;
 		} catch (IOException e) {
 			// Don't care, we're cleaning up anyway...
-			logger.log(Level.WARNING, "cleanup failed", e);
+			logger.warn("cleanup failed", e);
 		}
 	}
  

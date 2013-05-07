@@ -49,7 +49,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.UUID;
-import java.util.logging.Level;
 
 /**
  * Connection with a peer. This class provides event handlers
@@ -77,8 +76,7 @@ public class Connection extends Handler {
 		key.attach(this);
 		queue = new Queue(transport.getQueueSize(), transport.rand);
 		
-		if (logger.isLoggable(Level.INFO))
-			logger.log(Level.INFO, "opening connection to "+remote);
+		logger.info("opening connection to {}", remote);
 	}
     
     /**
@@ -101,8 +99,7 @@ public class Connection extends Handler {
         queue = new Queue(transport.getQueueSize(), transport.rand);
         connected=true;
 
-        if (logger.isLoggable(Level.INFO))
-        	logger.log(Level.INFO, "accepted connection from "+getPeer());
+        logger.info("accepted connection from {}", getPeer());
     }
     	
     /**
@@ -297,11 +294,10 @@ public class Connection extends Handler {
                 transport.notifyOpen(this);
                 key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
 
-                if (logger.isLoggable(Level.INFO))
-        			logger.log(Level.INFO, "connected to "+getPeer());
+        		logger.info("connected to {}", getPeer());
             }
         } catch (IOException e) {
-        	logger.log(Level.WARNING, "connect failed", e);
+        	logger.warn("connect failed", e);
             handleClose();
         } 
     }
@@ -312,8 +308,7 @@ public class Connection extends Handler {
      */
     void handleClose() {
     	if (key!=null) {
-    		if (logger.isLoggable(Level.INFO))
-    			logger.log(Level.INFO, "closed connection with "+getPeer());
+    		logger.info("closed connection with {}", getPeer());
 
     		try {
     			connected=false;
@@ -322,7 +317,7 @@ public class Connection extends Handler {
 				sock.close();
 			} catch (IOException e) {
 				// Don't care, we're cleaning up anyway...
-		       	logger.log(Level.WARNING, "cleanup failed", e);
+		       	logger.warn("cleanup failed", e);
 		    }
 			key = null;
 			sock = null;

@@ -42,13 +42,15 @@ package net.sf.neem.impl;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Abstract event handler.
  */
 public abstract class Handler {
-	protected static final Logger logger = Logger.getLogger("net.sf.neem.impl.Transport");
+	protected static final Logger logger = LoggerFactory.getLogger("net.sf.neem.impl.Transport");
 
     public Handler(Transport transport) {
 		this.transport = transport;
