@@ -46,12 +46,16 @@ import java.nio.ByteBuffer;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import net.sf.neem.apps.Addresses;
-
 import net.sf.neem.MulticastChannel;
 import net.sf.neem.ProtocolMBean;
+import net.sf.neem.apps.Addresses;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Drain {
+	private static Logger logger = LoggerFactory.getLogger(Drain.class); 
+
     public static void main(String[] args) {
         if (args.length < 1) {
             System.err.println("Usage: net.sf.neem.apps.perf.Drain local peer1 ... peerN");
@@ -77,10 +81,10 @@ public class Drain {
             	bb.clear();
                 neem.read(bb);
                 bb.flip();
-                System.out.println(id+" "+(System.nanoTime()/1000)+" "+new String(buf,0,bb.remaining()));
+                logger.info("{} {} {}", id, (System.nanoTime()/1000), new String(buf,0,bb.remaining()));
             }
         } catch (Exception e) {
-        	e.printStackTrace();
+        	logger.error("exception caught", e);
         }
     }
 }

@@ -48,16 +48,20 @@ import java.nio.ByteBuffer;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import net.sf.neem.apps.Addresses;
-
 import net.sf.neem.MulticastChannel;
 import net.sf.neem.ProtocolMBean;
+import net.sf.neem.apps.Addresses;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Creates a crowd of NeEM peers. All messages received are discarded. No
  * messages are sent. Use JMX to manipulate paramters.
  */
 public class Crowd extends Thread {
+	private static Logger logger = LoggerFactory.getLogger(Crowd.class); 
+	
     private MulticastChannel neem;
     
 	public Crowd(MulticastChannel neem) {
@@ -72,7 +76,7 @@ public class Crowd extends Thread {
                 neem.read(bb);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+        	logger.error("exception caught by worker", e);
         }
     }
     public static void main(String[] args) throws IOException {
@@ -105,7 +109,7 @@ public class Crowd extends Thread {
 				smalls[i].neem.connect(smalls[0].neem.getLocalSocketAddress());
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+        	logger.error("exception caught", e);
 		}
     }
 }

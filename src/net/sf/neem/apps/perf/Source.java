@@ -46,12 +46,17 @@ import java.nio.ByteBuffer;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.sf.neem.apps.Addresses;
 
 import net.sf.neem.MulticastChannel;
 import net.sf.neem.ProtocolMBean;
 
 public class Source {
+	private static Logger logger = LoggerFactory.getLogger(Source.class); 
+	
     public static void main(String[] args) {
         if (args.length < 3) {
             System.err.println("Usage: net.sf.neem.apps.perf.Source local iarrival size peer1 ... peerN");
@@ -91,11 +96,11 @@ public class Source {
                 bb.rewind();
                 neem.write(bb);
                 bb.clear();
-                System.out.println(msg);
+                logger.info(msg);
                 Thread.sleep(iarrival);
             }
         } catch (Exception e) {
-        	e.printStackTrace();
+        	logger.error("exception caught", e);
         }
     }
 }
