@@ -3,7 +3,7 @@
   <groupId>net.sf.neem</groupId>
   <artifactId>neem</artifactId>
   <packaging>jar</packaging>
-  <version>0.8-SNAPSHOT</version>
+  <version>0.8</version>
 
   <distributionManagement>
     <repository>
